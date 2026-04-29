@@ -1,0 +1,67 @@
+name: Bug report
+description: Report something that is broken or confusing.
+title: "bug: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve IssueDeck. Please include enough detail for someone else to reproduce the issue.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+      placeholder: The dashboard shows...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest steps that trigger the issue.
+      placeholder: |
+        1. Start IssueDeck with...
+        2. Open...
+        3. Click...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Dashboard
+        - REST API
+        - MCP tools
+        - CLI
+        - Docker/deployment
+        - Documentation
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.1.0 or commit SHA
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: OS, Python version, browser, deployment mode
+

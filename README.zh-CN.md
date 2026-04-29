@@ -2,6 +2,10 @@
 
 [English](README.md) | 简体中文
 
+[![CI](https://github.com/xq520mmy/IssueDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/xq520mmy/IssueDeck/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/xq520mmy/IssueDeck?display_name=tag)](https://github.com/xq520mmy/IssueDeck/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 比 Jira 更轻，比 Markdown 更稳。
 
 IssueDeck 是一个轻量、自托管的开发事项追踪器，面向小团队和 AI coding
@@ -13,6 +17,7 @@ IssueDeck 是一个轻量、自托管的开发事项追踪器，面向小团队�
 
 ## 功能
 
+- 面向 Agent：MCP tools 让 coding agent 可以直接创建、更新、搜索、关联和发布事项。
 - 多项目：每个项目独立配置事项类型、状态、分支和 ID 前缀。
 - SQLite FTS5 全文搜索。
 - 双向关系：`blocks` / `blocked_by` / `related_to`。
@@ -70,3 +75,5 @@ ISSUEDECK_TOKEN=your-secret-token
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+路线图见 [ROADMAP.md](ROADMAP.md)。

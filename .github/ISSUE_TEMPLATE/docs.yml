@@ -1,0 +1,26 @@
+name: Documentation improvement
+description: Report missing, stale, or confusing docs.
+title: "docs: "
+labels: ["documentation", "needs-triage"]
+body:
+  - type: textarea
+    id: location
+    attributes:
+      label: Location
+      description: Which page, section, or command is confusing?
+      placeholder: README.md Quickstart...
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: What is unclear?
+      description: Describe the gap or confusion.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix
+      description: If you know what would help, write it here.
+

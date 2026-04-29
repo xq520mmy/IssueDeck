@@ -1,0 +1,48 @@
+name: Feature request
+description: Suggest a useful capability or workflow.
+title: "feat: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        IssueDeck is intentionally small. The best feature requests describe a real workflow and why the current path is awkward.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do?
+      placeholder: I want to...
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current workaround
+      description: How do you handle this today?
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would feel natural in IssueDeck?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Dashboard
+        - REST API
+        - MCP tools
+        - CLI
+        - Docker/deployment
+        - Documentation
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+

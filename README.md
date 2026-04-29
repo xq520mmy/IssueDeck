@@ -2,6 +2,10 @@
 
 English | [简体中文](README.zh-CN.md)
 
+[![CI](https://github.com/xq520mmy/IssueDeck/actions/workflows/ci.yml/badge.svg)](https://github.com/xq520mmy/IssueDeck/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/xq520mmy/IssueDeck?display_name=tag)](https://github.com/xq520mmy/IssueDeck/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Lighter than Jira. More stable than Markdown.
 
 IssueDeck is a lightweight, self-hosted issue deck for small teams and
@@ -16,6 +20,8 @@ stays close to code, commits, branches, and release history.
 
 ## Features
 
+- Agent-ready: MCP tools let coding agents create, update, search, relate, and
+  ship tracked work without scraping Markdown.
 - Multi-project: one SQLite DB holds items for any number of projects, keyed by
   `project_key`. Each project has its own `kinds`, `statuses`, `branches`,
   and numeric ID prefix (e.g. `FEAT-0001`, `BUG-0003`).
@@ -72,6 +78,12 @@ curl http://127.0.0.1:8765/readyz
 Dashboard CSS is committed in the repository, so Node is not required to run
 IssueDeck. If you change dashboard templates, helper class maps, or
 `tailwind.config.cjs`, rebuild the CSS with `npm ci && npm run build:css`.
+
+For a populated demo, run:
+
+```bash
+uv run issuedeck seed-demo --config server.toml --project-key example
+```
 
 ## Configure
 
@@ -227,6 +239,7 @@ npm run build:css
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 Dashboard UI work should follow [DESIGN.md](DESIGN.md).
+See [ROADMAP.md](ROADMAP.md) for planned work and contribution areas.
 
 ## License
 
