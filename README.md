@@ -6,17 +6,25 @@ English | [简体中文](README.zh-CN.md)
 [![Release](https://img.shields.io/github/v/release/xq520mmy/IssueDeck?display_name=tag)](https://github.com/xq520mmy/IssueDeck/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Lighter than Jira. More stable than Markdown.
+<p align="center">
+  <img src="docs/assets/issuedeck-social-preview.png" alt="IssueDeck: a local-first issue deck for humans and AI coding agents" width="100%">
+</p>
 
-IssueDeck is a lightweight, self-hosted issue deck for small teams and
-AI coding workflows. It gives multiple projects one shared FastAPI + SQLite
-tracker, a web dashboard, and an MCP stdio client so coding agents can create,
-update, search, relate, and ship work items.
+**Lighter than Jira. More stable than Markdown.**
+
+IssueDeck is a local-first, self-hosted issue deck for small teams and AI
+coding workflows. It gives multiple projects one shared FastAPI + SQLite
+tracker, a web dashboard for humans, and MCP tools for coding agents.
+
+## Why IssueDeck
+
+- Replace project-specific Markdown trackers with one structured source of
+  truth that stays close to code, commits, branches, and releases.
+- Give humans and coding agents the same workflow instead of maintaining a
+  dashboard in one place and agent instructions in another.
+- Start safely with demo data, then add real project configs when you are ready.
 
 ![IssueDeck dashboard demo](docs/assets/issuedeck-demo.gif)
-
-It replaces project-specific Markdown trackers with one structured service that
-stays close to code, commits, branches, and release history.
 
 ## Features
 

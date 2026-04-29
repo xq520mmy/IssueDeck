@@ -6,12 +6,22 @@
 [![Release](https://img.shields.io/github/v/release/xq520mmy/IssueDeck?display_name=tag)](https://github.com/xq520mmy/IssueDeck/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-比 Jira 更轻，比 Markdown 更稳。
+<p align="center">
+  <img src="docs/assets/issuedeck-social-preview.png" alt="IssueDeck：面向人和 AI coding agent 的本地优先事项看板" width="100%">
+</p>
+
+**比 Jira 更轻，比 Markdown 更稳。**
 
 IssueDeck 是一个轻量、自托管的开发事项追踪器，面向小团队和 AI coding
 工作流。它用一个 FastAPI + SQLite 服务管理多个项目，提供 Web Dashboard
-和 MCP stdio 客户端，让人和 coding agent 都能创建、更新、搜索、关联、发布
-和记录事项。
+给人使用，也提供 MCP tools 给 coding agent 使用。
+
+## 为什么用 IssueDeck
+
+- 用结构化服务替代散落在项目里的 Markdown tracker，事项、commit、分支和
+  release 记录都在同一个地方。
+- Dashboard 给人看，MCP tools 给 coding agent 调用，避免维护两套互相脱节的流程。
+- 公开演示可以直接使用假数据，等准备好后再接入真实项目配置。
 
 ![IssueDeck dashboard demo](docs/assets/issuedeck-demo.gif)
 

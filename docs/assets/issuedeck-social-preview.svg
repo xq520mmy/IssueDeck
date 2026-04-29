@@ -1,0 +1,82 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#F7F4EE"/>
+  <rect x="48" y="48" width="1104" height="534" rx="18" fill="#FCFAF6" stroke="#1D2328" stroke-width="2"/>
+
+  <g opacity="0.55">
+    <path d="M48 140H1152" stroke="#D9D1C4" stroke-width="1"/>
+    <path d="M48 500H1152" stroke="#D9D1C4" stroke-width="1"/>
+    <path d="M420 48V582" stroke="#D9D1C4" stroke-width="1"/>
+    <path d="M812 48V582" stroke="#D9D1C4" stroke-width="1"/>
+  </g>
+
+  <g transform="translate(88 92)">
+    <rect width="64" height="64" rx="12" fill="#1D2328"/>
+    <path d="M18 18H46V24H26V30H44V36H26V42H46V48H18V18Z" fill="#F7F4EE"/>
+    <path d="M50 18H56V48H50V18Z" fill="#D94F35"/>
+  </g>
+
+  <text x="88" y="208" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="76" font-weight="800" letter-spacing="0" fill="#1D2328">IssueDeck</text>
+  <text x="92" y="250" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="29" font-weight="700" letter-spacing="0" fill="#D94F35">Lighter than Jira.</text>
+  <text x="92" y="286" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="29" font-weight="700" letter-spacing="0" fill="#D94F35">More stable than Markdown.</text>
+  <text x="92" y="342" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="23" font-weight="500" letter-spacing="0" fill="#3D464D">A local-first issue deck for small teams,</text>
+  <text x="92" y="376" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="23" font-weight="500" letter-spacing="0" fill="#3D464D">human developers, and AI coding agents.</text>
+
+  <g transform="translate(92 400)" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="18" font-weight="700">
+    <rect width="132" height="38" rx="8" fill="#E8F3EC" stroke="#2F7D4D"/>
+    <text x="18" y="25" fill="#245D39">MCP tools</text>
+    <rect x="146" width="132" height="38" rx="8" fill="#F4E7DA" stroke="#B45A2B"/>
+    <text x="164" y="25" fill="#86421F">FastAPI</text>
+    <rect x="292" width="118" height="38" rx="8" fill="#E6EEF8" stroke="#3467A1"/>
+    <text x="310" y="25" fill="#264E7E">SQLite</text>
+  </g>
+
+  <g transform="translate(560 88)">
+    <rect width="570" height="416" rx="14" fill="#1D2328"/>
+    <rect x="1" y="1" width="568" height="414" rx="13" stroke="#000000" stroke-opacity="0.25"/>
+    <rect x="22" y="24" width="526" height="48" rx="8" fill="#F7F4EE"/>
+    <text x="42" y="55" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="18" font-weight="800" fill="#1D2328">Example Project</text>
+    <text x="404" y="55" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" fill="#5D6870">Ready to ship</text>
+
+    <g transform="translate(22 96)">
+      <rect width="158" height="254" rx="8" fill="#FCFAF6"/>
+      <rect x="18" y="18" width="80" height="12" rx="2" fill="#5D6870"/>
+      <rect x="18" y="50" width="122" height="44" rx="6" fill="#E8F3EC" stroke="#2F7D4D"/>
+      <rect x="18" y="110" width="122" height="44" rx="6" fill="#F4E7DA" stroke="#B45A2B"/>
+      <rect x="18" y="170" width="122" height="44" rx="6" fill="#E6EEF8" stroke="#3467A1"/>
+    </g>
+
+    <g transform="translate(204 96)">
+      <rect width="344" height="254" rx="8" fill="#FCFAF6"/>
+      <rect x="22" y="20" width="122" height="14" rx="2" fill="#1D2328"/>
+      <rect x="250" y="18" width="70" height="24" rx="6" fill="#D94F35"/>
+      <text x="264" y="35" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" fill="#FFFFFF">SHIP</text>
+
+      <g transform="translate(22 58)">
+        <rect width="300" height="48" rx="8" fill="#F7F4EE" stroke="#D9D1C4"/>
+        <rect x="14" y="15" width="62" height="18" rx="4" fill="#E8F3EC"/>
+        <rect x="92" y="16" width="152" height="8" rx="2" fill="#5D6870"/>
+        <rect x="92" y="30" width="98" height="6" rx="2" fill="#B4AEA5"/>
+      </g>
+
+      <g transform="translate(22 122)">
+        <rect width="300" height="48" rx="8" fill="#F7F4EE" stroke="#D9D1C4"/>
+        <rect x="14" y="15" width="62" height="18" rx="4" fill="#F4E7DA"/>
+        <rect x="92" y="16" width="172" height="8" rx="2" fill="#5D6870"/>
+        <rect x="92" y="30" width="118" height="6" rx="2" fill="#B4AEA5"/>
+      </g>
+
+      <g transform="translate(22 186)">
+        <rect width="300" height="48" rx="8" fill="#F7F4EE" stroke="#D9D1C4"/>
+        <rect x="14" y="15" width="62" height="18" rx="4" fill="#E6EEF8"/>
+        <rect x="92" y="16" width="142" height="8" rx="2" fill="#5D6870"/>
+        <rect x="92" y="30" width="132" height="6" rx="2" fill="#B4AEA5"/>
+      </g>
+    </g>
+
+    <rect x="22" y="368" width="526" height="24" rx="6" fill="#2C343A"/>
+    <text x="40" y="385" font-family="JetBrains Mono, Consolas, monospace" font-size="13" font-weight="600" fill="#BEE3C8">uv run python -m issuedeck.mcp</text>
+  </g>
+
+  <text x="92" y="532" font-family="JetBrains Mono, Consolas, monospace" font-size="18" font-weight="700" fill="#5D6870">github.com/xq520mmy/IssueDeck</text>
+  <text x="930" y="532" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="18" font-weight="800" fill="#1D2328">Open source MIT</text>
+</svg>
