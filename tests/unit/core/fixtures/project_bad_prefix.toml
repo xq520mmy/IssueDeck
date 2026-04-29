@@ -1,0 +1,9 @@
+key = "bad"
+name = "Bad"
+
+[kinds.feature]
+label = "Feature"
+prefix = "feat"
+
+[statuses.proposed]
+label = "Proposed"

@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+
+  {# ── Page header ───────────────────────────────────────────────── #}
+  <div>
+    <h1 class="text-2xl font-display font-bold text-gray-900 dark:text-white">{{ project.name }}</h1>
+    {% if project.description %}
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ project.description }}</p>
+    {% endif %}
+  </div>
+
+  {# ── Stats cards ───────────────────────────────────────────────── #}
+  {% include "components/stats_cards.html" %}
+
+  {# ── Charts row ────────────────────────────────────────────────── #}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    {# Status distribution — doughnut #}
+    <div class="bg-white dark:bg-ledger-darkPanel rounded-md border border-ledger-line dark:border-ledger-darkLine p-5">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">{{ t("home.status_distribution") }}</h2>
+      <div class="relative" style="max-height: 320px;">
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+
+    {# Kind distribution — horizontal bar #}
+    <div class="bg-white dark:bg-ledger-darkPanel rounded-md border border-ledger-line dark:border-ledger-darkLine p-5">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-4">{{ t("home.kind_distribution") }}</h2>
+      <div class="relative" style="max-height: 320px;">
+        <canvas id="kindChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  {# ── Recent activity ───────────────────────────────────────────── #}
+  <div class="bg-white dark:bg-ledger-darkPanel rounded-md border border-ledger-line dark:border-ledger-darkLine">
+    <div class="px-5 py-4 border-b border-ledger-line dark:border-ledger-darkLine bg-ledger-surfaceAlt dark:bg-ledger-darkPanelAlt">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t("home.recent_activity") }}</h2>
+    </div>
+
+    {% if recent_items %}
+      <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+        {% for item in recent_items %}
+          <li class="px-5 py-3 hover:bg-primary-50/40 dark:hover:bg-primary-950/20 transition-colors">
+            <div class="flex items-center gap-3 min-w-0">
+
+              {# Kind badge #}
+              {% set kc = kind_color(item.kind) %}
+              <span class="inline-flex items-center flex-shrink-0 rounded px-2 py-0.5 text-xs font-medium {{ kc.bg }} {{ kc.text }}">
+                {{ kind_label(item.kind, project) }}
+              </span>
+
+              {# Local ID #}
+              <span class="flex-shrink-0 text-xs font-mono text-gray-400 dark:text-gray-500">
+                {{ item.local_id }}
+              </span>
+
+              {# Title — clickable #}
+              <a href="/dashboard/{{ project_key }}/items/{{ item.local_id }}"
+                 class="truncate text-sm font-semibold text-gray-900 dark:text-white hover:text-primary-700 dark:hover:text-primary-300 transition-colors">
+                {{ item.title }}
+              </a>
+
+              {# Spacer #}
+              <span class="flex-1"></span>
+
+              {# Status badge #}
+              {% set sc = status_color(item.status) %}
+              <span class="inline-flex items-center flex-shrink-0 gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium {{ sc.bg }} {{ sc.text }}">
+                <span class="w-1.5 h-1.5 rounded-full {{ sc.dot }}"></span>
+                {{ status_label(item.status, project) }}
+              </span>
+
+              {# Updated time #}
+              <time class="flex-shrink-0 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap"
+                    datetime="{{ item.updated_at }}"
+                    x-data="{ display: '' }"
+                    x-init="
+                      const d = new Date($el.getAttribute('datetime'));
+                      const now = new Date();
+                      const diff = Math.floor((now - d) / 1000);
+                      if (diff < 60) display = '{{ t("time.just_now") }}';
+                      else if (diff < 3600) display = Math.floor(diff / 60) + ' {{ t("time.minute_ago") }}';
+                      else if (diff < 86400) display = Math.floor(diff / 3600) + ' {{ t("time.hour_ago") }}';
+                      else if (diff < 604800) display = Math.floor(diff / 86400) + ' {{ t("time.day_ago") }}';
+                      else display = d.toLocaleDateString('{{ lang }}');
+                      $el.textContent = display;
+                    ">
+                {{ item.updated_at[:10] }}
+              </time>
+
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="px-5 py-12 text-center">
+        <svg class="mx-auto h-10 w-10 text-gray-300 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12H9.75m3 0h3m-3 0v3m0-3V15m-6.75 4.5h10.5A2.25 2.25 0 0021 17.25V6.75A2.25 2.25 0 0018.75 4.5h-13.5A2.25 2.25 0 003 6.75v10.5A2.25 2.25 0 005.25 19.5z" />
+        </svg>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ t("home.no_items") }}</p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{# ── Chart.js initialization ─────────────────────────────────────── #}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const isDark = document.documentElement.classList.contains('dark')
+    || window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const textColor = isDark ? '#d1d5db' : '#374151';
+  const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+  /* ── Status doughnut chart ─────────────────────────────── */
+  const statusData = {{ status_chart_json | safe }};
+
+  new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+      labels: statusData.labels,
+      datasets: [{
+        data: statusData.data,
+        backgroundColor: statusData.colors,
+        borderWidth: 0,
+        hoverBorderWidth: 2,
+        hoverBorderColor: isDark ? '#1f2937' : '#ffffff',
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: textColor,
+            padding: 16,
+            usePointStyle: true,
+            pointStyleWidth: 10,
+            font: { size: 12 },
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+              const pct = total > 0 ? Math.round(ctx.raw / total * 100) : 0;
+              return ctx.label + ': ' + ctx.raw + ' (' + pct + '%)';
+            },
+          },
+        },
+      },
+    },
+  });
+
+  /* ── Kind horizontal bar chart ─────────────────────────── */
+  const kindData = {{ kind_chart_json | safe }};
+
+  new Chart(document.getElementById('kindChart'), {
+    type: 'bar',
+    data: {
+      labels: kindData.labels,
+      datasets: [{
+        data: kindData.data,
+        backgroundColor: kindData.colors,
+        borderRadius: 4,
+        barThickness: 22,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              return {{ t("chart.count") | tojson }} + ': ' + ctx.raw;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: {
+            color: textColor,
+            precision: 0,
+            font: { size: 12 },
+          },
+          grid: { color: gridColor },
+        },
+        y: {
+          ticks: {
+            color: textColor,
+            font: { size: 12 },
+          },
+          grid: { display: false },
+        },
+      },
+    },
+  });
+});
+</script>
+{% endblock %}

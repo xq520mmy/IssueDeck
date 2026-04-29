@@ -1,0 +1,609 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.local_id }} {{ item.title }} — IssueDeck{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ shipOpen: false }">
+
+  {# ── Header section ── #}
+  <div class="space-y-4">
+    {# Back button #}
+    <a href="/dashboard/{{ project_key }}/list"
+       class="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400
+              hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+      {{ t("common.back_to_list") }}
+    </a>
+
+    {# Title row #}
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+      <div class="flex items-start gap-3 min-w-0">
+        <span class="flex-shrink-0 text-sm font-mono text-gray-400 dark:text-gray-500 mt-1">
+          {{ item.local_id }}
+        </span>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 break-words">
+          {{ item.title }}
+        </h1>
+      </div>
+
+      {# Action buttons #}
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <a href="/dashboard/{{ project_key }}/items/{{ item.local_id }}/edit"
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+                  text-gray-700 dark:text-gray-300
+                  bg-white dark:bg-gray-800
+                  border border-gray-300 dark:border-gray-600
+                  hover:bg-gray-50 dark:hover:bg-gray-700
+                  shadow-sm transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
+          </svg>
+          {{ t("common.edit") }}
+        </a>
+
+        <button @click="shipOpen = true"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+                       bg-primary-600 text-white hover:bg-primary-700
+                       shadow-sm transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.58-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+          </svg>
+          {{ t("common.ship") }}
+        </button>
+
+        {% if item.deleted_at %}
+          <button hx-post="/dashboard/{{ project_key }}/items/{{ item.local_id }}/restore"
+                  hx-swap="none"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+                         text-green-700 dark:text-green-300
+                         bg-green-50 dark:bg-green-900/20
+                         border border-green-200 dark:border-green-800
+                         hover:bg-green-100 dark:hover:bg-green-900/30
+                         transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/>
+            </svg>
+            {{ t("common.restore") }}
+          </button>
+        {% else %}
+          <button hx-post="/dashboard/{{ project_key }}/items/{{ item.local_id }}/delete"
+                  hx-swap="none"
+                  hx-confirm="{{ t('confirm.delete_item') }}"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium
+                         text-red-700 dark:text-red-300
+                         bg-red-50 dark:bg-red-900/20
+                         border border-red-200 dark:border-red-800
+                         hover:bg-red-100 dark:hover:bg-red-900/30
+                         transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            {{ t("common.delete") }}
+          </button>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Deleted banner #}
+    {% if item.deleted_at %}
+      <div class="flex items-center justify-between px-4 py-3 rounded-lg
+                  bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+        <div class="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+          </svg>
+          {{ t("common.deleted") }}
+        </div>
+        <button hx-post="/dashboard/{{ project_key }}/items/{{ item.local_id }}/restore"
+                hx-swap="none"
+                class="text-sm font-medium text-red-700 dark:text-red-300
+                       hover:text-red-800 dark:hover:text-red-200 underline transition-colors">
+          {{ t("common.restore") }}
+        </button>
+      </div>
+    {% endif %}
+  </div>
+
+  {# ── Metadata grid ── #}
+  {% set kc = kind_color(item.kind) %}
+  {% set sc = status_color(item.status) %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-lg border border-gray-200 dark:border-gray-800
+              bg-white dark:bg-gray-900 shadow-sm">
+    {# Kind #}
+    <div class="flex items-center gap-3">
+      <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16 flex-shrink-0">
+        {{ t("common.kind") }}
+      </span>
+      <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ kc.bg }} {{ kc.text }}">
+        {{ kind_label(item.kind, project) }}
+      </span>
+    </div>
+
+    {# Status #}
+    <div class="flex items-center gap-3">
+      <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16 flex-shrink-0">
+        {{ t("common.status") }}
+      </span>
+      <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium {{ sc.bg }} {{ sc.text }}">
+        <span class="w-1.5 h-1.5 rounded-full {{ sc.dot }}"></span>
+        {{ status_label(item.status, project) }}
+      </span>
+    </div>
+
+    {# Tags #}
+    <div class="flex items-center gap-3">
+      <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16 flex-shrink-0">
+        {{ t("common.tags") }}
+      </span>
+      <div class="flex flex-wrap gap-1">
+        {% if item.tags %}
+          {% for tag in item.tags %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                         bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+              {{ tag }}
+            </span>
+          {% endfor %}
+        {% else %}
+          <span class="text-xs text-gray-400 dark:text-gray-600 italic">{{ t("common.no") }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Branches #}
+    <div class="flex items-center gap-3">
+      <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16 flex-shrink-0">
+        {{ t("common.branches") }}
+      </span>
+      <div class="flex flex-wrap gap-1">
+        {% if item.applies_to %}
+          {% for branch in item.applies_to %}
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium
+                         bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+              </svg>
+              {{ branch }}
+            </span>
+          {% endfor %}
+        {% else %}
+          <span class="text-xs text-gray-400 dark:text-gray-600 italic">{{ t("common.no") }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Created time #}
+    <div class="flex items-center gap-3">
+      <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16 flex-shrink-0">
+        {{ t("common.created_at") }}
+      </span>
+      <span class="text-sm text-gray-700 dark:text-gray-300">
+        {{ item.created_at[:16] | replace('T', ' ') }}
+      </span>
+    </div>
+
+    {# Updated time #}
+    <div class="flex items-center gap-3">
+      <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16 flex-shrink-0">
+        {{ t("common.updated_at") }}
+      </span>
+      <span class="text-sm text-gray-700 dark:text-gray-300">
+        {{ item.updated_at[:16] | replace('T', ' ') }}
+      </span>
+    </div>
+  </div>
+
+  {# ── Body section ── #}
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800
+              bg-white dark:bg-gray-900 shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t("common.content") }}</h2>
+    </div>
+    <div class="px-5 py-4">
+      {% if item.body %}
+        {# Hidden template holding raw markdown #}
+        <script type="text/template" id="md-source">{{ item.body }}</script>
+        <div id="md-rendered"
+             class="prose prose-sm dark:prose-invert max-w-none
+                    prose-headings:text-gray-900 dark:prose-headings:text-gray-100
+                    prose-headings:font-semibold
+                    prose-h1:text-xl prose-h1:border-b prose-h1:border-gray-200 prose-h1:dark:border-gray-700 prose-h1:pb-2
+                    prose-h2:text-lg
+                    prose-p:text-gray-700 prose-p:dark:text-gray-300
+                    prose-a:text-primary-600 prose-a:dark:text-primary-400
+                    prose-code:text-sm prose-code:bg-gray-100 prose-code:dark:bg-gray-800
+                    prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono
+                    prose-pre:bg-gray-50 prose-pre:dark:bg-gray-800 prose-pre:border prose-pre:border-gray-200 prose-pre:dark:border-gray-700 prose-pre:rounded-lg
+                    prose-li:text-gray-700 prose-li:dark:text-gray-300
+                    prose-blockquote:border-primary-300 prose-blockquote:dark:border-primary-700
+                    prose-img:rounded-lg prose-img:shadow-sm
+                    prose-table:text-sm
+                    prose-th:bg-gray-50 prose-th:dark:bg-gray-800
+                    prose-td:border-gray-200 prose-td:dark:border-gray-700">
+        </div>
+      {% else %}
+        <p class="text-sm text-gray-400 dark:text-gray-600 italic">{{ t("common.empty_body") }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Activity timeline section ── #}
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800
+              bg-white dark:bg-gray-900 shadow-sm">
+    <div class="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t("activity.title") }}</h2>
+      <span class="text-xs text-gray-400 dark:text-gray-500">{{ item.events | length }} {{ t("activity.count_suffix") }}</span>
+    </div>
+    <div class="px-5 py-4 space-y-5">
+      {% if not item.deleted_at %}
+      <form method="post"
+            action="/dashboard/{{ project_key }}/items/{{ item.local_id }}/events"
+            hx-post="/dashboard/{{ project_key }}/items/{{ item.local_id }}/events"
+            hx-swap="none"
+            class="space-y-3">
+        <input type="hidden" name="actor_name" value="dashboard">
+        <textarea name="body" rows="3" required
+                  placeholder="{{ t('activity.placeholder') }}"
+                  class="w-full px-3 py-2 rounded-lg text-sm
+                         bg-white dark:bg-gray-800
+                         border border-gray-300 dark:border-gray-600
+                         text-gray-900 dark:text-gray-100
+                         placeholder-gray-400 dark:placeholder-gray-500
+                         focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                         resize-y transition-colors"></textarea>
+        <div class="flex justify-end">
+          <button type="submit"
+                  class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium
+                         bg-primary-600 text-white hover:bg-primary-700
+                         shadow-sm transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+            </svg>
+            {{ t("activity.add") }}
+          </button>
+        </div>
+      </form>
+      {% endif %}
+
+      {% if item.events %}
+        <ol class="relative ml-2 border-l border-gray-200 dark:border-gray-800">
+          {% for event in item.events %}
+            <li class="relative pl-5 pb-5 last:pb-0">
+              <span class="absolute -left-1.5 top-1.5 h-3 w-3 rounded-full
+                           bg-primary-600 dark:bg-primary-400
+                           ring-4 ring-white dark:ring-gray-900"></span>
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {{ event.actor_name }}
+                  </span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium
+                               bg-gray-100 dark:bg-gray-800
+                               text-gray-500 dark:text-gray-400">
+                    {{ event.event_type | replace('_', ' ') }}
+                  </span>
+                  <span class="text-xs text-gray-400 dark:text-gray-500">{{ event.actor_type }}</span>
+                </div>
+                <time class="text-xs text-gray-400 dark:text-gray-500">
+                  {{ event.created_at[:16] | replace('T', ' ') }}
+                </time>
+              </div>
+              <p class="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ event.body }}</p>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p class="text-sm text-gray-400 dark:text-gray-600 italic">{{ t("activity.empty") }}</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ── Ship records section ── #}
+  {% if item.ship_records %}
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800
+              bg-white dark:bg-gray-900 shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t("ship.records") }}</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-gray-800
+                     bg-gray-50 dark:bg-gray-900/50">
+            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              {{ t("common.branch") }}
+            </th>
+            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              {{ t("common.version") }}
+            </th>
+            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              {{ t("ship.shipped_at") }}
+            </th>
+            <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Commits
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for record in item.ship_records %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+              <td class="px-5 py-3">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium
+                             bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400">
+                  {{ record.branch_key }}
+                </span>
+              </td>
+              <td class="px-5 py-3">
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {{ record.version }}
+                </span>
+              </td>
+              <td class="px-5 py-3">
+                <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                  {{ record.shipped_at[:16] | replace('T', ' ') }}
+                </span>
+              </td>
+              <td class="px-5 py-3">
+                <div class="flex flex-wrap gap-1">
+                  {% for sha in record.commits %}
+                    <code class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-mono
+                                 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                      {{ sha[:7] }}
+                    </code>
+                  {% endfor %}
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Relationships section ── #}
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800
+              bg-white dark:bg-gray-900 shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t("relationship.title") }}</h2>
+    </div>
+    <div class="px-5 py-4 space-y-4">
+      {# Existing relationships #}
+      {% if item.relationships %}
+        <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for rel in item.relationships %}
+            <li class="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+              <div class="flex items-center gap-2.5">
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                             bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300
+                             border border-amber-200 dark:border-amber-800">
+                  {{ relation_labels.get(rel.relation_type, rel.relation_type) }}
+                </span>
+                <a href="/dashboard/{{ project_key }}/items/{{ rel.to_local_id }}"
+                   class="text-sm font-medium text-primary-600 dark:text-primary-400
+                          hover:text-primary-700 dark:hover:text-primary-300
+                          hover:underline transition-colors">
+                  {{ rel.to_local_id }}
+                </a>
+              </div>
+              <button hx-post="/dashboard/{{ project_key }}/relationships/{{ rel.rel_id }}/delete"
+                      hx-swap="none"
+                      hx-confirm="{{ t('confirm.delete_relationship') }}"
+                      class="p-1.5 rounded-md text-gray-400 dark:text-gray-500
+                             hover:text-red-600 dark:hover:text-red-400
+                             hover:bg-red-50 dark:hover:bg-red-900/20
+                             transition-colors"
+                      title="{{ t('relationship.remove') }}">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-gray-400 dark:text-gray-600 italic">{{ t("relationship.empty") }}</p>
+      {% endif %}
+
+      {# Add relationship form #}
+      <div class="pt-3 border-t border-gray-100 dark:border-gray-800">
+        <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+          {{ t("relationship.add") }}
+        </h3>
+        <form method="post"
+              action="/dashboard/{{ project_key }}/items/{{ item.local_id }}/relationships"
+              hx-post="/dashboard/{{ project_key }}/items/{{ item.local_id }}/relationships"
+              hx-swap="none"
+              class="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+          <div class="flex-1 min-w-0">
+            <label for="to_local_id" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              {{ t("relationship.target") }}
+            </label>
+            <input type="text" id="to_local_id" name="to_local_id" required
+                   placeholder="{{ t('relationship.target_placeholder') }}"
+                   class="w-full px-3 py-2 rounded-lg text-sm
+                          bg-white dark:bg-gray-800
+                          border border-gray-300 dark:border-gray-600
+                          text-gray-900 dark:text-gray-100
+                          placeholder-gray-400 dark:placeholder-gray-500
+                          focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                          transition-colors">
+          </div>
+          <div class="w-full sm:w-40">
+            <label for="relation_type" class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+              {{ t("relationship.kind") }}
+            </label>
+            <select id="relation_type" name="relation_type" required
+                    class="w-full px-3 py-2 rounded-lg text-sm
+                           bg-white dark:bg-gray-800
+                           border border-gray-300 dark:border-gray-600
+                           text-gray-900 dark:text-gray-100
+                           focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                           transition-colors">
+              <option value="blocks">{{ t("relationship.blocks") }}</option>
+              <option value="blocked_by">{{ t("relationship.blocked_by") }}</option>
+              <option value="related_to">{{ t("relationship.related_to") }}</option>
+            </select>
+          </div>
+          <button type="submit"
+                  class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium
+                         bg-primary-600 text-white hover:bg-primary-700
+                         shadow-sm transition-colors flex-shrink-0">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+            </svg>
+            {{ t("common.add") }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# ── Ship modal (Alpine.js) ── #}
+  {# Backdrop #}
+  <div x-show="shipOpen"
+       x-cloak
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       class="fixed inset-0 z-50 bg-black/50"
+       @click="shipOpen = false">
+  </div>
+
+  {# Modal panel #}
+  <div x-show="shipOpen"
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0 scale-95"
+       x-transition:enter-end="opacity-100 scale-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100 scale-100"
+       x-transition:leave-end="opacity-0 scale-95"
+       class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       @click.self="shipOpen = false">
+    <div class="w-full max-w-md rounded-xl
+                bg-white dark:bg-gray-900
+                border border-gray-200 dark:border-gray-800
+                shadow-xl"
+         @click.stop>
+      {# Modal header #}
+      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-800">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t("ship.modal_title") }}</h3>
+        <button @click="shipOpen = false"
+                class="p-1.5 rounded-md text-gray-400 dark:text-gray-500
+                       hover:text-gray-600 dark:hover:text-gray-300
+                       hover:bg-gray-100 dark:hover:bg-gray-800
+                       transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      {# Modal body #}
+      <form method="post"
+            action="/dashboard/{{ project_key }}/items/{{ item.local_id }}/ship"
+            hx-post="/dashboard/{{ project_key }}/items/{{ item.local_id }}/ship"
+            hx-swap="none"
+            @htmx:after-request.window="if ($event.detail.successful) shipOpen = false"
+            class="px-5 py-4 space-y-4">
+        {# Branch select #}
+        <div>
+          <label for="ship-branch" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            {{ t("ship.target_branch") }}
+          </label>
+          <select id="ship-branch" name="branch" required
+                  class="w-full px-3 py-2 rounded-lg text-sm
+                         bg-white dark:bg-gray-800
+                         border border-gray-300 dark:border-gray-600
+                         text-gray-900 dark:text-gray-100
+                         focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                         transition-colors">
+            {% for branch in project.branches %}
+              <option value="{{ branch.key }}">{{ branch.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {# Version input #}
+        <div>
+          <label for="ship-version" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            {{ t("common.version") }}
+          </label>
+          <input type="text" id="ship-version" name="version" required
+                 placeholder="v1.2.0"
+                 class="w-full px-3 py-2 rounded-lg text-sm
+                        bg-white dark:bg-gray-800
+                        border border-gray-300 dark:border-gray-600
+                        text-gray-900 dark:text-gray-100
+                        placeholder-gray-400 dark:placeholder-gray-500
+                        focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                        transition-colors">
+        </div>
+
+        {# Commits textarea #}
+        <div>
+          <label for="ship-commits" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            Commits
+          </label>
+          <textarea id="ship-commits" name="commits" rows="3"
+                    placeholder="{{ t('ship.commits_placeholder') }}"
+                    class="w-full px-3 py-2 rounded-lg text-sm
+                           bg-white dark:bg-gray-800
+                           border border-gray-300 dark:border-gray-600
+                           text-gray-900 dark:text-gray-100
+                           placeholder-gray-400 dark:placeholder-gray-500
+                           focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                           resize-y transition-colors"></textarea>
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t("ship.commits_help") }}</p>
+        </div>
+
+        {# Actions #}
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button"
+                  @click="shipOpen = false"
+                  class="px-4 py-2 rounded-lg text-sm font-medium
+                         text-gray-700 dark:text-gray-300
+                         hover:bg-gray-100 dark:hover:bg-gray-800
+                         transition-colors">
+            {{ t("common.cancel") }}
+          </button>
+          <button type="submit"
+                  class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium
+                         bg-primary-600 text-white hover:bg-primary-700
+                         shadow-sm transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.58-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+            </svg>
+            {{ t("ship.confirm") }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Render markdown body
+  var sourceEl = document.getElementById('md-source');
+  var renderEl = document.getElementById('md-rendered');
+  if (sourceEl && renderEl) {
+    renderEl.innerHTML = marked.parse(sourceEl.textContent);
+  }
+});
+</script>
+{% endblock %}

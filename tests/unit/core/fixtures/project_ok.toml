@@ -1,0 +1,36 @@
+key = "sample"
+name = "Sample Project"
+description = "Sample project tracker"
+
+[kinds.feature]
+label = "Feature"
+prefix = "FEAT"
+
+[kinds.bug]
+label = "Bug"
+prefix = "BUG"
+
+[statuses.proposed]
+label = "Proposed"
+
+[statuses.in_progress]
+label = "In Progress"
+
+[statuses.done]
+label = "Done"
+terminal = true
+requires_ship = true
+
+[[branches]]
+key = "v3"
+label = "v3 experimental"
+
+[[branches]]
+key = "v2"
+label = "v2 stable"
+
+[id_format]
+digits = 4
+
+[ship_rules]
+ship_exempt_kinds = []

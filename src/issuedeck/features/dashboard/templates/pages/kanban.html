@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t("page.kanban.title") }} — {{ project.name }} — IssueDeck{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  {# ── Page header ── #}
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ t("page.kanban.title") }}</h1>
+      {% set ns = namespace(total=0) %}
+      {% for status, items in columns.items() %}
+        {% set ns.total = ns.total + items | length %}
+      {% endfor %}
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                    bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+        {{ ns.total }} {{ t("common.items_suffix") }}
+      </span>
+    </div>
+    <a href="/dashboard/{{ project_key }}/items-new"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+              bg-primary-600 text-white hover:bg-primary-700
+              shadow-sm transition-colors">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+      </svg>
+      {{ t("nav.create") }}
+    </a>
+  </div>
+
+  {# ── Kanban columns ── #}
+  <div class="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4" id="kanban-board">
+    {% for status_key, items in columns.items() %}
+      {% set colors = status_color(status_key) %}
+      <div class="min-w-[280px] max-w-[320px] flex-shrink-0 flex flex-col
+                  bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
+        {# Column header #}
+        <div class="flex items-center justify-between px-3 py-3 border-b border-gray-200 dark:border-gray-800">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full {{ colors.dot }}"></span>
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              {{ status_label(status_key, project) }}
+            </h3>
+          </div>
+          <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5
+                        rounded-full text-xs font-medium
+                        bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+            {{ items | length }}
+          </span>
+        </div>
+
+        {# Column body — sortable container #}
+        <div class="kanban-column flex-1 overflow-y-auto p-2 space-y-2 min-h-[120px]"
+             data-status="{{ status_key }}">
+          {% for item in items %}
+            {% set view = "kanban" %}
+            {% include "components/item_card.html" %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const columns = document.querySelectorAll('.kanban-column');
+  const projectKey = '{{ project_key }}';
+
+  columns.forEach(function(col) {
+    new Sortable(col, {
+      group: 'kanban',
+      animation: 150,
+      ghostClass: 'opacity-40',
+      dragClass: 'shadow-lg',
+      handle: '.kanban-card',
+      draggable: '.kanban-card',
+      onEnd: function(evt) {
+        const itemEl = evt.item;
+        const itemId = itemEl.getAttribute('data-item-id');
+        const newStatus = evt.to.getAttribute('data-status');
+        const oldStatus = evt.from.getAttribute('data-status');
+
+        if (newStatus === oldStatus) return;
+
+        const url = '/dashboard/' + projectKey + '/items/' + itemId + '/status';
+
+        fetch(url, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status: newStatus }),
+        })
+        .then(function(response) {
+          if (!response.ok) {
+            // Revert: move the element back
+            evt.from.insertBefore(evt.item, evt.from.children[evt.oldIndex] || null);
+            window.dispatchEvent(new CustomEvent('toast', {
+              detail: { message: {{ t("toast.status_update_failed") | tojson }}, type: 'error' }
+            }));
+          } else {
+            window.dispatchEvent(new CustomEvent('toast', {
+              detail: { message: {{ t("toast.status_updated") | tojson }}, type: 'success' }
+            }));
+            // Update column counts
+            updateColumnCounts();
+          }
+        })
+        .catch(function() {
+          evt.from.insertBefore(evt.item, evt.from.children[evt.oldIndex] || null);
+          window.dispatchEvent(new CustomEvent('toast', {
+            detail: { message: {{ t("toast.network_error") | tojson }}, type: 'error' }
+          }));
+        });
+      },
+    });
+  });
+
+  function updateColumnCounts() {
+    columns.forEach(function(col) {
+      const count = col.querySelectorAll('.kanban-card').length;
+      const header = col.closest('.flex-shrink-0');
+      if (header) {
+        const badge = header.querySelector('.rounded-full.text-xs');
+        if (badge) badge.textContent = count;
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

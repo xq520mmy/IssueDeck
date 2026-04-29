@@ -1,0 +1,196 @@
+"""Config loading — ServerConfig + ProjectConfig + ConfigRegistry.
+
+TOML is parsed via stdlib `tomllib`. Env vars with the ISSUEDECK_ prefix override
+server.toml values so secrets can live outside the repo. Project TOMLs live in
+`projects_dir` and are loaded at startup; `ConfigRegistry` is read-only after
+construction.
+"""
+
+from __future__ import annotations
+
+import os
+import tomllib
+from pathlib import Path
+from typing import Any, Literal
+
+from pydantic import BaseModel, Field, SecretStr, model_validator
+
+from issuedeck.core.errors import (
+    ConfigError,
+    InvalidBranch,
+    InvalidKind,
+    InvalidStatus,
+    ProjectNotFound,
+)
+
+
+class SqliteConfig(BaseModel):
+    wal_mode: bool = True
+    busy_timeout_ms: int = 5000
+
+
+class ServerConfig(BaseModel):
+    host: str = "0.0.0.0"
+    port: int = 8765
+    api_token: SecretStr
+    data_dir: Path = Path("./data")
+    projects_dir: Path = Path("./projects")
+    log_level: Literal["debug", "info", "warning", "error"] = "info"
+    sqlite: SqliteConfig = SqliteConfig()
+
+    @model_validator(mode="before")
+    @classmethod
+    def _env_overrides(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        if tok := os.environ.get("ISSUEDECK_API_TOKEN"):
+            data["api_token"] = tok
+        if h := os.environ.get("ISSUEDECK_HOST"):
+            data["host"] = h
+        if p := os.environ.get("ISSUEDECK_PORT"):
+            data["port"] = int(p)
+        if d := os.environ.get("ISSUEDECK_DATA_DIR"):
+            data["data_dir"] = d
+        if pd := os.environ.get("ISSUEDECK_PROJECTS_DIR"):
+            data["projects_dir"] = pd
+        return data
+
+
+class KindConfig(BaseModel):
+    label: str
+    prefix: str = Field(pattern=r"^[A-Z][A-Z0-9]{1,9}$")
+
+
+class StatusConfig(BaseModel):
+    label: str
+    terminal: bool = False
+    requires_ship: bool = False
+
+
+class BranchConfig(BaseModel):
+    key: str
+    label: str
+    changelog_path: Path | None = None
+
+
+class IdFormat(BaseModel):
+    digits: int = Field(default=4, ge=2, le=8)
+
+
+class ShipRules(BaseModel):
+    ship_exempt_kinds: list[str] = []
+
+
+class ProjectConfig(BaseModel):
+    key: str
+    name: str
+    description: str = ""
+    kinds: dict[str, KindConfig]
+    statuses: dict[str, StatusConfig]
+    branches: list[BranchConfig] = []
+    id_format: IdFormat = IdFormat()
+    ship_rules: ShipRules = ShipRules()
+
+    @model_validator(mode="after")
+    def _cross_field_checks(self) -> ProjectConfig:
+        if not self.kinds:
+            raise ValueError("kinds must not be empty")
+        if not self.statuses:
+            raise ValueError("statuses must not be empty")
+
+        for k in self.ship_rules.ship_exempt_kinds:
+            if k not in self.kinds:
+                raise ValueError(f"ship_exempt_kinds references unknown kind '{k}'")
+
+        if any(s.requires_ship for s in self.statuses.values()) and not self.branches:
+            raise ValueError(
+                "a status declares requires_ship=true but [[branches]] is empty"
+            )
+
+        prefixes = [k.prefix for k in self.kinds.values()]
+        if len(set(prefixes)) != len(prefixes):
+            raise ValueError(f"duplicate kind.prefix values: {prefixes}")
+
+        bkeys = [b.key for b in self.branches]
+        if len(set(bkeys)) != len(bkeys):
+            raise ValueError(f"duplicate branch keys: {bkeys}")
+
+        return self
+
+
+def _read_toml(path: Path) -> dict[str, Any]:
+    try:
+        return tomllib.loads(path.read_text(encoding="utf-8-sig"))
+    except FileNotFoundError as e:
+        raise ConfigError(f"config file not found: {path}") from e
+    except tomllib.TOMLDecodeError as e:
+        raise ConfigError(f"{path}: TOML parse error: {e}") from e
+
+
+def load_server_config(path: Path) -> ServerConfig:
+    data = _read_toml(path)
+    return ServerConfig.model_validate(data)
+
+
+def load_project_config(path: Path) -> ProjectConfig:
+    data = _read_toml(path)
+    return ProjectConfig.model_validate(data)
+
+
+class ConfigRegistry:
+    """Singleton, constructed at startup, read-only afterward."""
+
+    def __init__(self, server: ServerConfig, projects: dict[str, ProjectConfig]):
+        self._server = server
+        self._projects = projects
+
+    @property
+    def server(self) -> ServerConfig:
+        return self._server
+
+    def project(self, key: str) -> ProjectConfig:
+        try:
+            return self._projects[key]
+        except KeyError as exc:
+            raise ProjectNotFound(
+                f"project '{key}' not found", details={"project_key": key}
+            ) from exc
+
+    def all_projects(self) -> list[ProjectConfig]:
+        return list(self._projects.values())
+
+    def register_project(self, project: ProjectConfig) -> None:
+        if project.key in self._projects:
+            raise ConfigError(f"duplicate project key '{project.key}'")
+        self._projects[project.key] = project
+
+    def validate_kind(self, project_key: str, kind: str) -> KindConfig:
+        pc = self.project(project_key)
+        if kind not in pc.kinds:
+            raise InvalidKind(
+                f"kind '{kind}' is not defined in project '{project_key}'",
+                details={"project_key": project_key, "kind": kind,
+                         "valid": sorted(pc.kinds.keys())},
+            )
+        return pc.kinds[kind]
+
+    def validate_status(self, project_key: str, status: str) -> StatusConfig:
+        pc = self.project(project_key)
+        if status not in pc.statuses:
+            raise InvalidStatus(
+                f"status '{status}' is not defined in project '{project_key}'",
+                details={"project_key": project_key, "status": status,
+                         "valid": sorted(pc.statuses.keys())},
+            )
+        return pc.statuses[status]
+
+    def validate_branch(self, project_key: str, branch_key: str) -> BranchConfig:
+        pc = self.project(project_key)
+        for b in pc.branches:
+            if b.key == branch_key:
+                return b
+        raise InvalidBranch(
+            f"branch '{branch_key}' is not defined in project '{project_key}'",
+            details={"project_key": project_key, "branch_key": branch_key,
+                     "valid": [b.key for b in pc.branches]},
+        )

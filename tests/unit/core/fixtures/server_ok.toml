@@ -1,0 +1,10 @@
+host = "127.0.0.1"
+port = 8765
+api_token = "secret-token-xyz"
+data_dir = "./data"
+projects_dir = "./projects"
+log_level = "info"
+
+[sqlite]
+wal_mode = true
+busy_timeout_ms = 5000

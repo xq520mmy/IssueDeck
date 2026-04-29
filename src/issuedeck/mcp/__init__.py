@@ -1,0 +1,1 @@
+"""issuedeck MCP stdio server."""

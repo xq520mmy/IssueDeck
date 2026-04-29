@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="{{ lang | default('en') }}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ t("auth.login_title") }} - IssueDeck</title>
+  <link rel="stylesheet" href="/dashboard/static/css/dashboard.css">
+  <style>
+    body {
+      background:
+        linear-gradient(90deg, rgba(15, 118, 110, 0.055) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(15, 118, 110, 0.045) 1px, transparent 1px),
+        #f7f7f2;
+      background-size: 48px 48px;
+      color: #161a1d;
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <form method="post" action="/dashboard/language" class="fixed right-4 top-4 inline-flex items-center gap-0.5 rounded-md border border-ledger-line bg-white p-0.5 shadow-sm"
+        aria-label="{{ t('language.label') }}">
+    <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+    <button type="submit"
+            name="lang"
+            value="en"
+            class="h-7 px-2 rounded text-xs font-semibold transition-colors
+                   {% if lang == 'en' %}bg-primary-600 text-white{% else %}text-gray-500 hover:bg-primary-50{% endif %}">
+      {{ t("language.en") }}
+    </button>
+    <button type="submit"
+            name="lang"
+            value="zh-CN"
+            class="h-7 px-2 rounded text-xs font-semibold transition-colors
+                   {% if lang == 'zh-CN' %}bg-primary-600 text-white{% else %}text-gray-500 hover:bg-primary-50{% endif %}">
+      {{ t("language.zh") }}
+    </button>
+  </form>
+  <main class="min-h-screen flex items-center justify-center px-4 py-10">
+    <section class="w-full max-w-sm rounded-md border border-ledger-line bg-white shadow-sm">
+      <div class="border-b border-ledger-line px-6 py-5">
+        <p class="font-mono text-xs uppercase tracking-[0.18em] text-primary-700">IssueDeck</p>
+        <h1 class="mt-2 text-2xl font-semibold tracking-normal">{{ t("auth.login_title") }}</h1>
+      </div>
+
+      <form method="post" action="/dashboard/login" class="px-6 py-5 space-y-4">
+        <input type="hidden" name="next" value="{{ next_url }}">
+
+        <label class="block">
+          <span class="block text-sm font-medium text-ledger-ink">{{ t("auth.token") }}</span>
+          <input
+            name="token"
+            type="password"
+            autocomplete="current-password"
+            autofocus
+            class="mt-1 block h-10 w-full rounded-md border border-ledger-line px-3 text-sm outline-none
+                   focus:border-primary-600 focus:ring-2 focus:ring-primary-100"
+            required>
+        </label>
+
+        {% if error %}
+          <p class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {{ error }}
+          </p>
+        {% endif %}
+
+        <button
+          type="submit"
+          class="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary-600 px-4
+                 text-sm font-semibold text-white transition-colors hover:bg-primary-700
+                 focus:outline-none focus:ring-2 focus:ring-primary-100">
+          {{ t("auth.sign_in") }}
+        </button>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

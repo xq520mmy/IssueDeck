@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t("nav.new_project") }} — IssueDeck{% endblock %}
+
+{% block content %}
+{% set values = form | default({}) %}
+<div class="max-w-2xl space-y-6">
+  <div>
+    <h1 class="text-2xl font-display font-bold text-gray-900 dark:text-gray-100">{{ t("nav.new_project") }}</h1>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+      {{ t("project_form.help") }}
+    </p>
+  </div>
+
+  {% if error %}
+    <div class="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  <form method="post"
+        action="/dashboard/projects-new"
+        class="rounded-md border border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-ledger-darkPanel p-5 space-y-5">
+    <div>
+      <label for="project-key" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+        {{ t("project_form.key") }}
+      </label>
+      <input id="project-key"
+             name="key"
+             required
+             pattern="[a-z][a-z0-9_-]{1,62}"
+             value="{{ values.get('key', '') }}"
+             placeholder="acme-web"
+             class="w-full px-3 py-2 rounded-md text-sm
+                    bg-white dark:bg-gray-800
+                    border border-gray-300 dark:border-gray-600
+                    text-gray-900 dark:text-gray-100
+                    placeholder-gray-400 dark:placeholder-gray-500
+                    focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+      <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+        {{ t("project_form.key_help") }}
+      </p>
+    </div>
+
+    <div>
+      <label for="project-name" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+        {{ t("project_form.name") }}
+      </label>
+      <input id="project-name"
+             name="name"
+             required
+             value="{{ values.get('name', '') }}"
+             placeholder="{{ t('project_form.name_placeholder') }}"
+             class="w-full px-3 py-2 rounded-md text-sm
+                    bg-white dark:bg-gray-800
+                    border border-gray-300 dark:border-gray-600
+                    text-gray-900 dark:text-gray-100
+                    placeholder-gray-400 dark:placeholder-gray-500
+                    focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+    </div>
+
+    <div>
+      <label for="project-description" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+        {{ t("project_form.description") }}
+      </label>
+      <textarea id="project-description"
+                name="description"
+                rows="3"
+                placeholder="{{ t('project_form.description_placeholder') }}"
+                class="w-full px-3 py-2 rounded-md text-sm
+                       bg-white dark:bg-gray-800
+                       border border-gray-300 dark:border-gray-600
+                       text-gray-900 dark:text-gray-100
+                       placeholder-gray-400 dark:placeholder-gray-500
+                       focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                       resize-y">{{ values.get('description', '') }}</textarea>
+    </div>
+
+    <div class="rounded-md border border-ledger-line dark:border-ledger-darkLine bg-ledger-surfaceAlt dark:bg-ledger-darkPanelAlt px-4 py-3">
+      <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t("project_form.template_title") }}</p>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+        {{ t("project_form.template_body") }}
+      </p>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 pt-2">
+      <a href="/dashboard/"
+         class="px-4 py-2 rounded-md text-sm font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800">
+        {{ t("common.cancel") }}
+      </a>
+      <button type="submit"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold bg-primary-600 text-white hover:bg-primary-700">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        {{ t("nav.new_project") }}
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

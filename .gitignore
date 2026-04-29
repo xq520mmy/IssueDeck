@@ -1,0 +1,29 @@
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+.env
+.env.*
+!.env.example
+*.log
+*.tar.gz
+*.tgz
+*.zip
+backups/
+docs/superpowers/
+
+# Runtime data
+data/*
+!data/.gitkeep
+
+# Project configs contain secrets in deploy; keep example
+projects/*.toml
+!projects/example.toml
+
+# Server config is per-deploy
+server.toml

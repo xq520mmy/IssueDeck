@@ -1,0 +1,40 @@
+key = "example"
+name = "Example Project"
+description = "A template project config. Copy this file and rename to your project key."
+
+[kinds.feature]
+label = "Feature"
+prefix = "FEAT"
+
+[kinds.bug]
+label = "Bug"
+prefix = "BUG"
+
+[kinds.improvement]
+label = "Improvement"
+prefix = "IMP"
+
+[statuses.proposed]
+label = "Proposed"
+
+[statuses.in_progress]
+label = "In Progress"
+
+[statuses.done]
+label = "Done"
+terminal = true
+requires_ship = true
+
+[statuses.wontfix]
+label = "Won't Fix"
+terminal = true
+
+[[branches]]
+key = "main"
+label = "Main"
+
+[id_format]
+digits = 4
+
+[ship_rules]
+ship_exempt_kinds = []

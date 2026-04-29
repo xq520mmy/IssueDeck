@@ -1,0 +1,235 @@
+# IssueDeck
+
+English | [简体中文](README.zh-CN.md)
+
+Lighter than Jira. More stable than Markdown.
+
+IssueDeck is a lightweight, self-hosted issue deck for small teams and
+AI coding workflows. It gives multiple projects one shared FastAPI + SQLite
+tracker, a web dashboard, and an MCP stdio client so coding agents can create,
+update, search, relate, and ship work items.
+
+![IssueDeck dashboard demo](docs/assets/issuedeck-demo.gif)
+
+It replaces project-specific Markdown trackers with one structured service that
+stays close to code, commits, branches, and release history.
+
+## Features
+
+- Multi-project: one SQLite DB holds items for any number of projects, keyed by
+  `project_key`. Each project has its own `kinds`, `statuses`, `branches`,
+  and numeric ID prefix (e.g. `FEAT-0001`, `BUG-0003`).
+- Full-text search via SQLite FTS5.
+- Bidirectional relationships (`blocks`/`blocked_by`, `related_to`).
+- Item activity timeline with automatic lifecycle events and manual comments.
+- Built-in dashboard work queues for backlog, active, blocked, ready-to-ship,
+  done, deleted, and recently touched items.
+- Soft delete + restore.
+- Ship records with version + commits, queryable by shipped branch.
+- Markdown export (one file per item) and changelog rendering.
+- Frontmatter migration from existing Markdown trackers.
+- Server-rendered dashboard with list, kanban, detail, search, and create/edit flows.
+- Dashboard project creation and language switch foundation.
+- MCP tools for coding-agent workflows.
+
+## Requirements
+
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/)
+- Docker, optional for container deployment
+- Node.js 20+, only needed when changing dashboard styles
+
+## Quickstart
+
+Start from a fresh clone:
+
+```bash
+uv sync
+cp server.toml.example server.toml
+export ISSUEDECK_API_TOKEN="issuedeck-local-token"
+uv run alembic upgrade head
+uv run issuedeck serve --config server.toml
+```
+
+PowerShell:
+
+```powershell
+uv sync
+Copy-Item server.toml.example server.toml
+$env:ISSUEDECK_API_TOKEN = "issuedeck-local-token"
+uv run alembic upgrade head
+uv run issuedeck serve --config server.toml
+```
+
+Then open `http://127.0.0.1:8765/dashboard/example` and sign in with the same
+token. Health endpoints:
+
+```bash
+curl http://127.0.0.1:8765/healthz
+curl http://127.0.0.1:8765/readyz
+```
+
+Dashboard CSS is committed in the repository, so Node is not required to run
+IssueDeck. If you change dashboard templates, helper class maps, or
+`tailwind.config.cjs`, rebuild the CSS with `npm ci && npm run build:css`.
+
+## Configure
+
+`server.toml` controls the server:
+
+```toml
+host = "0.0.0.0"
+port = 8765
+api_token = "change-me-in-production"
+data_dir = "./data"
+projects_dir = "./projects"
+```
+
+For real use, set the token through the environment instead of committing it:
+
+```bash
+export ISSUEDECK_API_TOKEN="your-secret-token"
+```
+
+PowerShell:
+
+```powershell
+$env:ISSUEDECK_API_TOKEN = "your-secret-token"
+```
+
+Project files live in `projects/*.toml`. Each file defines one project and
+must use the same file stem, `key`, and dashboard URL segment. The repository
+includes `projects/example.toml` so the quickstart works immediately:
+
+```toml
+key = "myproject"
+name = "My Project"
+```
+
+Dashboard: `http://127.0.0.1:8765/dashboard/myproject`
+
+## Demo Data
+
+Use fake data for screenshots, docs, or a clean local demo:
+
+```bash
+uv run alembic upgrade head
+uv run issuedeck seed-demo --config server.toml --project-key example
+```
+
+If the target project already has items, the command refuses to overwrite it.
+To intentionally replace that project's items, add `--force-reset`.
+
+## Run the server
+
+```bash
+# Apply database migrations first
+uv run alembic upgrade head
+
+# Start the server
+export ISSUEDECK_API_TOKEN="your-secret-token"
+uv run issuedeck serve --config server.toml
+```
+
+PowerShell:
+
+```powershell
+$env:ISSUEDECK_API_TOKEN = "your-secret-token"
+uv run issuedeck serve --config server.toml
+```
+
+The dashboard uses the same shared token as the API. Open the dashboard URL,
+enter `ISSUEDECK_API_TOKEN`, and IssueDeck will create an HTTP-only browser
+session cookie. API and MCP clients should keep using the `Authorization:
+Bearer <token>` header.
+
+## Docker
+
+```bash
+cp server.toml.example server.toml
+cp .env.example .env
+docker compose up -d --build
+```
+
+Open `http://127.0.0.1:8765/dashboard/example` and sign in with
+`ISSUEDECK_API_TOKEN` from `.env`.
+
+For offline or server deployment details, see [DEPLOY.md](DEPLOY.md). A longer
+Chinese deployment guide is available at
+[docs/deployment.zh.md](docs/deployment.zh.md).
+
+## MCP stdio process
+
+Register in your MCP client (Claude Code, etc.):
+
+```json
+{
+  "mcpServers": {
+    "issuedeck": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "issuedeck.mcp"],
+      "env": {
+        "ISSUEDECK_BASE_URL": "http://127.0.0.1:8765",
+        "ISSUEDECK_TOKEN": "your-secret-token"
+      }
+    }
+  }
+}
+```
+
+> **Note:** The MCP client reads `ISSUEDECK_TOKEN`; the server reads
+> `ISSUEDECK_API_TOKEN`. They may hold the same value but the env var names
+> differ by design (client/server are separate processes).
+
+12 tools: `list_projects`, `get_project_config`, `create_item`, `update_item`,
+`ship_item`, `append_item_event`, `delete_item`, `get_item`, `list_items`,
+`search_items`, `add_relationship`, `remove_relationship`.
+
+The MCP process reads `ISSUEDECK_BASE_URL` and `ISSUEDECK_TOKEN`, then talks to
+the REST server over HTTP. It does not access SQLite directly.
+
+## Migrate from Markdown Frontmatter
+
+```bash
+uv run issuedeck migrate \
+  --config server.toml \
+  --from-frontmatter /path/to/markdown-tracker \
+  --project-key myproject
+```
+
+Add `--dry-run` to preview without writing. Add `--force-reset` to wipe existing items first.
+
+## Export
+
+```bash
+uv run issuedeck export \
+  --config server.toml \
+  --project-key myproject \
+  --out ./export
+```
+
+Writes one `.md` file per item with YAML frontmatter.
+
+## Development
+
+```bash
+uv sync
+uv run pytest
+uv run ruff check .
+```
+
+For dashboard UI work:
+
+```bash
+npm ci
+npm run build:css
+```
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+Dashboard UI work should follow [DESIGN.md](DESIGN.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
+Vendored dashboard browser assets are listed in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

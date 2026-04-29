@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="{{ lang | default('en') }}"
+      x-data="{
+        theme: localStorage.getItem('theme') || 'light',
+        toggleTheme() {
+          this.theme = this.theme === 'dark' ? 'light' : 'dark';
+          localStorage.setItem('theme', this.theme);
+        }
+      }"
+      x-init="$watch('theme', val => {
+        document.documentElement.classList.toggle('dark', val === 'dark');
+      });
+      document.documentElement.classList.toggle('dark', theme === 'dark');"
+      :class="{ 'dark': theme === 'dark' }">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}IssueDeck{% endblock %}</title>
+
+  <link rel="stylesheet" href="/dashboard/static/css/dashboard.css">
+
+  <!-- HTMX -->
+  <script src="/dashboard/static/js/htmx.min.js"></script>
+
+  <!-- Alpine.js -->
+  <script defer src="/dashboard/static/js/alpine.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="/dashboard/static/js/chart.min.js"></script>
+
+  <!-- SortableJS -->
+  <script src="/dashboard/static/js/sortable.min.js"></script>
+
+  <!-- marked.js -->
+  <script src="/dashboard/static/js/marked.min.js"></script>
+
+  <!-- HTMX config -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      htmx.config.defaultSwapStyle = 'innerHTML';
+    });
+
+    // Re-initialize Alpine on content swapped in via hx-boost / htmx.
+    // Without this, x-cloak stays applied and new x-data / x-show directives
+    // never activate, leaving navigated pages blank.
+    document.addEventListener('htmx:afterSwap', function(evt) {
+      if (window.Alpine && evt.detail && evt.detail.target) {
+        window.Alpine.initTree(evt.detail.target);
+      }
+    });
+  </script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+
+    :root {
+      --dt-bg: #f7f7f2;
+      --dt-panel: #ffffff;
+      --dt-panel-alt: #fbfcf8;
+      --dt-ink: #161a1d;
+      --dt-ink-soft: #394046;
+      --dt-muted: #687076;
+      --dt-line: #d8ded8;
+      --dt-line-strong: #aeb8af;
+      --dt-primary: #0f766e;
+      --dt-accent: #b45309;
+    }
+
+    .dark {
+      --dt-bg: #0c0f0e;
+      --dt-panel: #141817;
+      --dt-panel-alt: #101412;
+      --dt-ink: #e7ece8;
+      --dt-ink-soft: #c2cbc5;
+      --dt-muted: #8c9891;
+      --dt-line: #27302d;
+      --dt-line-strong: #3b4943;
+      --dt-primary: #2dd4bf;
+      --dt-accent: #f59e0b;
+    }
+
+    body {
+      background:
+        linear-gradient(90deg, rgba(15, 118, 110, 0.055) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(15, 118, 110, 0.045) 1px, transparent 1px),
+        var(--dt-bg);
+      background-size: 48px 48px;
+      color: var(--dt-ink);
+      font-family: "Source Sans 3", "Segoe UI", sans-serif;
+    }
+
+    .dark body {
+      background:
+        linear-gradient(90deg, rgba(45, 212, 191, 0.07) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(45, 212, 191, 0.055) 1px, transparent 1px),
+        var(--dt-bg);
+      background-size: 48px 48px;
+    }
+
+    h1,
+    h2,
+    h3,
+    .dt-display {
+      font-family: "General Sans", "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    .font-mono {
+      font-family: "IBM Plex Mono", "JetBrains Mono", monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--dt-line-strong); border-radius: 3px; }
+    .dark ::-webkit-scrollbar-thumb { background: var(--dt-line-strong); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--dt-muted); }
+    .dark ::-webkit-scrollbar-thumb:hover { background: var(--dt-muted); }
+
+    /* Smooth transitions */
+    .sidebar-transition {
+      transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+    }
+
+    .dt-sidebar-closed {
+      transform: translateX(-100%);
+    }
+
+    .dt-sidebar-open {
+      transform: translateX(0);
+    }
+
+    @media (min-width: 1024px) {
+      .dt-sidebar-open,
+      .dt-sidebar-closed {
+        transform: translateX(0);
+      }
+    }
+
+    /* Toast animation */
+    .toast-enter {
+      animation: toastSlideIn 0.3s ease-out;
+    }
+    .toast-leave {
+      animation: toastSlideOut 0.3s ease-in forwards;
+    }
+    @keyframes toastSlideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    @keyframes toastSlideOut {
+      from { transform: translateX(0);    opacity: 1; }
+      to   { transform: translateX(100%); opacity: 0; }
+    }
+  </style>
+</head>
+
+<body class="text-gray-900 dark:text-gray-100 antialiased min-h-screen">
+
+  <!-- Main layout wrapper -->
+  <div x-data="{ sidebarOpen: window.innerWidth >= 1024 }"
+       @resize.window="sidebarOpen = window.innerWidth >= 1024"
+       class="flex min-h-screen">
+
+    <!-- Mobile overlay -->
+    <div x-show="sidebarOpen"
+         x-cloak
+         @click="sidebarOpen = false"
+         class="fixed inset-0 z-30 bg-black/50 lg:hidden"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+    </div>
+
+    <!-- Sidebar -->
+    <aside :class="sidebarOpen ? 'dt-sidebar-open' : 'dt-sidebar-closed'"
+           class="fixed inset-y-0 left-0 z-40 w-64 dt-sidebar-closed sidebar-transition lg:static lg:z-auto">
+      {% include "components/sidebar.html" %}
+    </aside>
+
+    <!-- Main content area -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <!-- Top navigation -->
+      {% include "components/nav.html" %}
+
+      <!-- Page content -->
+      <main class="flex-1 overflow-y-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Toast notifications container -->
+  <div x-data="toastManager()"
+       @toast.window="addToast($event.detail)"
+       class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm"
+       id="toast-container">
+
+    <template x-for="toast in toasts" :key="toast.id">
+      <div x-show="toast.visible"
+           x-transition:enter="toast-enter"
+           x-transition:leave="toast-leave"
+           @click="removeToast(toast.id)"
+           :class="{
+             'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200': toast.type === 'success',
+             'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200': toast.type === 'error',
+             'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200': toast.type === 'info',
+             'bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200': toast.type === 'warning',
+           }"
+           class="px-4 py-3 rounded-lg border shadow-lg cursor-pointer flex items-start gap-3 text-sm">
+
+        <!-- Icon -->
+        <div class="flex-shrink-0 mt-0.5">
+          <template x-if="toast.type === 'success'">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+          </template>
+          <template x-if="toast.type === 'error'">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </template>
+          <template x-if="toast.type === 'info'">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/>
+            </svg>
+          </template>
+          <template x-if="toast.type === 'warning'">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86l-8.6 14.86A1 1 0 002.56 20h16.88a1 1 0 00.87-1.28l-8.6-14.86a1 1 0 00-1.72 0z"/>
+            </svg>
+          </template>
+        </div>
+
+        <span x-text="toast.message" class="flex-1"></span>
+      </div>
+    </template>
+  </div>
+
+  <!-- HTMX event listeners for toasts -->
+  <script>
+    function toastManager() {
+      return {
+        toasts: [],
+        nextId: 0,
+        addToast(detail) {
+          const id = this.nextId++;
+          const toast = {
+            id,
+            message: detail.message || '',
+            type: detail.type || 'info',
+            visible: true,
+          };
+          this.toasts.push(toast);
+          setTimeout(() => this.removeToast(id), detail.duration || 4000);
+        },
+        removeToast(id) {
+          const toast = this.toasts.find(t => t.id === id);
+          if (toast) toast.visible = false;
+          setTimeout(() => {
+            this.toasts = this.toasts.filter(t => t.id !== id);
+          }, 300);
+        },
+      };
+    }
+
+    // Hook into HTMX events for automatic toasts
+    document.addEventListener('htmx:afterRequest', function(event) {
+      if (event.detail.successful && event.detail.xhr) {
+        const toastHeader = event.detail.xhr.getResponseHeader('X-Toast-Message');
+        const toastType   = event.detail.xhr.getResponseHeader('X-Toast-Type') || 'success';
+        if (toastHeader) {
+          window.dispatchEvent(new CustomEvent('toast', {
+            detail: { message: toastHeader, type: toastType }
+          }));
+        }
+      }
+    });
+
+    document.addEventListener('htmx:responseError', function(event) {
+      window.dispatchEvent(new CustomEvent('toast', {
+        detail: { message: {{ t("toast.request_failed") | tojson }}, type: 'error' }
+      }));
+    });
+
+    document.addEventListener('htmx:sendError', function() {
+      window.dispatchEvent(new CustomEvent('toast', {
+        detail: { message: {{ t("toast.network_error") | tojson }}, type: 'error' }
+      }));
+    });
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

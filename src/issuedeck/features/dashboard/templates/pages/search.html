@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t("page.search.title") }} — {{ project.name }} — IssueDeck{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  {# ── Page header ── #}
+  <div class="flex items-center gap-3">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ t("page.search.title") }}</h1>
+  </div>
+
+  {# ── Search form ── #}
+  <form method="get"
+        action="/dashboard/{{ project_key }}/search"
+        class="relative">
+    <div class="relative">
+      {# Search icon #}
+      <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 pointer-events-none"
+           fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+      </svg>
+
+      <input type="text"
+             name="q"
+             value="{{ q }}"
+             placeholder="{{ t('search.input_placeholder') }}"
+             autocomplete="off"
+             autofocus
+             class="w-full h-12 pl-12 pr-12 text-base rounded-xl
+                    bg-white dark:bg-gray-900
+                    border border-gray-200 dark:border-gray-700
+                    focus:border-primary-400 dark:focus:border-primary-600
+                    focus:ring-2 focus:ring-primary-100 dark:focus:ring-primary-900
+                    text-gray-900 dark:text-gray-100
+                    placeholder-gray-400 dark:placeholder-gray-500
+                    shadow-sm outline-none transition-all"
+             hx-get="/dashboard/{{ project_key }}/search"
+             hx-trigger="input changed delay:500ms"
+             hx-target="#search-results"
+             hx-push-url="true"
+             hx-vals='js:{"q": document.querySelector("[name=q]").value, "partial": "true"}'
+             hx-indicator="#search-spinner">
+
+      {# Clear button (shown via Alpine when input has value) #}
+      <div x-data="{ hasValue: '{{ q }}' !== '' }"
+           class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+        {# Loading spinner #}
+        <svg id="search-spinner"
+             class="htmx-indicator w-5 h-5 text-primary-500 animate-spin"
+             fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+          <path class="opacity-75" fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+        </svg>
+
+        {# Clear button #}
+        <button x-show="hasValue"
+                x-cloak
+                type="button"
+                @click="
+                  const input = document.querySelector('[name=q]');
+                  input.value = '';
+                  input.focus();
+                  hasValue = false;
+                  htmx.ajax('GET', '/dashboard/{{ project_key }}/search?q=&partial=true', '#search-results');
+                "
+                class="p-1 rounded-md text-gray-400 dark:text-gray-500
+                       hover:text-gray-600 dark:hover:text-gray-300
+                       hover:bg-gray-100 dark:hover:bg-gray-800
+                       transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    {# Keep Alpine in sync with input changes #}
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const input = document.querySelector('[name=q]');
+        if (input) {
+          input.addEventListener('input', function() {
+            const alpineEl = input.closest('form').querySelector('[x-data]');
+            if (alpineEl && alpineEl.__x) {
+              alpineEl.__x.$data.hasValue = input.value.length > 0;
+            }
+          });
+        }
+      });
+    </script>
+  </form>
+
+  {# ── Results section ── #}
+  <div id="search-results">
+    {% include "components/search_results.html" %}
+  </div>
+</div>
+{% endblock %}
