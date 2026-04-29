@@ -12,6 +12,8 @@ build/
 .env.*
 data/
 server.toml
+projects/*.toml
+!projects/example.toml
 docs/
 tests/
 .github/
@@ -19,4 +21,9 @@ tests/
 *.tgz
 *.zip
 backups/
+tmp/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
 DEPLOY.md

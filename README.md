@@ -187,14 +187,25 @@ Bearer <token>` header.
 
 ## Docker
 
+The default Compose file pulls the published image from GitHub Container
+Registry:
+
 ```bash
 cp server.toml.example server.toml
 cp .env.example .env
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Open `http://127.0.0.1:8765/dashboard/example` and sign in with
 `ISSUEDECK_API_TOKEN` from `.env`.
+
+To run a locally built image from source instead:
+
+```bash
+docker build -t issuedeck:local .
+ISSUEDECK_IMAGE=issuedeck:local docker compose up -d
+```
 
 For offline or server deployment details, see [DEPLOY.md](DEPLOY.md). A longer
 Chinese deployment guide is available at

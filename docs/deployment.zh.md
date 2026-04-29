@@ -1,380 +1,163 @@
-# issuedeck 部署文档
+# IssueDeck 部署指南
 
-## 目录
+这份指南面向小团队或个人服务器部署，默认使用 Docker Compose 和 SQLite。
 
-- [架构概览](#架构概览)
-- [环境要求](#环境要求)
-- [方式一：本地部署](#方式一本地部署)
-- [方式二：Docker 部署](#方式二docker-部署)
-- [配置说明](#配置说明)
-- [接入 MCP 客户端](#接入-mcp-客户端)
-- [数据迁移](#数据迁移)
-- [数据导出与备份](#数据导出与备份)
-- [运维操作](#运维操作)
-- [常见问题](#常见问题)
+## 架构
 
----
-
-## 架构概览
-
-```
-┌─────────────┐         HTTP/REST          ┌──────────────────┐
-│ Claude Code │ ───── MCP stdio ────────── │  issuedeck MCP    │
-│ / 其他 MCP  │                            │  (python -m      │
-│   客户端    │                            │   issuedeck.mcp)  │
-└─────────────┘                            └────────┬─────────┘
-                                                    │ httpx
-                                                    ▼
-                                           ┌──────────────────┐
-                                           │  issuedeck server  │
-                                           │  (FastAPI/uvicorn)│
-                                           │  :8765            │
-                                           └────────┬─────────┘
-                                                    │ SQLAlchemy async
-                                                    ▼
-                                           ┌──────────────────┐
-                                           │  SQLite (WAL)    │
-                                           │  data/tracker.db │
-                                           └──────────────────┘
+```text
+MCP client / Browser
+        |
+        | HTTP / REST
+        v
+IssueDeck server (FastAPI + uvicorn)
+        |
+        | SQLAlchemy async
+        v
+SQLite database (data/tracker.db)
 ```
 
-- **issuedeck server** — FastAPI REST 服务，管理所有项目的 items、关系、搜索、ship 记录
-- **issuedeck MCP** — stdio 进程，作为 MCP server 注册到 Claude Code 等客户端，内部通过 httpx 调 REST API
-- **SQLite** — 单文件数据库，WAL 模式，支持 FTS5 全文搜索
-
----
+- `issuedeck server`：FastAPI REST 服务，管理项目、事项、关系、搜索和发布记录。
+- `issuedeck MCP`：stdio 进程，通过 HTTP 调用 REST API，不直接访问 SQLite。
+- `SQLite`：单文件数据库，适合本地优先和小团队自托管。
 
 ## 环境要求
 
 | 部署方式 | 要求 |
-|---------|------|
-| 本地部署 | Python >= 3.11, [uv](https://docs.astral.sh/uv/) |
-| Docker 部署 | Docker >= 20.10, Docker Compose V2 |
+| --- | --- |
+| 本地运行 | Python 3.11+、uv |
+| Docker 部署 | Docker 20.10+、Docker Compose V2 |
 
----
-
-## 方式一：本地部署
-
-### 1. 安装依赖
+## 方式一：本地运行
 
 ```bash
-cd issuedeck
-uv sync
-```
-
-### 2. 准备配置文件
-
-```bash
-# 服务配置
 cp server.toml.example server.toml
-
-# 项目配置（可创建多个）
-cp projects/example.toml projects/myproject.toml
-```
-
-编辑 `projects/myproject.toml`，文件名必须与 `key` 字段一致：
-
-```toml
-key = "myproject"
-name = "我的项目"
-description = "项目描述"
-
-[kinds.feature]
-label = "Feature"
-prefix = "FEAT"
-
-[kinds.bug]
-label = "Bug"
-prefix = "BUG"
-
-[statuses.proposed]
-label = "待处理"
-
-[statuses.in_progress]
-label = "进行中"
-
-[statuses.done]
-label = "已完成"
-terminal = true
-requires_ship = true
-
-[[branches]]
-key = "main"
-label = "Main"
-```
-
-### 3. 初始化数据库
-
-```bash
+uv sync
 uv run alembic upgrade head
-```
-
-数据库文件默认在 `./data/tracker.db`。
-
-### 4. 启动服务
-
-```bash
-# 设置 API Token（必需）
 export ISSUEDECK_API_TOKEN="your-secret-token"
-
-# 启动
 uv run issuedeck serve --config server.toml
 ```
 
-### 5. 验证
+打开 `http://127.0.0.1:8765/dashboard/example`，使用
+`ISSUEDECK_API_TOKEN` 登录 Dashboard。
+
+健康检查：
 
 ```bash
-# 健康检查（不需要 token）
 curl http://127.0.0.1:8765/healthz
-# 返回: {"status":"ok","version":"0.1.0"}
-
-# 项目列表（需要 token）
-curl -H "Authorization: Bearer your-secret-token" \
-     http://127.0.0.1:8765/api/v1/projects
+curl http://127.0.0.1:8765/readyz
 ```
 
----
+## 方式二：Docker Compose
 
-## 方式二：Docker 部署
-
-### 1. 准备配置文件
-
-与本地部署相同，准备好 `server.toml` 和 `projects/*.toml`。
+默认 `docker-compose.yml` 会拉取公开镜像
+`ghcr.io/xq520mmy/issuedeck:latest`：
 
 ```bash
 cp server.toml.example server.toml
-# 编辑 server.toml 和项目配置...
+cp .env.example .env
+
+# 先把 .env 里的 ISSUEDECK_API_TOKEN 改成随机值
+docker compose pull
+docker compose up -d
 ```
 
-> **注意：** `server.toml` 中 `data_dir` 和 `projects_dir` 保持默认即可（`./data` 和 `./projects`），容器内会通过 volume 挂载。
+打开 `http://127.0.0.1:8765/dashboard/example`，使用 `.env` 里的
+`ISSUEDECK_API_TOKEN` 登录。
 
-### 2. 设置环境变量
-
-创建 `.env` 文件（可选，也可直接 export）：
+查看状态：
 
 ```bash
-# .env
-ISSUEDECK_API_TOKEN=your-secret-token
+docker compose ps
+docker compose logs -f issuedeck
+curl http://127.0.0.1:8765/readyz
+```
+
+生产环境建议固定版本，而不是长期使用 `latest`：
+
+```bash
+ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.2.1 docker compose up -d
+```
+
+可用镜像标签：
+
+- `latest`：最新稳定 release。
+- `0.2.1`、`0.2`、`v0.2.1`：版本标签。
+- `edge`：最新 `main` 分支镜像。
+
+如果要运行本地源码构建的镜像：
+
+```bash
+docker build -t issuedeck:local .
+ISSUEDECK_IMAGE=issuedeck:local docker compose up -d
+```
+
+## 生产检查清单
+
+- 设置随机 `ISSUEDECK_API_TOKEN`，不要使用 `change-me`。
+- 不要把 `.env`、`server.toml`、`data/`、`backups/` 提交到 git。
+- 将服务放在可信网络、VPN 或反向代理后面。
+- 通过公网访问 Dashboard 时，在反向代理层启用 HTTPS。
+- 定期备份 SQLite 数据库。
+- 团队成员变化时轮换 token。
+
+生成随机 token：
+
+```bash
+openssl rand -hex 32
+```
+
+`.env` 示例：
+
+```env
+ISSUEDECK_API_TOKEN=replace-with-random-token
 ISSUEDECK_PORT=8765
 ```
 
-### 3. 构建并启动
+## 离线部署
+
+在有网络的机器上：
 
 ```bash
-# 构建镜像并启动
-docker compose up -d --build
-
-# 查看日志
-docker compose logs -f issuedeck
-
-# 查看健康状态
-docker compose ps
+docker pull ghcr.io/xq520mmy/issuedeck:latest
+docker tag ghcr.io/xq520mmy/issuedeck:latest issuedeck:latest
+docker save issuedeck:latest | gzip > issuedeck-image.tar.gz
 ```
 
-### 4. 验证
+把 `issuedeck-image.tar.gz`、`docker-compose.yml`、`server.toml`、`projects/`
+和 `.env` 复制到目标服务器，然后运行：
 
 ```bash
-curl http://localhost:8765/healthz
+docker load < issuedeck-image.tar.gz
+ISSUEDECK_IMAGE=issuedeck:latest docker compose up -d
 ```
 
-浏览器打开 `http://localhost:8765/dashboard/<project-key>` 时，需要输入
-`ISSUEDECK_API_TOKEN` 登录。REST API 和 MCP 客户端仍然使用 Bearer token。
+每个 GitHub Release 也会上传 Python wheel、source distribution 和
+`SHA256SUMS.txt`。离线镜像或包文件进入内网前，建议先用 checksum 校验。
 
+## 备份与恢复
 
-### 5. 常用 Docker 命令
-
-```bash
-# 停止
-docker compose down
-
-# 停止并删除数据卷（危险！会丢失所有数据）
-docker compose down -v
-
-# 重新构建（代码有更新时）
-docker compose up -d --build
-
-# 进入容器排查问题
-docker compose exec issuedeck bash
-```
-
-### 6. 预构建镜像
-
-如果要把镜像推到私有仓库：
-
-```bash
-# 构建并打 tag
-docker build -t your-registry/issuedeck:0.1.0 .
-docker tag your-registry/issuedeck:0.1.0 your-registry/issuedeck:latest
-
-# 推送
-docker push your-registry/issuedeck:0.1.0
-docker push your-registry/issuedeck:latest
-```
-
-使用预构建镜像时，修改 `docker-compose.yml`：
-
-```yaml
-services:
-  issuedeck:
-    image: your-registry/issuedeck:0.1.0   # 替换 build: .
-    # ... 其余配置不变
-```
-
----
-
-## 配置说明
-
-### server.toml
-
-| 字段 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `host` | string | `"0.0.0.0"` | 监听地址 |
-| `port` | int | `8765` | 监听端口 |
-| `api_token` | string | - | API 认证 token，**建议通过 `ISSUEDECK_API_TOKEN` 环境变量设置** |
-| `data_dir` | string | `"./data"` | SQLite 数据库目录 |
-| `projects_dir` | string | `"./projects"` | 项目配置 TOML 文件目录 |
-| `log_level` | string | `"info"` | 日志级别：debug / info / warning / error |
-| `sqlite.wal_mode` | bool | `true` | 启用 WAL 模式（推荐） |
-| `sqlite.busy_timeout_ms` | int | `5000` | SQLite 锁等待超时（毫秒） |
-
-### 环境变量覆盖
-
-以下环境变量会覆盖 `server.toml` 中的对应字段：
-
-| 环境变量 | 覆盖字段 |
-|---------|---------|
-| `ISSUEDECK_API_TOKEN` | `api_token` |
-| `ISSUEDECK_HOST` | `host` |
-| `ISSUEDECK_PORT` | `port` |
-| `ISSUEDECK_DATA_DIR` | `data_dir` |
-| `ISSUEDECK_PROJECTS_DIR` | `projects_dir` |
-
-### 项目配置 (projects/*.toml)
-
-每个 `.toml` 文件定义一个项目。文件名必须与 `key` 字段一致。
-
-| 字段 | 说明 |
-|------|------|
-| `key` | 项目唯一标识，等于文件名（不含 .toml） |
-| `name` | 项目显示名 |
-| `description` | 项目描述 |
-| `kinds.*` | Item 类型，每个类型有 `label` 和 `prefix`（大写，如 `FEAT`） |
-| `statuses.*` | 状态，可选 `terminal=true`（终态）和 `requires_ship=true` |
-| `branches[]` | 分支列表，每个有 `key` 和 `label` |
-| `id_format.digits` | 本地 ID 数字位数，默认 4（即 FEAT-0001） |
-
----
-
-## 接入 MCP 客户端
-
-### Claude Code
-
-在项目的 `.mcp.json` 或全局 MCP 配置中添加：
-
-```json
-{
-  "mcpServers": {
-    "issuedeck": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/issuedeck", "python", "-m", "issuedeck.mcp"],
-      "env": {
-        "ISSUEDECK_BASE_URL": "http://127.0.0.1:8765",
-        "ISSUEDECK_TOKEN": "your-secret-token"
-      }
-    }
-  }
-}
-```
-
-> Docker 部署时 `ISSUEDECK_BASE_URL` 用 `http://host.docker.internal:8765`（如果 MCP 进程也在容器内）或 `http://127.0.0.1:8765`（MCP 进程在宿主机）。
-
-### 可用工具（11 个）
-
-| 工具 | 说明 |
-|------|------|
-| `list_projects` | 列出所有项目 |
-| `get_project_config` | 获取项目配置（kinds/statuses/branches） |
-| `create_item` | 创建 item |
-| `update_item` | 更新 item（标题、内容、状态、标签等） |
-| `ship_item` | 标记 item 已发布（绑定版本号和 commits） |
-| `delete_item` | 软删除 item |
-| `get_item` | 获取单个 item 详情（含关系和发布记录） |
-| `list_items` | 列表查询，支持按 kind/status/tag/branch 筛选 + 游标分页 |
-| `search_items` | FTS5 全文搜索 |
-| `add_relationship` | 添加关系（blocks / related_to，自动创建双向） |
-| `remove_relationship` | 删除关系（自动删除双向） |
-
----
-
-## 数据迁移
-
-### 从 Markdown frontmatter 迁移
-
-```bash
-# 预览（不写入）
-uv run issuedeck migrate \
-  --config server.toml \
-  --from-frontmatter /path/to/markdown-tracker \
-  --project-key myproject \
-  --dry-run
-
-# 确认无误后执行
-uv run issuedeck migrate \
-  --config server.toml \
-  --from-frontmatter /path/to/markdown-tracker \
-  --project-key myproject
-```
-
-Docker 环境中执行：
-
-```bash
-docker compose exec issuedeck uv run issuedeck migrate \
-  --config server.toml \
-  --from-frontmatter /data/markdown-source \
-  --project-key myproject
-```
-
-迁移会：
-1. 解析 `items/*.md` 和 `items/.archive/*.md` 的 frontmatter
-2. 验证所有 kind/status/branch 是否在项目配置中定义
-3. 一个事务写入全部数据（tags、applies_to、ship_records、commits）
-4. 写入后校验行数
-
-如果目标项目已有数据，需加 `--force-reset` 清空后重新导入。
-
----
-
-## 数据导出与备份
-
-### Markdown 导出
-
-```bash
-uv run issuedeck export \
-  --config server.toml \
-  --project-key myproject \
-  --out ./export
-```
-
-每个 item 导出为一个 `.md` 文件（YAML frontmatter + body），便于继续使用文本化快照和代码审查。
-
-### 数据库备份与恢复
-
-推荐使用仓库自带的备份脚本。它会在运行中的容器里调用 SQLite online backup
-API，再把 gzip 压缩后的快照复制到 Docker host 的 `backups/` 目录：
+运行仓库内置备份脚本。它会在运行中的容器里调用 SQLite online backup API，
+再把 gzip 快照复制到 Docker host 的 `backups/` 目录：
 
 ```bash
 chmod +x scripts/backup.sh
 ./scripts/backup.sh
 ```
 
-先对备份做恢复 smoke test：
+每天凌晨 3 点备份：
+
+```cron
+0 3 * * * /opt/issuedeck/scripts/backup.sh >> /var/log/issuedeck-backup.log 2>&1
+```
+
+恢复前先做 smoke test：
 
 ```bash
 python scripts/restore_smoke.py backups/tracker-YYYYMMDD-HHMMSS.db.gz \
   --out /tmp/issuedeck-restore-smoke.db
 ```
 
-Docker 环境也可以直接跑 smoke test：
+Docker 环境也可以直接跑：
 
 ```bash
 docker compose run --rm \
@@ -398,110 +181,58 @@ curl -fsS http://127.0.0.1:8765/readyz
 恢复只替换 SQLite 数据库。`server.toml`、`.env` 和 `projects/*.toml` 不需要替换，
 除非你正在恢复整台主机的快照。
 
----
+## MCP 客户端
 
-## 运维操作
+把 MCP 客户端指向已部署的 HTTP 服务：
 
-### 数据库迁移（版本升级后）
-
-代码更新后如果有新的 Alembic 迁移：
-
-```bash
-# 本地
-uv run alembic upgrade head
-
-# Docker（自动执行，重启即可）
-docker compose up -d --build
+```json
+{
+  "mcpServers": {
+    "issuedeck": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "issuedeck.mcp"],
+      "env": {
+        "ISSUEDECK_BASE_URL": "http://127.0.0.1:8765",
+        "ISSUEDECK_TOKEN": "replace-with-random-token"
+      }
+    }
+  }
+}
 ```
 
-Docker 容器的 `docker-entrypoint.sh` 在每次启动时会自动运行 `alembic upgrade head`。
-
-### 查看数据库状态
-
-```bash
-# 当前迁移版本
-uv run alembic current
-
-# 迁移历史
-uv run alembic history
-```
-
-### REST API 快速测试
-
-```bash
-TOKEN="your-secret-token"
-BASE="http://127.0.0.1:8765"
-
-# 创建 item
-curl -X POST "$BASE/api/v1/projects/myproject/items" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"kind": "feature", "title": "新功能", "tags": ["v1"]}'
-
-# 查询列表
-curl "$BASE/api/v1/projects/myproject/items" \
-  -H "Authorization: Bearer $TOKEN"
-
-# 全文搜索
-curl "$BASE/api/v1/projects/myproject/search?q=新功能" \
-  -H "Authorization: Bearer $TOKEN"
-```
-
----
+`ISSUEDECK_TOKEN` 给 MCP 客户端使用；`ISSUEDECK_API_TOKEN` 给服务端使用。
+它们通常是同一个 secret，但变量名不同，因为它们属于不同进程。
 
 ## 常见问题
 
-### Q: 启动报 `ISSUEDECK_TOKEN env var is required`
+### 启动时报 `ISSUEDECK_TOKEN env var is required`
 
-这是 MCP 客户端的报错，不是 server。设置环境变量：
+这是 MCP 客户端进程的报错，不是 server。设置：
 
 ```bash
 export ISSUEDECK_TOKEN="your-secret-token"
 ```
 
-注意 MCP 进程用的是 `ISSUEDECK_TOKEN`，server 用的是 `ISSUEDECK_API_TOKEN`。
-
-### Q: Docker 构建失败，提示 uv.lock 不存在
-
-先在本地生成 lock 文件：
+### Docker 镜像更新后如何升级
 
 ```bash
-uv lock
+docker compose pull
+docker compose up -d
+curl -fsS http://127.0.0.1:8765/readyz
 ```
 
-然后重新构建。
+容器启动时会自动执行 `alembic upgrade head`。
 
-### Q: SQLite 报 `database is locked`
+### SQLite 报 `database is locked`
 
-调大 `server.toml` 中的 `sqlite.busy_timeout_ms`（默认 5000ms）。单进程部署下一般不会出现。
+调大 `server.toml` 里的 `sqlite.busy_timeout_ms`。单进程部署下一般不会频繁出现。
 
-### Q: 如何添加多个项目？
+### 如何添加多个项目
 
-在 `projects/` 目录下创建多个 `.toml` 文件，每个文件是一个项目。文件名要与 `key` 字段一致：
+在 `projects/` 目录创建多个 `.toml` 文件。文件名要与 `key` 字段一致：
 
 ```bash
 cp projects/example.toml projects/frontend.toml
-# 编辑 frontend.toml，修改 key = "frontend"
-```
-
-重启服务后自动加载。
-
-### Q: 如何在生产环境设置 HTTPS？
-
-issuedeck 本身不处理 TLS。推荐在前面放 nginx 或 caddy 做反向代理：
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name issuedeck.example.com;
-
-    ssl_certificate /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
-
-    location / {
-        proxy_pass http://127.0.0.1:8765;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-}
+# 编辑 frontend.toml，把 key 改成 "frontend"
+docker compose restart issuedeck
 ```

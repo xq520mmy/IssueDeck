@@ -5,21 +5,25 @@ intended for teams that want a private IssueDeck service backed by SQLite.
 
 ## Files
 
-- `Dockerfile` builds the app image.
-- `docker-compose.yml` runs the service, mounts `/app/data`, and reads
+- `docker-compose.yml` runs the published
+  `ghcr.io/xq520mmy/issuedeck:latest` image, mounts `/app/data`, and reads
   `ISSUEDECK_API_TOKEN` from `.env`.
+- `Dockerfile` builds the app image when you want a local or private-registry image.
 - `server.toml.example` is the server configuration template.
 - `projects/example.toml` is a safe demo project config.
 - `scripts/backup.sh` creates SQLite backups from a running container.
 
-## Local Docker Run
+## One-command Docker Run
+
+The default Compose file pulls the public GHCR image:
 
 ```bash
 cp server.toml.example server.toml
 cp .env.example .env
 
 # Replace the placeholder token before sharing the service.
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
 Open `http://127.0.0.1:8765/dashboard/example` and sign in with the
@@ -31,6 +35,28 @@ Health checks:
 curl http://127.0.0.1:8765/healthz
 curl http://127.0.0.1:8765/readyz
 ```
+
+## Local Source Image
+
+Build from the current checkout when testing local changes or publishing to a
+private registry:
+
+```bash
+docker build -t issuedeck:local .
+ISSUEDECK_IMAGE=issuedeck:local docker compose up -d
+```
+
+Release tags are also published to GHCR. Pin an exact version in production:
+
+```bash
+ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.2.1 docker compose up -d
+```
+
+Available GHCR tags:
+
+- `latest`: newest stable release tag.
+- `0.2.1`, `0.2`, and `v0.2.1`: versioned release tags.
+- `edge`: latest `main` branch image.
 
 ## Production Checklist
 
@@ -60,7 +86,8 @@ ISSUEDECK_PORT=8765
 On a machine with internet access:
 
 ```bash
-docker build -t issuedeck:latest .
+docker pull ghcr.io/xq520mmy/issuedeck:latest
+docker tag ghcr.io/xq520mmy/issuedeck:latest issuedeck:latest
 docker save issuedeck:latest | gzip > issuedeck-image.tar.gz
 ```
 
@@ -69,14 +96,21 @@ Copy `issuedeck-image.tar.gz`, `docker-compose.yml`, `server.toml`,
 
 ```bash
 docker load < issuedeck-image.tar.gz
-docker compose up -d
+ISSUEDECK_IMAGE=issuedeck:latest docker compose up -d
 ```
 
-If the compose file still uses `build: .`, replace it with:
+To transfer a local source build instead, create `issuedeck:latest` before
+running `docker save`:
 
-```yaml
-image: issuedeck:latest
+```bash
+docker build -t issuedeck:latest .
 ```
+
+## Release Assets
+
+Every tagged release builds Python wheels and source distributions, then uploads
+them with `SHA256SUMS.txt` to the GitHub Release. Use the checksum file to verify
+downloaded artifacts before mirroring them into an offline environment.
 
 ## Backup and Restore
 

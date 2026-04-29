@@ -7,6 +7,17 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-04-29
+
+### Added
+
+- Published Docker images to GitHub Container Registry for stable releases and `edge`.
+- Automated release artifacts with Python distributions and `SHA256SUMS.txt`.
+- Docker Compose now starts from the published GHCR image by default, with a local-image override for source builds.
+- Docker containers now run `uv` with `--no-dev` so production startup does not install development tools.
+- Docker build contexts now exclude private project configs, SQLite databases, backups, and temporary files.
+- Refreshed English and Chinese deployment docs for one-command Docker startup, pinned versions, offline transfer, and release checksums.
+
 ## [0.2.0] - 2026-04-29
 
 ### Added

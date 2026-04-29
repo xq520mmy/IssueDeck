@@ -1,6 +1,6 @@
 services:
   issuedeck:
-    build: .
+    image: ${ISSUEDECK_IMAGE:-ghcr.io/xq520mmy/issuedeck:latest}
     container_name: issuedeck
     restart: unless-stopped
     ports:

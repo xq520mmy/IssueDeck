@@ -12,52 +12,77 @@
 
 **比 Jira 更轻，比 Markdown 更稳。**
 
-IssueDeck 是一个轻量、自托管的开发事项追踪器，面向小团队和 AI coding
-工作流。它用一个 FastAPI + SQLite 服务管理多个项目，提供 Web Dashboard
-给人使用，也提供 MCP tools 给 coding agent 使用。
+IssueDeck 是一个本地优先、自托管的事项看板，面向小团队和 AI coding
+工作流。它用一套 FastAPI + SQLite 服务管理多个项目，给人提供 Web
+Dashboard，也给 coding agent 提供 MCP tools。
 
 ## 为什么用 IssueDeck
 
-- 用结构化服务替代散落在项目里的 Markdown tracker，事项、commit、分支和
-  release 记录都在同一个地方。
-- Dashboard 给人看，MCP tools 给 coding agent 调用，避免维护两套互相脱节的流程。
-- 公开演示可以直接使用假数据，等准备好后再接入真实项目配置。
+- 用结构化服务替代散落在项目里的 Markdown tracker，让事项、commit、分支和
+  release 记录放在同一个地方。
+- 人用 Dashboard，agent 用 MCP tools，避免维护两套互相脱节的流程。
+- 开源演示默认使用假数据，准备好后再接入真实项目配置。
 
 ![IssueDeck dashboard demo](docs/assets/issuedeck-demo.gif)
 
-更多界面见[截图画廊](docs/gallery.zh-CN.md)，包含列表、看板、详情、搜索和新建项目。
+更多界面见[截图画廊](docs/gallery.zh-CN.md)，包括列表、看板、详情、搜索和新建项目。
 
 ## 功能
 
-- 面向 Agent：MCP tools 让 coding agent 可以直接创建、更新、搜索、关联和发布事项。
+- 面向 Agent：MCP tools 可创建、更新、搜索、关联和发布事项。
 - 多项目：每个项目独立配置事项类型、状态、分支和 ID 前缀。
 - SQLite FTS5 全文搜索。
-- 双向关系：`blocks` / `blocked_by` / `related_to`。
-- 外部链接：可关联 GitHub issue、PR、commit 和其他代码审查上下文。
+- 双向关系：`blocks`、`blocked_by`、`related_to`。
+- 外部链接：关联 GitHub issue、PR、commit 和其他审查上下文。
 - Activity Timeline：自动记录生命周期事件，也支持手动评论。
 - Dashboard 工作队列：最近更新、待办、进行中、被阻塞、待发布、已完成、已删除。
-- 已保存筛选：每个项目可以保存常用视图，比如活跃 Bug、阻塞事项、待发布队列或标签队列。
+- 已保存筛选：每个项目保存常用视图，例如活跃 Bug、阻塞事项和待发布队列。
 - 软删除和恢复。
 - Ship 记录：绑定版本和 commit。
 - Markdown 导出和通用 frontmatter 迁移。
-- Dashboard 新建项目入口和语言切换基础。
-- MCP tools，方便 coding agent 直接操作事项。
+- Dashboard 新建项目入口和中英文切换。
 
 ## 快速开始
+
+本地 demo：
 
 ```bash
 uv run issuedeck demo
 ```
 
-这个命令会在缺少 `server.toml` 时自动生成本地 demo 配置，执行数据库迁移，
-写入 `example` 项目的假数据，并启动 Dashboard。
+这个命令会在缺少 `server.toml` 时生成本地 demo 配置，执行数据库迁移，写入
+`example` 项目的假数据，并启动 Dashboard。打开
+`http://127.0.0.1:8765/dashboard/example`，使用 `issuedeck-local-token` 登录。
 
-打开 `http://127.0.0.1:8765/dashboard/example`，使用 `issuedeck-local-token`
-登录。想自动打开浏览器可以运行：
+自动打开浏览器：
 
 ```bash
 uv run issuedeck demo --open
 ```
+
+## Docker
+
+默认 Compose 文件会拉取 GitHub Container Registry 上的公开镜像：
+
+```bash
+cp server.toml.example server.toml
+cp .env.example .env
+docker compose pull
+docker compose up -d
+```
+
+打开 `http://127.0.0.1:8765/dashboard/example`，使用 `.env` 里的
+`ISSUEDECK_API_TOKEN` 登录。
+
+如果要运行本地源码构建的镜像：
+
+```bash
+docker build -t issuedeck:local .
+ISSUEDECK_IMAGE=issuedeck:local docker compose up -d
+```
+
+更完整的服务器部署、离线迁移、备份和恢复说明见
+[中文部署指南](docs/deployment.zh.md)。
 
 ## 假数据
 
@@ -69,9 +94,6 @@ uv run issuedeck seed-demo --config server.toml --project-key example
 
 如果目标项目已经有事项，命令会拒绝覆盖。确认要替换该项目事项时再加
 `--force-reset`。
-
-第一次体验建议直接使用 `uv run issuedeck demo`，它会自动完成配置、迁移、
-假数据和启动服务。
 
 ## 配置项目
 
@@ -95,12 +117,12 @@ token = "replace-with-admin-token"
 scopes = ["admin"]
 ```
 
-`read` token 只能调用只读 API；`agent` token 可以读写 REST API，适合 MCP /
+`read` token 只能调用只读 API；`agent` token 可读写 REST API，适合 MCP /
 coding agent；`admin` token 拥有完整 API 权限，也可以登录 Dashboard。
 
-项目配置位于 `projects/*.toml`。Dashboard 也提供了轻量的新建项目入口，
-会生成默认的 Feature / Bug / Improvement 类型和 Proposed / In Progress /
-Done / Won't Fix 状态。高级配置仍建议直接编辑 TOML。
+项目配置位于 `projects/*.toml`。Dashboard 也提供轻量的新建项目入口，会生成默认的
+Feature / Bug / Improvement 类型和 Proposed / In Progress / Done / Won't Fix
+状态。高级配置仍建议直接编辑 TOML。
 
 ## MCP
 
@@ -115,14 +137,14 @@ ISSUEDECK_TOKEN=your-secret-token
 
 ## Markdown 迁移
 
-导入器支持标准 frontmatter 字段，也默认识别 `type`、`state`、`labels`
-等常见别名。完整 schema 和自定义别名示例见
+导入器支持标准 frontmatter 字段，也默认识别 `type`、`state`、`labels` 等常见别名。
+完整 schema 和自定义别名示例见
 [Markdown Frontmatter 导入](docs/markdown-frontmatter-import.zh-CN.md)。
 
 ## 开源发布提醒
 
-`data/*` 和除 `projects/example.toml` 之外的项目配置已经被 `.gitignore`
-忽略。发布前请确认本地真实项目数据没有被加入 git。
+`data/*` 和除 `projects/example.toml` 之外的项目配置已经被 `.gitignore` 忽略。
+发版前请确认本地真实项目数据没有被加入 git。
 
 ## License
 
