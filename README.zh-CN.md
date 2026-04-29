@@ -26,6 +26,7 @@ Dashboard，也给 coding agent 提供 MCP tools。
 ![IssueDeck dashboard demo](docs/assets/issuedeck-demo.gif)
 
 更多界面见[截图画廊](docs/gallery.zh-CN.md)，包括列表、看板、详情、搜索和新建项目。
+日常分诊快捷键见[键盘快捷键](docs/keyboard-shortcuts.zh-CN.md)。
 
 ## 功能
 
@@ -40,7 +41,7 @@ Dashboard，也给 coding agent 提供 MCP tools。
 - 软删除和恢复。
 - Ship 记录：绑定版本和 commit。
 - Markdown 导出和通用 frontmatter 迁移。
-- Dashboard 新建项目入口和中英文切换。
+- Dashboard 新建项目入口、中英文切换和键盘友好的分诊快捷键。
 
 ## 快速开始
 

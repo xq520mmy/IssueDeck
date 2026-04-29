@@ -27,8 +27,11 @@
 
   {# Title #}
   <a href="/dashboard/{{ project_key }}/items/{{ item.local_id }}"
+     data-dashboard-item-link
      class="block text-sm font-medium text-gray-900 dark:text-gray-100
             hover:text-primary-600 dark:hover:text-primary-400
+            focus:outline-none focus:ring-2 focus:ring-primary-500
+            focus:ring-offset-2 dark:focus:ring-offset-ledger-darkPanel rounded
             transition-colors line-clamp-2 mb-2"
      onclick="event.stopPropagation()">
     {{ item.title }}
@@ -88,8 +91,11 @@
   {# Title (clickable) #}
   <td class="px-4 py-3">
     <a href="/dashboard/{{ project_key }}/items/{{ item.local_id }}"
+       data-dashboard-item-link
        class="text-sm font-medium text-gray-900 dark:text-gray-100
               hover:text-primary-600 dark:hover:text-primary-400
+              focus:outline-none focus:ring-2 focus:ring-primary-500
+              focus:ring-offset-2 dark:focus:ring-offset-ledger-darkPanel rounded
               transition-colors">
       {{ item.title }}
     </a>
@@ -158,8 +164,11 @@
         </span>
       </div>
       <a href="/dashboard/{{ project_key }}/items/{{ item.local_id }}"
+         data-dashboard-item-link
          class="block text-sm font-semibold leading-6 text-gray-950 dark:text-gray-100
-                hover:text-primary-700 dark:hover:text-primary-300">
+                hover:text-primary-700 dark:hover:text-primary-300
+                focus:outline-none focus:ring-2 focus:ring-primary-500
+                focus:ring-offset-2 dark:focus:ring-offset-ledger-darkPanel rounded">
         {{ item.title }}
       </a>
     </div>

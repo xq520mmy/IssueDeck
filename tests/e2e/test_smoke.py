@@ -162,12 +162,20 @@ async def test_dashboard_list_has_work_queues(app_ctx):
         data={"token": "test-tok", "next": "/dashboard/test/list"},
         follow_redirects=False,
     )
+    await app_ctx.post(
+        "/api/v1/projects/test/items",
+        headers={"Authorization": "Bearer test-tok"},
+        json={"kind": "feature", "title": "Keyboard target"},
+    )
 
-    r = await app_ctx.get("/dashboard/test/list?view=blocked")
+    r = await app_ctx.get("/dashboard/test/list?view=recent")
     assert r.status_code == 200
     assert "Recently touched" in r.text
     assert "Blocked" in r.text
     assert "Ready to ship" in r.text
+    assert "dashboard-toggle-filters" in r.text
+    assert "data-dashboard-search-input" in r.text
+    assert "data-dashboard-item-link" in r.text
 
 
 async def test_dashboard_can_save_and_select_project_filters(app_ctx):

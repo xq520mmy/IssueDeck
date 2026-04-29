@@ -48,6 +48,115 @@
         window.Alpine.initTree(evt.detail.target);
       }
     });
+
+    (function() {
+      const projectKey = {{ project_key | tojson }};
+      let keyPrefix = null;
+      let keyPrefixTimer = null;
+
+      function isTypingTarget(target) {
+        if (!target) return false;
+        const tagName = target.tagName ? target.tagName.toLowerCase() : '';
+        return target.isContentEditable ||
+          tagName === 'input' ||
+          tagName === 'textarea' ||
+          tagName === 'select';
+      }
+
+      function dashboardUrl(path) {
+        if (!projectKey) return null;
+        return `/dashboard/${encodeURIComponent(projectKey)}${path}`;
+      }
+
+      function navigate(path) {
+        const url = dashboardUrl(path);
+        if (url) window.location.assign(url);
+      }
+
+      function focusSearch() {
+        const searchInput = document.querySelector('[data-dashboard-search-input][autofocus]') ||
+          document.querySelector('[data-dashboard-search-input]');
+        if (searchInput && searchInput.offsetParent !== null) {
+          searchInput.focus();
+          searchInput.select();
+          return;
+        }
+        navigate('/search');
+      }
+
+      function visibleItemLinks() {
+        return Array.from(document.querySelectorAll('[data-dashboard-item-link]'))
+          .filter(link => link.offsetParent !== null);
+      }
+
+      function focusItem(delta) {
+        const links = visibleItemLinks();
+        if (!links.length) return;
+        const activeLink = document.activeElement &&
+          document.activeElement.closest('[data-dashboard-item-link]');
+        const activeIndex = links.indexOf(activeLink);
+        const nextIndex = activeIndex === -1
+          ? (delta > 0 ? 0 : links.length - 1)
+          : (activeIndex + delta + links.length) % links.length;
+        links[nextIndex].focus();
+      }
+
+      function clearPrefix() {
+        keyPrefix = null;
+        if (keyPrefixTimer) {
+          window.clearTimeout(keyPrefixTimer);
+          keyPrefixTimer = null;
+        }
+      }
+
+      document.addEventListener('keydown', function(event) {
+        if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+          return;
+        }
+        if (isTypingTarget(event.target)) return;
+
+        const key = event.key.toLowerCase();
+        if (keyPrefix === 'g') {
+          clearPrefix();
+          if (key === 'h') {
+            event.preventDefault();
+            navigate('');
+          } else if (key === 'l') {
+            event.preventDefault();
+            navigate('/list');
+          } else if (key === 'k') {
+            event.preventDefault();
+            navigate('/kanban');
+          } else if (key === 's') {
+            event.preventDefault();
+            navigate('/search');
+          }
+          return;
+        }
+
+        if (key === 'g') {
+          keyPrefix = 'g';
+          keyPrefixTimer = window.setTimeout(clearPrefix, 900);
+          return;
+        }
+        if (key === '/') {
+          event.preventDefault();
+          focusSearch();
+        } else if (key === 'n') {
+          event.preventDefault();
+          navigate('/items-new');
+        } else if (key === 'f') {
+          event.preventDefault();
+          window.dispatchEvent(new CustomEvent('dashboard-toggle-filters'));
+        } else if (key === 'j') {
+          event.preventDefault();
+          focusItem(1);
+        } else if (key === 'k') {
+          event.preventDefault();
+          focusItem(-1);
+        }
+      });
+    })();
   </script>
 
   <style>

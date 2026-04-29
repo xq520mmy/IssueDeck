@@ -3,8 +3,8 @@
 These are candidate public issues for the next open-source iterations. The
 original launch backlog has mostly shipped: one-command demo mode, MCP client
 examples, scoped tokens, saved dashboard filters, Markdown frontmatter aliases,
-external links, GitHub URL inference, restore smoke tests, and the screenshot
-gallery.
+external links, GitHub URL inference, keyboard-friendly dashboard triage,
+restore smoke tests, and the screenshot gallery.
 
 ## 1. Publish the PyPI package with Trusted Publishing
 
@@ -24,23 +24,7 @@ Acceptance criteria:
 - Verify a fresh machine can run `uvx issuedeck demo --open`.
 - Update README copy once the PyPI path is live.
 
-## 2. Add keyboard-friendly dashboard triage
-
-Labels: `enhancement`, `design`, `area: dashboard`
-
-The list and kanban views should feel fast for repeated review sessions, not
-only for point-and-click browsing.
-
-Acceptance criteria:
-
-- Add keyboard actions for common triage moves such as focusing search,
-  opening filters, creating an item, and moving between list results.
-- Keep shortcuts inactive while the user is typing in inputs, textareas, or
-  content-editable fields.
-- Add accessibility labels and tests for the scripted behavior.
-- Document the shortcut map outside the main dashboard UI.
-
-## 3. Add Markdown import adapter presets
+## 2. Add Markdown import adapter presets
 
 Labels: `enhancement`, `help wanted`, `area: migration`
 
@@ -56,7 +40,7 @@ Acceptance criteria:
   external links.
 - Document how to pick a preset and how to override fields.
 
-## 4. Add lifecycle webhooks
+## 3. Add lifecycle webhooks
 
 Labels: `enhancement`, `help wanted`, `area: integrations`
 

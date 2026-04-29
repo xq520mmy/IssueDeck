@@ -28,6 +28,8 @@ tracker, a web dashboard for humans, and MCP tools for coding agents.
 
 See the [screenshot gallery](docs/gallery.md) for list, kanban, detail,
 search, and project creation surfaces.
+Daily triage shortcuts are documented in
+[Keyboard Shortcuts](docs/keyboard-shortcuts.md).
 
 ## Features
 
@@ -49,6 +51,7 @@ search, and project creation surfaces.
 - Markdown export (one file per item) and changelog rendering.
 - Frontmatter migration from existing Markdown trackers.
 - Server-rendered dashboard with list, kanban, detail, search, and create/edit flows.
+- Keyboard-friendly dashboard triage for search, filters, create, and item focus.
 - Dashboard project creation and language switch foundation.
 - MCP tools for coding-agent workflows.
 
