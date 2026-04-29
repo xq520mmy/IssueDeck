@@ -285,6 +285,36 @@ async def test_dashboard_can_create_project(app_ctx):
     assert "Demo Project" in r.text
 
 
+async def test_dashboard_create_item_infers_github_external_link(app_ctx):
+    await app_ctx.post(
+        "/dashboard/login",
+        data={"token": "test-tok", "next": "/dashboard/test/items-new"},
+        follow_redirects=False,
+    )
+
+    r = await app_ctx.post(
+        "/dashboard/test/items-new",
+        data={
+            "kind": "feature",
+            "title": "Link from dashboard",
+            "body": "",
+            "tags": "",
+            "external_links": "https://github.com/example/repo/pull/123?from=form",
+            "applies_to": "main",
+        },
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert r.headers["location"] == "/dashboard/test/items/FEAT-0001"
+
+    r = await app_ctx.get("/api/v1/projects/test/items/FEAT-0001",
+                          headers={"Authorization": "Bearer test-tok"})
+    assert r.status_code == 200
+    assert r.json()["external_links"][0]["link_type"] == "github_pr"
+    assert r.json()["external_links"][0]["label"] == "PR #123"
+    assert r.json()["external_links"][0]["url"] == "https://github.com/example/repo/pull/123"
+
+
 async def test_full_lifecycle_requires_token(app_ctx):
     r = await app_ctx.post("/api/v1/projects/test/items",
                            json={"kind": "feature", "title": "x"})

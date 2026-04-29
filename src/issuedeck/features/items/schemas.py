@@ -12,11 +12,20 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from issuedeck.features.items.external_links import normalize_external_link_payload
+
 
 class ExternalLinkInput(BaseModel):
-    link_type: Literal["github_issue", "github_pr", "github_commit", "other"]
+    link_type: Literal["github_issue", "github_pr", "github_commit", "other"] = "other"
     url: str = Field(min_length=1, max_length=2048)
     label: str | None = Field(default=None, max_length=160)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _infer_github_url(cls, data: object) -> object:
+        if isinstance(data, dict):
+            return normalize_external_link_payload(data)
+        return data
 
 
 class CreateItemRequest(BaseModel):

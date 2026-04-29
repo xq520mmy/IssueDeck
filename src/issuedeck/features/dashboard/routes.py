@@ -143,6 +143,26 @@ def _safe_dashboard_next(next_url: str | None) -> str:
     return "/dashboard/"
 
 
+def _external_links_from_form(raw: str) -> list[dict[str, str]]:
+    links: list[dict[str, str]] = []
+    for line in raw.splitlines():
+        clean = line.strip()
+        if not clean:
+            continue
+        label = None
+        url = clean
+        if "|" in clean:
+            before, after = clean.split("|", 1)
+            if after.strip():
+                label = before.strip() or None
+                url = after.strip()
+        payload = {"url": url}
+        if label:
+            payload["label"] = label
+        links.append(payload)
+    return links
+
+
 def _work_queue_statuses(project: ProjectConfig, view: str) -> list[str] | None:
     status_keys = list(project.statuses.keys())
     if not status_keys:
@@ -756,6 +776,7 @@ async def create_item_submit(
     title: str = Form(...),
     body: str = Form(""),
     tags: str = Form(""),
+    external_links: str = Form(""),
     applies_to: list[str] = APPLIES_TO_FORM,
 ):
     tag_list = [t.strip() for t in tags.split(",") if t.strip()]
@@ -768,6 +789,7 @@ async def create_item_submit(
             CreateItemRequest(
                 kind=kind, title=title, body=body,
                 tags=tag_list, applies_to=branch_list,
+                external_links=_external_links_from_form(external_links),
             ),
         )
     finally:
@@ -807,6 +829,7 @@ async def edit_item_submit(
     body: str = Form(""),
     status: str = Form(None),
     tags: str = Form(""),
+    external_links: str = Form(""),
     applies_to: list[str] = APPLIES_TO_FORM,
 ):
     tag_list = [t.strip() for t in tags.split(",") if t.strip()]
@@ -823,6 +846,7 @@ async def edit_item_submit(
             UpdateItemRequest(
                 title=title, body=body, status=status,
                 tags=tag_list, applies_to=branch_list,
+                external_links=_external_links_from_form(external_links),
             ),
         )
     finally:
