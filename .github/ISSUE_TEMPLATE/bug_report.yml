@@ -58,10 +58,14 @@ body:
     id: version
     attributes:
       label: Version or commit
-      placeholder: v0.1.0 or commit SHA
+      placeholder: v0.2.1 or commit SHA
   - type: textarea
     id: environment
     attributes:
       label: Environment
-      placeholder: OS, Python version, browser, deployment mode
-
+      placeholder: OS, Python version, browser, deployment mode, Docker image tag if relevant
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste only sanitized logs. Do not include tokens, private project names, or database dumps.

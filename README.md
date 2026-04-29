@@ -287,6 +287,8 @@ npm run build:css
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 Dashboard UI work should follow [DESIGN.md](DESIGN.md).
 See [ROADMAP.md](ROADMAP.md) for planned work and contribution areas.
+For support and issue-reporting guidance, see [SUPPORT.md](SUPPORT.md).
+For sensitive vulnerabilities, follow [SECURITY.md](SECURITY.md).
 
 ## License
 

@@ -3,7 +3,12 @@
 ## Supported Versions
 
 IssueDeck is currently pre-1.0. Security fixes target the latest `main` branch
-until a stable release line exists.
+and the latest public release until a stable release line exists.
+
+| Version | Supported |
+| --- | --- |
+| `0.2.x` | Yes |
+| `< 0.2.0` | No |
 
 ## Reporting a Vulnerability
 

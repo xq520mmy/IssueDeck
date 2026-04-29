@@ -7,6 +7,11 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+### Added
+
+- Added Dependabot version updates for Python/uv, npm, and GitHub Actions.
+- Added `SUPPORT.md` plus refreshed issue, pull request, security, and roadmap guidance for contributors.
+
 ## [0.2.1] - 2026-04-29
 
 ### Added
