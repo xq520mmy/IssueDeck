@@ -1,117 +1,102 @@
 # Starter Issue Backlog
 
-These are candidate public issues for the first open-source iteration.
+These are candidate public issues for the next open-source iterations. The
+original launch backlog has mostly shipped: one-command demo mode, MCP client
+examples, scoped tokens, saved dashboard filters, Markdown frontmatter aliases,
+external links, restore smoke tests, and the screenshot gallery.
 
-## 1. Add a one-command local demo
+## 1. Publish the PyPI package with Trusted Publishing
 
-Labels: `enhancement`, `good first issue`, `area: cli`, `area: docs`
+Labels: `enhancement`, `area: deployment`, `area: docs`
 
-IssueDeck should have a single command or documented script that gets a new
-contributor from clone to populated dashboard quickly.
-
-Suggested behavior:
-
-- Copy `server.toml.example` to `server.toml` when missing.
-- Apply database migrations.
-- Seed fake demo data for the `example` project.
-- Print the dashboard URL and demo token instructions.
+IssueDeck can already be installed from GitHub with `uvx --from git+...`.
+Publishing to PyPI will make the short `uvx issuedeck demo --open` path work
+for new users.
 
 Acceptance criteria:
 
-- Works on macOS/Linux and Windows PowerShell.
-- Does not overwrite an existing non-empty project unless explicitly forced.
-- README quickstart can point at the flow.
+- Configure the PyPI project `issuedeck` with Trusted Publishing for owner
+  `xq520mmy`, repository `IssueDeck`, workflow `pypi-publish.yml`, and
+  environment `pypi`.
+- Enable the guarded publish path with the repository variable
+  `PYPI_PUBLISH=true` or run the workflow manually against a release tag.
+- Verify a fresh machine can run `uvx issuedeck demo --open`.
+- Update README copy once the PyPI path is live.
 
-## 2. Add MCP client setup examples
+## 2. Add GitHub URL import helpers for external links
 
-Labels: `documentation`, `good first issue`, `area: mcp`
+Labels: `enhancement`, `help wanted`, `area: integrations`, `area: dashboard`
 
-The README currently shows one generic MCP config. Add examples for common
-agent environments and explain the difference between `ISSUEDECK_TOKEN` and
-`ISSUEDECK_API_TOKEN`.
-
-Acceptance criteria:
-
-- Add examples for at least two client environments.
-- Keep secrets as placeholders only.
-- Mention that the MCP process talks to the REST API and does not touch SQLite.
-
-## 3. Add scoped token support
-
-Labels: `enhancement`, `help wanted`, `area: auth`
-
-IssueDeck currently uses one shared bearer token. Add a path toward multiple
-tokens with scopes such as read-only, agent, and admin.
+IssueDeck already stores external links for GitHub issues, pull requests, and
+commits. The next polish step is making pasted GitHub URLs easier to turn into
+structured links.
 
 Acceptance criteria:
 
-- Propose a backwards-compatible config format.
-- Preserve existing single-token deployments.
-- Include tests for allowed and denied requests.
+- Accept a GitHub issue, pull request, or commit URL and infer `link_type`,
+  label, and normalized URL.
+- Use the helper from the dashboard item form and from an API/MCP-friendly
+  utility path.
+- Keep the feature optional and avoid requiring GitHub authentication.
+- Add tests for issue, pull request, commit, and non-GitHub URLs.
 
-## 4. Add saved dashboard filters
+## 3. Add keyboard-friendly dashboard triage
 
-Labels: `enhancement`, `help wanted`, `area: dashboard`
+Labels: `enhancement`, `design`, `area: dashboard`
 
-Users should be able to save common dashboard filters such as active bugs,
-blocked items, ready-to-ship work, or a tag-specific queue.
+The list and kanban views should feel fast for repeated review sessions, not
+only for point-and-click browsing.
 
 Acceptance criteria:
 
-- Saved filters are project-scoped.
-- Filters can be selected from the dashboard without manual URL editing.
-- The implementation works without external services.
+- Add keyboard actions for common triage moves such as focusing search,
+  opening filters, creating an item, and moving between list results.
+- Keep shortcuts inactive while the user is typing in inputs, textareas, or
+  content-editable fields.
+- Add accessibility labels and tests for the scripted behavior.
+- Document the shortcut map outside the main dashboard UI.
 
-## 5. Improve Markdown import compatibility
+## 4. Add Markdown import adapter presets
 
 Labels: `enhancement`, `help wanted`, `area: migration`
 
-The frontmatter importer expects a specific item shape. Make it easier to
-import Markdown issue collections from other tools.
+The frontmatter importer supports common aliases today, but teams often have
+their own Markdown issue shapes. Adapter presets would make migration less
+manual.
 
 Acceptance criteria:
 
-- Document the currently accepted frontmatter schema.
-- Add mapping options for common field aliases such as `type`, `state`, and
-  `labels`.
-- Add fixtures that cover at least two schema variants.
+- Add named presets for at least two common Markdown tracker shapes.
+- Keep the default importer behavior unchanged.
+- Include fixtures that cover status, kind, tags, branch/applicability, and
+  external links.
+- Document how to pick a preset and how to override fields.
 
-## 6. Add GitHub link fields for PRs, issues, and commits
+## 5. Add lifecycle webhooks
 
 Labels: `enhancement`, `help wanted`, `area: integrations`
 
-IssueDeck already tracks ship commits. It should also support optional links
-to GitHub issues and pull requests so project state can connect back to code
-review.
+Teams may want lightweight notifications or automation when items change state,
+are shipped, or are restored.
 
 Acceptance criteria:
 
-- Add a minimal data model for external links.
-- Render links in item detail pages.
-- Expose links through REST and MCP responses.
+- Emit webhook payloads for item created, item updated, item shipped, item
+  deleted, and item restored events.
+- Support signed requests with a shared secret.
+- Include retry/backoff behavior that cannot block the main item mutation.
+- Add tests for payload shape and signature verification.
 
-## 7. Add backup and restore smoke tests
+## 6. Improve first-run troubleshooting docs
 
-Labels: `documentation`, `good first issue`, `area: deployment`
+Labels: `documentation`, `good first issue`, `area: docs`
 
-The repo includes backup docs and a helper script. Add a smoke-testable restore
-path so operators can trust the deployment guide.
-
-Acceptance criteria:
-
-- Document backup and restore with copy-pasteable commands.
-- Add a lightweight test or scripted check where practical.
-- Keep the flow SQLite-native and Docker-friendly.
-
-## 8. Create a screenshot gallery
-
-Labels: `documentation`, `good first issue`, `area: dashboard`
-
-The README has a demo GIF. Add a small gallery for the main dashboard surfaces:
-list, kanban, item detail, search, and project creation.
+The happy path is short, but first-time users still need clear recovery notes
+for local environment problems.
 
 Acceptance criteria:
 
-- Use fake demo data only.
-- Optimize images for repository size.
-- Link the gallery from README without overwhelming the top section.
+- Add troubleshooting notes for missing `uv`, occupied ports, invalid tokens,
+  SQLite migration errors, and Docker Compose startup failures.
+- Include Windows PowerShell examples where commands differ.
+- Link the troubleshooting section from README and SUPPORT.
