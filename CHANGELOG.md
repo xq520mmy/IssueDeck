@@ -13,6 +13,7 @@ versioning once public releases begin.
 - MCP client setup guides for Claude Desktop, Claude Code, and Cursor.
 - Scoped API tokens for read-only, agent, and admin clients.
 - Project-scoped saved dashboard filters stored in the local runtime data directory.
+- Markdown frontmatter import schema docs plus field alias mapping for legacy trackers.
 
 ## [0.1.0] - 2026-04-29
 

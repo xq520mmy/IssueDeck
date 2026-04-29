@@ -13,9 +13,11 @@ from issuedeck.core.config import (
     StatusConfig,
 )
 from issuedeck.features.items.models import Base, Item, ShipCommit, ShipRecord
-from issuedeck.features.migrate.frontmatter import migrate_frontmatter_bundle
+from issuedeck.features.migrate.frontmatter import FrontmatterMapping, migrate_frontmatter_bundle
 
 FIX_ROOT = Path(__file__).parent / "fixtures"
+FIX_ALIASES = Path(__file__).parent / "fixtures_aliases"
+FIX_CUSTOM_ALIASES = Path(__file__).parent / "fixtures_custom_aliases"
 
 
 def _registry():
@@ -91,3 +93,44 @@ async def test_rerun_without_force_fails(session):
             source_dir=FIX_ROOT, project_key="sample",
             registry=_registry(), db=session, dry_run=False,
         )
+
+
+async def test_common_alias_fixture_migrates(session):
+    report = await migrate_frontmatter_bundle(
+        source_dir=FIX_ALIASES,
+        project_key="sample",
+        registry=_registry(),
+        db=session,
+        dry_run=False,
+    )
+
+    assert report.items_written == 1
+    item = (await session.execute(select(Item))).scalar_one()
+    assert item.local_id == "BUG-0100"
+    assert item.kind == "bug"
+    assert item.status == "proposed"
+
+
+async def test_custom_alias_fixture_migrates(session):
+    mapping = FrontmatterMapping.from_alias_options([
+        "kind=category",
+        "status=workflow",
+        "tags=keywords",
+        "applies_to=branches",
+    ])
+    report = await migrate_frontmatter_bundle(
+        source_dir=FIX_CUSTOM_ALIASES,
+        project_key="sample",
+        registry=_registry(),
+        db=session,
+        dry_run=False,
+        mapping=mapping,
+    )
+
+    assert report.items_written == 1
+    assert report.ship_records == 1
+    assert report.ship_commits == 2
+    item = (await session.execute(select(Item))).scalar_one()
+    assert item.local_id == "FEAT-0100"
+    assert item.kind == "feature"
+    assert item.status == "done"

@@ -87,6 +87,16 @@ def main(argv: list[str] | None = None) -> int:
     p_mig.add_argument("--project-key", required=True)
     p_mig.add_argument("--dry-run", action="store_true")
     p_mig.add_argument("--force-reset", action="store_true")
+    p_mig.add_argument(
+        "--field-alias",
+        action="append",
+        default=[],
+        metavar="FIELD=ALIAS[,ALIAS...]",
+        help=(
+            "Add frontmatter field aliases, e.g. kind=category, "
+            "status=workflow, tags=keywords"
+        ),
+    )
 
     p_exp = sub.add_parser("export", help="Export project as markdown bundle")
     p_exp.add_argument("--config", default="server.toml")
@@ -117,6 +127,7 @@ def main(argv: list[str] | None = None) -> int:
         return asyncio.run(_cmd_migrate(
             Path(args.config), Path(args.from_frontmatter),
             args.project_key, args.dry_run, args.force_reset,
+            args.field_alias,
         ))
     if args.cmd == "export":
         return asyncio.run(_cmd_export(
@@ -306,12 +317,16 @@ def _demo_token_hint(config_created: bool) -> str:
 
 async def _cmd_migrate(
     config_path: Path, source_dir: Path, project_key: str,
-    dry_run: bool, force_reset: bool,
+    dry_run: bool, force_reset: bool, field_aliases: list[str],
 ) -> int:
     from issuedeck.core.db import make_engine, make_session_factory
-    from issuedeck.features.migrate.frontmatter import migrate_frontmatter_bundle
+    from issuedeck.features.migrate.frontmatter import (
+        FrontmatterMapping,
+        migrate_frontmatter_bundle,
+    )
 
     registry = _build_registry(config_path)
+    mapping = FrontmatterMapping.from_alias_options(field_aliases)
     db_path = registry.server.data_dir / "tracker.db"
     engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
     session_factory = make_session_factory(engine)
@@ -321,6 +336,7 @@ async def _cmd_migrate(
                 source_dir=source_dir, project_key=project_key,
                 registry=registry, db=session,
                 dry_run=dry_run, force_reset=force_reset,
+                mapping=mapping,
             )
             print(
                 f"[{'dry-run' if dry_run else 'ok'}] planned={report.items_planned} "

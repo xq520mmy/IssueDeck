@@ -238,6 +238,10 @@ uv run issuedeck migrate \
 ```
 
 Add `--dry-run` to preview without writing. Add `--force-reset` to wipe existing items first.
+The importer accepts the canonical schema plus common aliases such as `type`,
+`state`, and `labels`; see
+[Markdown Frontmatter Import](docs/markdown-frontmatter-import.md) for the full
+schema and custom alias options.
 
 ## Export
 

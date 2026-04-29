@@ -110,6 +110,12 @@ ISSUEDECK_BASE_URL=http://127.0.0.1:8765
 ISSUEDECK_TOKEN=your-secret-token
 ```
 
+## Markdown 迁移
+
+导入器支持标准 frontmatter 字段，也默认识别 `type`、`state`、`labels`
+等常见别名。完整 schema 和自定义别名示例见
+[Markdown Frontmatter 导入](docs/markdown-frontmatter-import.zh-CN.md)。
+
 ## 开源发布提醒
 
 `data/*` 和除 `projects/example.toml` 之外的项目配置已经被 `.gitignore`

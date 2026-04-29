@@ -24,6 +24,48 @@ class MigrationError(Exception):
     pass
 
 
+@dataclass(frozen=True)
+class FrontmatterMapping:
+    local_id: tuple[str, ...] = ("id",)
+    kind: tuple[str, ...] = ("kind", "type")
+    status: tuple[str, ...] = ("status", "state")
+    title: tuple[str, ...] = ("title",)
+    tags: tuple[str, ...] = ("tags", "labels")
+    applies_to: tuple[str, ...] = ("applies_to",)
+
+    @classmethod
+    def from_alias_options(cls, options: list[str] | None) -> FrontmatterMapping:
+        mapping = cls()
+        if not options:
+            return mapping
+
+        aliases_by_field = {field: list(getattr(mapping, field)) for field in _MAPPABLE_FIELDS}
+        for option in options:
+            if "=" not in option:
+                raise ValueError(
+                    f"invalid field alias '{option}'; expected FIELD=alias[,alias...]"
+                )
+            field, raw_aliases = option.split("=", 1)
+            field = field.strip()
+            if field == "id":
+                field = "local_id"
+            if field not in aliases_by_field:
+                expected = ", ".join(["id", "kind", "status", "title", "tags", "applies_to"])
+                raise ValueError(
+                    f"unknown frontmatter field '{field}'; expected one of: {expected}"
+                )
+            for alias in raw_aliases.split(","):
+                alias = alias.strip()
+                if alias and alias not in aliases_by_field[field]:
+                    aliases_by_field[field].append(alias)
+
+        return cls(**{field: tuple(aliases) for field, aliases in aliases_by_field.items()})
+
+
+_MAPPABLE_FIELDS = ("local_id", "kind", "status", "title", "tags", "applies_to")
+_MISSING = object()
+
+
 @dataclass
 class ShipRow:
     branch_key: str
@@ -60,9 +102,15 @@ def _iso_now() -> str:
     return datetime.now(UTC).isoformat()
 
 
-def map_frontmatter_to_row(fm: frontmatter.Post, *, is_archived: bool) -> MigrationRow:
+def map_frontmatter_to_row(
+    fm: frontmatter.Post,
+    *,
+    is_archived: bool,
+    mapping: FrontmatterMapping | None = None,
+) -> MigrationRow:
     """Pure function: parse item frontmatter into a migration row."""
     d = fm.metadata
+    mapping = mapping or FrontmatterMapping()
 
     ship: list[ShipRow] = []
     for branch, ver_key, commits_key in (
@@ -72,8 +120,8 @@ def map_frontmatter_to_row(fm: frontmatter.Post, *, is_archived: bool) -> Migrat
         version = d.get(ver_key)
         if version:
             ship.append(ShipRow(
-                branch_key=branch, version=version,
-                commits=list(d.get(commits_key, []) or []),
+                branch_key=branch, version=str(version),
+                commits=_normalize_string_list(d.get(commits_key)),
             ))
 
     deleted_at = None
@@ -81,13 +129,13 @@ def map_frontmatter_to_row(fm: frontmatter.Post, *, is_archived: bool) -> Migrat
         deleted_at = d.get("deleted_at") or _iso_now()
 
     return MigrationRow(
-        local_id=d["id"],
-        kind=d["kind"],
-        status=d["status"],
-        title=d["title"],
+        local_id=str(_required_field(d, mapping.local_id, "id")),
+        kind=str(_required_field(d, mapping.kind, "kind")),
+        status=str(_required_field(d, mapping.status, "status")),
+        title=str(_required_field(d, mapping.title, "title")),
         body=fm.content or "",
-        tags=list(d.get("tags") or []),
-        applies_to=list(d.get("applies_to") or []),
+        tags=_normalize_string_list(_optional_field(d, mapping.tags)),
+        applies_to=_normalize_string_list(_optional_field(d, mapping.applies_to)),
         ship_records=ship,
         created_at=d.get("created_at") or _iso_now(),
         updated_at=d.get("updated_at") or _iso_now(),
@@ -103,6 +151,7 @@ async def migrate_frontmatter_bundle(
     *,
     dry_run: bool = False,
     force_reset: bool = False,
+    mapping: FrontmatterMapping | None = None,
 ) -> MigrationReport:
     project_cfg = registry.project(project_key)
 
@@ -123,7 +172,11 @@ async def migrate_frontmatter_bundle(
     for f, is_archived in [(x, False) for x in active_files] + [(x, True) for x in archived_files]:
         try:
             fm = frontmatter.load(f)
-            row = map_frontmatter_to_row(fm, is_archived=is_archived)
+            row = map_frontmatter_to_row(
+                fm,
+                is_archived=is_archived,
+                mapping=mapping,
+            )
             if row.kind not in known_kinds:
                 errors.append(f"{f.name}: unknown kind '{row.kind}'")
             if row.status not in known_statuses:
@@ -211,3 +264,44 @@ async def migrate_frontmatter_bundle(
         )
 
     return report
+
+
+def _optional_field(metadata: dict, aliases: tuple[str, ...]) -> object:
+    for alias in aliases:
+        if alias not in metadata:
+            continue
+        value = metadata[alias]
+        if value is not None and value != "":
+            return value
+    return _MISSING
+
+
+def _required_field(metadata: dict, aliases: tuple[str, ...], canonical: str) -> object:
+    value = _optional_field(metadata, aliases)
+    if value is _MISSING or value == "":
+        accepted = ", ".join(aliases)
+        raise KeyError(f"missing required frontmatter field '{canonical}' (accepted: {accepted})")
+    return value
+
+
+def _normalize_string_list(value: object) -> list[str]:
+    if value is _MISSING or value is None:
+        return []
+
+    if isinstance(value, str):
+        raw_values: list[object] = value.split(",") if "," in value else [value]
+    elif isinstance(value, list | tuple | set):
+        raw_values = list(value)
+    else:
+        raw_values = [value]
+
+    normalized: list[str] = []
+    for raw in raw_values:
+        if isinstance(raw, dict):
+            raw = raw.get("name") or raw.get("label") or raw.get("value")
+        if raw is None:
+            continue
+        text = str(raw).strip()
+        if text and text not in normalized:
+            normalized.append(text)
+    return normalized
