@@ -4,7 +4,14 @@ import { fileURLToPath } from "node:url";
 
 const scriptsDir = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(scriptsDir, "..");
-const tailwindCli = join(rootDir, "node_modules", "tailwindcss", "lib", "cli.js");
+const tailwindCli = join(
+  rootDir,
+  "node_modules",
+  "@tailwindcss",
+  "cli",
+  "dist",
+  "index.mjs",
+);
 
 const result = spawnSync(
   process.execPath,
