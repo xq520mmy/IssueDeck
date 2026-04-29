@@ -51,6 +51,7 @@
   </div>
 
   <!-- Center: search -->
+  {% if project %}
   <div class="flex-1 max-w-xl mx-4 hidden sm:block" x-data="{ searchOpen: false, query: '' }">
     <div class="relative">
       <!-- Search icon -->
@@ -112,11 +113,15 @@
       </div>
     </div>
   </div>
+  {% else %}
+    <div class="flex-1"></div>
+  {% endif %}
 
   <!-- Right section: theme toggle + project switcher -->
   <div class="flex items-center gap-2">
 
     <!-- Mobile search button -->
+    {% if project %}
     <a href="/dashboard/{{ project_key }}/search"
        class="sm:hidden p-1.5 rounded-md text-gray-500 dark:text-gray-400
               hover:bg-primary-50 dark:hover:bg-primary-950 hover:text-primary-700 dark:hover:text-primary-300
@@ -127,6 +132,7 @@
               d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
       </svg>
     </a>
+    {% endif %}
 
     <!-- Theme toggle -->
     <button @click="toggleTheme()"

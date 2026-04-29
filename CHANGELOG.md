@@ -9,10 +9,15 @@ versioning once public releases begin.
 
 ### Added
 
+- Added dashboard onboarding empty states for fresh installs and empty projects.
 - Added a gated PyPI Trusted Publishing workflow and PyPI setup guide for future `uvx issuedeck` installs.
 - Added PyPI project URLs and license-file metadata to the Python package.
 - Added Dependabot version updates for Python/uv, npm, and GitHub Actions.
 - Added `SUPPORT.md` plus refreshed issue, pull request, security, and roadmap guidance for contributors.
+
+### Fixed
+
+- Fixed fresh dashboard installs rendering broken project links when no projects exist yet.
 
 ## [0.2.1] - 2026-04-29
 

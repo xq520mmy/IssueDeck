@@ -43,6 +43,35 @@ async def app_ctx(tmp_path):
         yield c
 
 
+@pytest.fixture
+async def empty_app_ctx(tmp_path):
+    """Dashboard app with no project configs, matching a fresh install."""
+    data_dir = tmp_path / "data"
+    projects_dir = tmp_path / "projects"
+    projects_dir.mkdir()
+    server_toml = tmp_path / "server.toml"
+    server_toml.write_text(
+        f'host="127.0.0.1"\nport=8765\napi_token="test-tok"\n'
+        f'data_dir="{data_dir.as_posix()}"\n'
+        f'projects_dir="{projects_dir.as_posix()}"\n'
+    )
+
+    from alembic import command
+    from alembic.config import Config
+    data_dir.mkdir()
+    db = data_dir / "tracker.db"
+    cfg = Config(str(Path.cwd() / "alembic.ini"))
+    cfg.set_main_option("sqlalchemy.url", f"sqlite:///{db}")
+    command.upgrade(cfg, "head")
+
+    from issuedeck.app import create_app
+    app = create_app(server_toml)
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://t",
+    ) as c:
+        yield c
+
+
 async def test_healthz(app_ctx):
     r = await app_ctx.get("/healthz")
     assert r.status_code == 200
@@ -91,6 +120,24 @@ async def test_dashboard_requires_login_cookie(app_ctx):
     r = await app_ctx.get("/dashboard/test")
     assert r.status_code == 200
     assert "Test" in r.text
+    assert "Start the queue" in r.text
+    assert "/dashboard/test/items-new" in r.text
+
+
+async def test_dashboard_empty_install_has_onboarding(empty_app_ctx):
+    r = await empty_app_ctx.post(
+        "/dashboard/login",
+        data={"token": "test-tok", "next": "/dashboard/"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+
+    r = await empty_app_ctx.get("/dashboard/")
+    assert r.status_code == 200
+    assert "No projects yet" in r.text
+    assert "New project" in r.text
+    assert "/dashboard/projects-new" in r.text
+    assert "/dashboard/None" not in r.text
 
 
 async def test_dashboard_login_requires_admin_token(app_ctx):
