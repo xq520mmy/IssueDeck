@@ -10,6 +10,7 @@ versioning once public releases begin.
 ### Added
 
 - One-command local demo flow via `issuedeck demo`.
+- MCP client setup guides for Claude Desktop, Claude Code, and Cursor.
 
 ## [0.1.0] - 2026-04-29
 

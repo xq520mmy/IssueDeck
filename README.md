@@ -172,7 +172,9 @@ Chinese deployment guide is available at
 
 ## MCP stdio process
 
-Register in your MCP client (Claude Code, etc.):
+For client-specific examples, see [MCP Client Setup](docs/mcp-clients.md).
+
+Generic stdio config:
 
 ```json
 {

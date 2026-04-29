@@ -77,6 +77,8 @@ Done / Won't Fix 状态。高级配置仍建议直接编辑 TOML。
 
 ## MCP
 
+客户端配置示例见 [MCP 客户端接入](docs/mcp-clients.zh-CN.md)。
+
 MCP 进程通过 REST API 与 IssueDeck 通信，不直接访问 SQLite。环境变量：
 
 ```bash
