@@ -33,6 +33,7 @@ IssueDeck 是一个轻量、自托管的开发事项追踪器，面向小团队�
 - 双向关系：`blocks` / `blocked_by` / `related_to`。
 - Activity Timeline：自动记录生命周期事件，也支持手动评论。
 - Dashboard 工作队列：最近更新、待办、进行中、被阻塞、待发布、已完成、已删除。
+- 已保存筛选：每个项目可以保存常用视图，比如活跃 Bug、阻塞事项、待发布队列或标签队列。
 - 软删除和恢复。
 - Ship 记录：绑定版本和 commit。
 - Markdown 导出和通用 frontmatter 迁移。

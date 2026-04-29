@@ -38,6 +38,8 @@ tracker, a web dashboard for humans, and MCP tools for coding agents.
 - Item activity timeline with automatic lifecycle events and manual comments.
 - Built-in dashboard work queues for backlog, active, blocked, ready-to-ship,
   done, deleted, and recently touched items.
+- Project-scoped saved dashboard filters for reusable views such as active
+  bugs, blocked work, release queues, and tag-specific searches.
 - Soft delete + restore.
 - Ship records with version + commits, queryable by shipped branch.
 - Markdown export (one file per item) and changelog rendering.

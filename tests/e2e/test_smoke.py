@@ -123,6 +123,33 @@ async def test_dashboard_list_has_work_queues(app_ctx):
     assert "Ready to ship" in r.text
 
 
+async def test_dashboard_can_save_and_select_project_filters(app_ctx):
+    await app_ctx.post(
+        "/dashboard/login",
+        data={"token": "test-tok", "next": "/dashboard/test/list"},
+        follow_redirects=False,
+    )
+
+    r = await app_ctx.post(
+        "/dashboard/test/saved-filters",
+        data={
+            "name": "Feature queue",
+            "view": "recent",
+            "kind": "feature",
+            "status": "proposed",
+        },
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert r.headers["location"] == "/dashboard/test/list?saved_filter=feature-queue"
+
+    r = await app_ctx.get(r.headers["location"])
+    assert r.status_code == 200
+    assert "Feature queue" in r.text
+    assert "saved_filter=feature-queue" in r.text
+    assert 'name="kind" value="feature"' in r.text
+
+
 async def test_dashboard_language_switch_sets_cookie(app_ctx):
     await app_ctx.post(
         "/dashboard/login",

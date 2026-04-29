@@ -32,6 +32,13 @@ from issuedeck.features.dashboard.i18n import (
     language_from_request,
     make_translator,
 )
+from issuedeck.features.dashboard.saved_filters import (
+    filter_params_from_form,
+    get_saved_dashboard_filter,
+    list_saved_dashboard_filters,
+    save_dashboard_filter,
+    saved_filter_href,
+)
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
     CreateItemEventRequest,
@@ -52,7 +59,11 @@ STATUS_QUERY = Query(None, alias="status")
 TAG_QUERY = Query(None)
 APPLIES_TO_QUERY = Query(None)
 RELATION_TYPE_QUERY = Query(None)
+KIND_FORM = Form([])
+STATUS_FORM = Form([], alias="status")
+TAG_FORM = Form([])
 APPLIES_TO_FORM = Form([])
+RELATION_TYPE_FORM = Form([])
 NEXT_QUERY = Query("/dashboard/")
 NEXT_FORM = Form("/dashboard/")
 
@@ -515,6 +526,7 @@ async def update_status_htmx(
 async def list_view(
     project_key: str, request: Request,
     view: str = "recent",
+    saved_filter: str | None = None,
     kind: list[str] | None = KIND_QUERY,
     status: list[str] | None = STATUS_QUERY,
     tag: list[str] | None = TAG_QUERY,
@@ -526,6 +538,32 @@ async def list_view(
 ):
     registry = request.app.state.registry
     project = registry.project(project_key)
+    saved_filters = list_saved_dashboard_filters(registry.server.data_dir, project_key)
+    active_saved_filter = None
+    if saved_filter:
+        active_saved_filter = get_saved_dashboard_filter(
+            registry.server.data_dir,
+            project_key,
+            saved_filter,
+        )
+        if active_saved_filter:
+            params = active_saved_filter.params
+            view = params.get("view", view) if isinstance(params.get("view"), str) else view
+            kind = params.get("kind") if isinstance(params.get("kind"), list) else None
+            status = params.get("status") if isinstance(params.get("status"), list) else None
+            tag = params.get("tag") if isinstance(params.get("tag"), list) else None
+            applies_to = (
+                params.get("applies_to")
+                if isinstance(params.get("applies_to"), list)
+                else None
+            )
+            relation_type = (
+                params.get("relation_type")
+                if isinstance(params.get("relation_type"), list)
+                else None
+            )
+            include_deleted = bool(params.get("include_deleted"))
+
     active_view = view if view in WORK_QUEUE_KEYS else "recent"
     queue_filters = _work_queue_filters(project, active_view)
     effective_status = status or queue_filters["statuses"]
@@ -563,6 +601,16 @@ async def list_view(
         next_cursor=result.next_cursor,
         all_tags=tags,
         work_queues=_work_queue_nav(project_key, active_view),
+        saved_filters=[
+            {
+                "id": item.id,
+                "name": item.name,
+                "href": saved_filter_href(project_key, item.id),
+                "active": active_saved_filter is not None and item.id == active_saved_filter.id,
+            }
+            for item in saved_filters
+        ],
+        active_saved_filter=active_saved_filter,
         active_view=active_view,
         # Preserve current filters for the template
         filter_kind=kind or [],
@@ -572,6 +620,41 @@ async def list_view(
         filter_relation_type=relation_type or [],
         filter_include_deleted=effective_include_deleted,
         active_page="list",
+    )
+
+
+@router.post("/{project_key}/saved-filters")
+async def create_saved_filter(
+    project_key: str,
+    request: Request,
+    name: str = Form(...),
+    view: str = Form("recent"),
+    kind: list[str] | None = KIND_FORM,
+    status: list[str] | None = STATUS_FORM,
+    tag: list[str] | None = TAG_FORM,
+    applies_to: list[str] | None = APPLIES_TO_FORM,
+    relation_type: list[str] | None = RELATION_TYPE_FORM,
+    include_deleted: bool = Form(False),
+):
+    registry = request.app.state.registry
+    registry.project(project_key)
+    saved_filter = save_dashboard_filter(
+        registry.server.data_dir,
+        project_key,
+        name,
+        filter_params_from_form(
+            view=view,
+            kind=kind,
+            status=status,
+            tag=tag,
+            applies_to=applies_to,
+            relation_type=relation_type,
+            include_deleted=include_deleted,
+        ),
+    )
+    return RedirectResponse(
+        url=saved_filter_href(project_key, saved_filter.id),
+        status_code=303,
     )
 
 

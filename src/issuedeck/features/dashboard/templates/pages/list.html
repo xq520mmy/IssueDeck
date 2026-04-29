@@ -73,6 +73,66 @@
     {% endfor %}
   </nav>
 
+  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <nav class="flex flex-wrap items-center gap-2" aria-label="{{ t('aria.saved_filters') }}">
+      <span class="text-xs font-semibold uppercase text-gray-400 dark:text-gray-600">
+        {{ t("saved_filters.title") }}
+      </span>
+      {% for saved in saved_filters %}
+        <a href="{{ saved.href }}"
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-semibold
+                  border transition-colors
+                  {% if saved.active %}
+                    border-primary-600 dark:border-primary-400
+                    bg-primary-50 dark:bg-primary-950
+                    text-primary-700 dark:text-primary-200
+                  {% else %}
+                    border-ledger-line dark:border-ledger-darkLine
+                    bg-white dark:bg-ledger-darkPanel
+                    text-gray-600 dark:text-gray-400
+                    hover:border-primary-200 dark:hover:border-primary-900
+                    hover:text-gray-900 dark:hover:text-gray-100
+                  {% endif %}">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 5v14l7-4 7 4V5a2 2 0 00-2-2H7a2 2 0 00-2 2z"/>
+          </svg>
+          <span>{{ saved.name }}</span>
+        </a>
+      {% endfor %}
+    </nav>
+
+    <form method="post"
+          action="/dashboard/{{ project_key }}/saved-filters"
+          class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+      <input type="hidden" name="view" value="{{ active_view }}">
+      {% for k in filter_kind %}<input type="hidden" name="kind" value="{{ k }}">{% endfor %}
+      {% for s in filter_status %}<input type="hidden" name="status" value="{{ s }}">{% endfor %}
+      {% for t in filter_tag %}<input type="hidden" name="tag" value="{{ t }}">{% endfor %}
+      {% for a in filter_applies_to %}<input type="hidden" name="applies_to" value="{{ a }}">{% endfor %}
+      {% for r in filter_relation_type %}<input type="hidden" name="relation_type" value="{{ r }}">{% endfor %}
+      {% if filter_include_deleted %}<input type="hidden" name="include_deleted" value="true">{% endif %}
+
+      <input type="text"
+             name="name"
+             required
+             maxlength="80"
+             placeholder="{{ t('saved_filters.name_placeholder') }}"
+             class="w-full sm:w-52 rounded-md border-ledger-line dark:border-ledger-darkLine
+                    bg-white dark:bg-ledger-darkPanel text-sm
+                    text-gray-900 dark:text-gray-100
+                    focus:border-primary-500 focus:ring-primary-500">
+      <button type="submit"
+              class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold
+                     bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900
+                     hover:bg-gray-800 dark:hover:bg-white transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 3H7a2 2 0 00-2 2v16l7-4 7 4V5a2 2 0 00-2-2z"/>
+        </svg>
+        {{ t("saved_filters.save_current") }}
+      </button>
+    </form>
+  </div>
+
   <div x-data="{ filtersOpen: false }" class="space-y-3">
     <button @click="filtersOpen = !filtersOpen"
             class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-semibold
@@ -101,10 +161,6 @@
           x-transition:leave-end="opacity-0 -translate-y-2"
           method="get"
           action="/dashboard/{{ project_key }}/list"
-          hx-get="/dashboard/{{ project_key }}/list"
-          hx-target="#items-list-content"
-          hx-push-url="true"
-          hx-swap="innerHTML"
           class="p-4 rounded-md border border-ledger-line dark:border-ledger-darkLine
                  bg-white dark:bg-ledger-darkPanel space-y-4">
       <input type="hidden" name="view" value="{{ active_view }}">
