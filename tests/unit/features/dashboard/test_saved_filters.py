@@ -1,6 +1,7 @@
 import json
 
 from issuedeck.features.dashboard.saved_filters import (
+    delete_dashboard_filter,
     filter_params_from_form,
     list_saved_dashboard_filters,
     save_dashboard_filter,
@@ -38,6 +39,22 @@ def test_saved_filter_ids_are_unique(tmp_path):
     assert [item.id for item in list_saved_dashboard_filters(tmp_path, "alpha")] == [
         "active-bugs-2",
         "active-bugs",
+    ]
+
+
+def test_saved_filter_delete_removes_only_matching_project(tmp_path):
+    alpha = save_dashboard_filter(tmp_path, "alpha", "Active bugs", {"view": "active"})
+    save_dashboard_filter(tmp_path, "alpha", "Ready work", {"view": "ready_to_ship"})
+    beta = save_dashboard_filter(tmp_path, "beta", "Active bugs", {"view": "active"})
+
+    assert delete_dashboard_filter(tmp_path, "alpha", alpha.id) is True
+    assert delete_dashboard_filter(tmp_path, "alpha", "missing") is False
+
+    assert [item.name for item in list_saved_dashboard_filters(tmp_path, "alpha")] == [
+        "Ready work",
+    ]
+    assert [item.id for item in list_saved_dashboard_filters(tmp_path, "beta")] == [
+        beta.id,
     ]
 
 

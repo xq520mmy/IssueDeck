@@ -86,6 +86,27 @@ def save_dashboard_filter(
     )
 
 
+def delete_dashboard_filter(data_dir: Path, project_key: str, filter_id: str) -> bool:
+    store_path = _store_path(data_dir)
+    store = _read_store(store_path)
+    projects = store.setdefault("projects", {})
+    raw_filters = projects.get(project_key)
+    if not isinstance(raw_filters, list):
+        return False
+
+    kept_filters = [
+        raw for raw in raw_filters
+        if not (isinstance(raw, dict) and raw.get("id") == filter_id)
+    ]
+    if len(kept_filters) == len(raw_filters):
+        return False
+
+    projects[project_key] = kept_filters[:MAX_FILTERS_PER_PROJECT]
+    store_path.parent.mkdir(parents=True, exist_ok=True)
+    _write_store(store_path, store)
+    return True
+
+
 def normalize_filter_params(params: dict[str, object]) -> dict[str, object]:
     normalized: dict[str, object] = {}
 

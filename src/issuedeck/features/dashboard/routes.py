@@ -33,6 +33,7 @@ from issuedeck.features.dashboard.i18n import (
     make_translator,
 )
 from issuedeck.features.dashboard.saved_filters import (
+    delete_dashboard_filter,
     filter_params_from_form,
     get_saved_dashboard_filter,
     list_saved_dashboard_filters,
@@ -660,6 +661,23 @@ async def create_saved_filter(
     )
     return RedirectResponse(
         url=saved_filter_href(project_key, saved_filter.id),
+        status_code=303,
+    )
+
+
+@router.post("/{project_key}/saved-filters/{filter_id}/delete")
+async def delete_saved_filter(
+    project_key: str,
+    filter_id: str,
+    request: Request,
+    next: str | None = Form(None),
+):
+    registry = request.app.state.registry
+    registry.project(project_key)
+    delete_dashboard_filter(registry.server.data_dir, project_key, filter_id)
+    target_url = _safe_dashboard_next(next) if next else f"/dashboard/{project_key}/list"
+    return RedirectResponse(
+        url=target_url,
         status_code=303,
     )
 

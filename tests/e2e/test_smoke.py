@@ -195,6 +195,20 @@ async def test_dashboard_can_save_and_select_project_filters(app_ctx):
     assert "Feature queue" in r.text
     assert "saved_filter=feature-queue" in r.text
     assert 'name="kind" value="feature"' in r.text
+    assert "/dashboard/test/saved-filters/feature-queue/delete" in r.text
+
+    r = await app_ctx.post(
+        "/dashboard/test/saved-filters/feature-queue/delete",
+        data={"next": "/dashboard/test/list?view=recent"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert r.headers["location"] == "/dashboard/test/list?view=recent"
+
+    r = await app_ctx.get("/dashboard/test/list")
+    assert r.status_code == 200
+    assert "Feature queue" not in r.text
+    assert "saved_filter=feature-queue" not in r.text
 
 
 async def test_dashboard_language_switch_sets_cookie(app_ctx):
