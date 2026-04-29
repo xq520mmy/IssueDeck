@@ -357,20 +357,46 @@ uv run issuedeck export \
 
 每个 item 导出为一个 `.md` 文件（YAML frontmatter + body），便于继续使用文本化快照和代码审查。
 
-### 数据库备份
+### 数据库备份与恢复
 
-SQLite 单文件，直接备份即可：
+推荐使用仓库自带的备份脚本。它会在运行中的容器里调用 SQLite online backup
+API，再把 gzip 压缩后的快照复制到 Docker host 的 `backups/` 目录：
 
 ```bash
-# 本地
-cp data/tracker.db data/tracker.db.bak
-
-# Docker
-docker compose exec issuedeck cp /app/data/tracker.db /app/data/tracker.db.bak
-docker compose cp issuedeck:/app/data/tracker.db.bak ./tracker.db.bak
+chmod +x scripts/backup.sh
+./scripts/backup.sh
 ```
 
-> 建议在备份前确认没有正在写入的事务。WAL 模式下直接复制 `.db` 文件是安全的。
+先对备份做恢复 smoke test：
+
+```bash
+python scripts/restore_smoke.py backups/tracker-YYYYMMDD-HHMMSS.db.gz \
+  --out /tmp/issuedeck-restore-smoke.db
+```
+
+Docker 环境也可以直接跑 smoke test：
+
+```bash
+docker compose run --rm \
+  -v "$PWD/backups:/backups:ro" \
+  -v "$PWD/tmp:/tmp/issuedeck" \
+  issuedeck \
+  python scripts/restore_smoke.py /backups/tracker-YYYYMMDD-HHMMSS.db.gz \
+    --out /tmp/issuedeck/restore-smoke.db
+```
+
+确认备份可用后再恢复：
+
+```bash
+docker compose stop issuedeck
+cp data/tracker.db data/tracker.db.before-restore
+gzip -dc backups/tracker-YYYYMMDD-HHMMSS.db.gz > data/tracker.db
+docker compose up -d
+curl -fsS http://127.0.0.1:8765/readyz
+```
+
+恢复只替换 SQLite 数据库。`server.toml`、`.env` 和 `projects/*.toml` 不需要替换，
+除非你正在恢复整台主机的快照。
 
 ---
 

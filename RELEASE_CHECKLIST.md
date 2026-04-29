@@ -35,6 +35,7 @@ git diff --exit-code -- src/issuedeck/features/dashboard/static/css/dashboard.cs
 - [ ] Dashboard login accepts `ISSUEDECK_API_TOKEN` and sets an HTTP-only session cookie.
 - [ ] List, kanban, search, create/edit, and item detail pages load without console errors.
 - [ ] MCP client can list projects, create an item, search it, update it, and fetch it.
+- [ ] `python scripts/restore_smoke.py <backup.db.gz>` validates a recent backup.
 - [ ] Windows-edited TOML files with UTF-8 BOM still load correctly.
 
 ## Release

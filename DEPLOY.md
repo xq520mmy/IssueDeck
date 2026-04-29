@@ -78,9 +78,11 @@ If the compose file still uses `build: .`, replace it with:
 image: issuedeck:latest
 ```
 
-## Backups
+## Backup and Restore
 
-Run the bundled backup helper from the deployment directory:
+Run the bundled backup helper from the deployment directory. It uses SQLite's
+online backup API inside the running container, then copies a gzipped snapshot
+to `backups/` on the Docker host:
 
 ```bash
 chmod +x scripts/backup.sh
@@ -95,6 +97,38 @@ For daily backups, add a cron entry:
 
 By default, backups are written under `backups/` and retained for 14 days.
 Override the retention window with `ISSUEDECK_BACKUP_RETENTION_DAYS`.
+
+Smoke-test a backup before restoring it:
+
+```bash
+python scripts/restore_smoke.py backups/tracker-YYYYMMDD-HHMMSS.db.gz \
+  --out /tmp/issuedeck-restore-smoke.db
+```
+
+Docker-friendly smoke test:
+
+```bash
+docker compose run --rm \
+  -v "$PWD/backups:/backups:ro" \
+  -v "$PWD/tmp:/tmp/issuedeck" \
+  issuedeck \
+  python scripts/restore_smoke.py /backups/tracker-YYYYMMDD-HHMMSS.db.gz \
+    --out /tmp/issuedeck/restore-smoke.db
+```
+
+Restore a verified backup:
+
+```bash
+docker compose stop issuedeck
+cp data/tracker.db data/tracker.db.before-restore
+gzip -dc backups/tracker-YYYYMMDD-HHMMSS.db.gz > data/tracker.db
+docker compose up -d
+curl -fsS http://127.0.0.1:8765/readyz
+```
+
+The restore replaces only the SQLite database. Keep `server.toml`, `.env`, and
+`projects/*.toml` in place unless you are intentionally restoring a full host
+snapshot.
 
 ## MCP Client
 
