@@ -9,6 +9,8 @@ versioning once public releases begin.
 
 ### Added
 
+- Added a gated PyPI Trusted Publishing workflow and PyPI setup guide for future `uvx issuedeck` installs.
+- Added PyPI project URLs and license-file metadata to the Python package.
 - Added Dependabot version updates for Python/uv, npm, and GitHub Actions.
 - Added `SUPPORT.md` plus refreshed issue, pull request, security, and roadmap guidance for contributors.
 

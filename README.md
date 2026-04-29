@@ -61,6 +61,18 @@ search, and project creation surfaces.
 
 ## Quickstart
 
+Try the latest GitHub version without cloning:
+
+```bash
+uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
+```
+
+After the PyPI package is published, the command becomes:
+
+```bash
+uvx issuedeck demo --open
+```
+
 Start a local dashboard with fake demo data:
 
 ```bash
@@ -289,6 +301,8 @@ Dashboard UI work should follow [DESIGN.md](DESIGN.md).
 See [ROADMAP.md](ROADMAP.md) for planned work and contribution areas.
 For support and issue-reporting guidance, see [SUPPORT.md](SUPPORT.md).
 For sensitive vulnerabilities, follow [SECURITY.md](SECURITY.md).
+For PyPI Trusted Publishing setup, see
+[docs/pypi-publishing.md](docs/pypi-publishing.md).
 
 ## License
 

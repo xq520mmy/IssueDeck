@@ -44,6 +44,18 @@ Dashboard，也给 coding agent 提供 MCP tools。
 
 ## 快速开始
 
+不用 clone 仓库，直接运行 GitHub 最新版本：
+
+```bash
+uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
+```
+
+PyPI 包发布后，可以直接运行：
+
+```bash
+uvx issuedeck demo --open
+```
+
 本地 demo：
 
 ```bash
@@ -151,3 +163,4 @@ ISSUEDECK_TOKEN=your-secret-token
 MIT. See [LICENSE](LICENSE).
 
 路线图见 [ROADMAP.md](ROADMAP.md)。
+PyPI Trusted Publishing 配置见 [docs/pypi-publishing.md](docs/pypi-publishing.md)。
