@@ -63,6 +63,28 @@ async def test_create_item_assigns_local_id(service):
     assert detail.events[0].event_type == "created"
 
 
+async def test_create_item_persists_external_links(service):
+    await service.create(
+        "test",
+        CreateItemRequest(
+            kind="feature",
+            title="Link back to GitHub",
+            external_links=[
+                {
+                    "link_type": "github_pr",
+                    "label": "PR #12",
+                    "url": "https://github.com/example/repo/pull/12",
+                }
+            ],
+        ),
+    )
+
+    detail = await service.get("test", "FEAT-0001")
+    assert detail.external_links[0].link_type == "github_pr"
+    assert detail.external_links[0].label == "PR #12"
+    assert detail.external_links[0].url == "https://github.com/example/repo/pull/12"
+
+
 async def test_create_item_rejects_unknown_kind(service):
     with pytest.raises(InvalidKind):
         await service.create("test", CreateItemRequest(kind="spike", title="x"))
@@ -88,6 +110,40 @@ async def test_update_item_append_body(service):
     assert full.body == "first\nsecond"
     assert full.events[0].event_type == "updated"
     assert full.events[0].metadata["fields"] == ["body"]
+
+
+async def test_update_item_replaces_external_links(service):
+    await service.create(
+        "test",
+        CreateItemRequest(
+            kind="feature",
+            title="t",
+            external_links=[
+                {
+                    "link_type": "github_issue",
+                    "label": "Issue #1",
+                    "url": "https://github.com/example/repo/issues/1",
+                }
+            ],
+        ),
+    )
+    await service.update(
+        "test",
+        "FEAT-0001",
+        UpdateItemRequest(
+            external_links=[
+                {
+                    "link_type": "github_commit",
+                    "label": "abc123",
+                    "url": "https://github.com/example/repo/commit/abc123",
+                }
+            ],
+        ),
+    )
+
+    full = await service.get("test", "FEAT-0001")
+    assert [link.link_type for link in full.external_links] == ["github_commit"]
+    assert full.events[0].metadata["fields"] == ["external_links"]
 
 
 async def test_add_event_appends_comment(service):

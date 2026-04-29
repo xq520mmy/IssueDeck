@@ -53,19 +53,32 @@ async def client():
 async def test_create_get_list_roundtrip(client):
     r = await client.post(
         "/api/v1/projects/test/items",
-        json={"kind": "feature", "title": "Hello"},
+        json={
+            "kind": "feature",
+            "title": "Hello",
+            "external_links": [
+                {
+                    "link_type": "github_issue",
+                    "label": "Issue #42",
+                    "url": "https://github.com/example/repo/issues/42",
+                }
+            ],
+        },
     )
     assert r.status_code == 201, r.text
     assert r.json()["local_id"] == "FEAT-0001"
+    assert r.json()["external_links"][0]["label"] == "Issue #42"
 
     r = await client.get("/api/v1/projects/test/items/FEAT-0001")
     assert r.status_code == 200
     assert r.json()["title"] == "Hello"
+    assert r.json()["external_links"][0]["link_type"] == "github_issue"
 
     r = await client.get("/api/v1/projects/test/items")
     assert r.status_code == 200
     assert r.json()["limit"] == 50
     assert len(r.json()["items"]) == 1
+    assert r.json()["items"][0]["external_links"][0]["url"].endswith("/issues/42")
 
 
 async def test_ship_item(client):

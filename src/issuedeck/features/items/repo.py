@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from sqlalchemy import Integer, func, select, update
+from sqlalchemy import Integer, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -17,6 +17,7 @@ from issuedeck.features.items.models import (
     Item,
     ItemApplyTo,
     ItemEvent,
+    ItemExternalLink,
     ItemRelationship,
     ItemTag,
     ShipCommit,
@@ -55,6 +56,7 @@ class ItemRepo:
     async def insert_item(
         self, *, project_key: str, local_id: str, kind: str, status: str,
         title: str, body: str, tags: list[str], applies_to: list[str],
+        external_links: list[dict[str, str | None]] | None = None,
         created_at: str | None = None, updated_at: str | None = None,
     ) -> Item:
         now = created_at or _iso_now()
@@ -69,6 +71,7 @@ class ItemRepo:
             self._s.add(ItemTag(item_pk=item.pk, tag=t))
         for b in applies_to:
             self._s.add(ItemApplyTo(item_pk=item.pk, branch_key=b))
+        self._add_external_links(item.pk, external_links or [], created_at=now)
         await self._s.flush()
         return item
 
@@ -86,6 +89,7 @@ class ItemRepo:
         self, item: Item, *, title: str | None = None, body: str | None = None,
         status: str | None = None, tags: list[str] | None = None,
         applies_to: list[str] | None = None,
+        external_links: list[dict[str, str | None]] | None = None,
     ) -> None:
         if title is not None:
             item.title = title
@@ -101,6 +105,11 @@ class ItemRepo:
             item.applies_to.clear()
             for b in applies_to:
                 item.applies_to.append(ItemApplyTo(item_pk=item.pk, branch_key=b))
+        if external_links is not None:
+            await self._s.execute(
+                delete(ItemExternalLink).where(ItemExternalLink.item_pk == item.pk)
+            )
+            self._add_external_links(item.pk, external_links)
         item.updated_at = _iso_now()
         await self._s.flush()
 
@@ -178,6 +187,23 @@ class ItemRepo:
         )
         return list((await self._s.execute(stmt)).scalars().all())
 
+    def _add_external_links(
+        self,
+        item_pk: int,
+        links: list[dict[str, str | None]],
+        *,
+        created_at: str | None = None,
+    ) -> None:
+        timestamp = created_at or _iso_now()
+        for link in links:
+            self._s.add(ItemExternalLink(
+                item_pk=item_pk,
+                link_type=str(link["link_type"]),
+                label=link.get("label") or None,
+                url=str(link["url"]),
+                created_at=timestamp,
+            ))
+
     async def list_items(
         self,
         project_key: str,
@@ -247,7 +273,11 @@ class ItemRepo:
 
         stmt = (
             stmt
-            .options(selectinload(Item.tags), selectinload(Item.applies_to))
+            .options(
+                selectinload(Item.tags),
+                selectinload(Item.applies_to),
+                selectinload(Item.external_links),
+            )
             .order_by(Item.updated_at.desc(), Item.pk.desc())
             .limit(limit)
         )

@@ -20,7 +20,7 @@ def test_upgrade_head_creates_all_tables(tmp_path):
     expected = {
         "items", "item_tags", "item_applies_to",
         "ship_records", "ship_commits", "item_relationships", "item_events",
-        "items_fts", "alembic_version",
+        "item_external_links", "items_fts", "alembic_version",
     }
     assert expected.issubset(names)
 

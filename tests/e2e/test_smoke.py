@@ -232,9 +232,20 @@ async def test_full_lifecycle_requires_token(app_ctx):
     h = {"Authorization": "Bearer test-tok"}
 
     r = await app_ctx.post("/api/v1/projects/test/items",
-                           headers=h, json={"kind": "feature", "title": "Hello"})
+                           headers=h, json={
+                               "kind": "feature",
+                               "title": "Hello",
+                               "external_links": [
+                                   {
+                                       "link_type": "github_pr",
+                                       "label": "PR #99",
+                                       "url": "https://github.com/example/repo/pull/99",
+                                   }
+                               ],
+                           })
     assert r.status_code == 201, r.text
     assert r.json()["local_id"] == "FEAT-0001"
+    assert r.json()["external_links"][0]["label"] == "PR #99"
 
     r = await app_ctx.post(
         "/api/v1/projects/test/items/FEAT-0001/ship",
@@ -246,6 +257,18 @@ async def test_full_lifecycle_requires_token(app_ctx):
     r = await app_ctx.get("/api/v1/projects/test/items", headers=h)
     assert r.status_code == 200
     assert len(r.json()["items"]) == 1
+    assert r.json()["items"][0]["external_links"][0]["url"].endswith("/pull/99")
+
+    await app_ctx.post(
+        "/dashboard/login",
+        data={"token": "test-tok", "next": "/dashboard/test/items/FEAT-0001"},
+        follow_redirects=False,
+    )
+    r = await app_ctx.get("/dashboard/test/items/FEAT-0001")
+    assert r.status_code == 200
+    assert "External links" in r.text
+    assert "PR #99" in r.text
+    assert "https://github.com/example/repo/pull/99" in r.text
 
     r = await app_ctx.get("/api/v1/projects", headers=h)
     assert r.status_code == 200

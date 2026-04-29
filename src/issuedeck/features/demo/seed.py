@@ -12,6 +12,7 @@ from issuedeck.features.items.models import (
     Item,
     ItemApplyTo,
     ItemEvent,
+    ItemExternalLink,
     ItemRelationship,
     ItemTag,
     ShipCommit,
@@ -73,6 +74,7 @@ async def seed_demo_project(
                 body=spec["body"],
                 tags=spec["tags"],
                 applies_to=["main"],
+                external_links=spec.get("external_links", []),
             ),
         )
         created[spec["slug"]] = summary.local_id
@@ -162,6 +164,7 @@ async def _reset_project(session: AsyncSession, project_key: str) -> None:
         | ItemRelationship.to_item_pk.in_(pks)
     ))
     await session.execute(delete(ItemEvent).where(ItemEvent.item_pk.in_(pks)))
+    await session.execute(delete(ItemExternalLink).where(ItemExternalLink.item_pk.in_(pks)))
     await session.execute(delete(ItemApplyTo).where(ItemApplyTo.item_pk.in_(pks)))
     await session.execute(delete(ItemTag).where(ItemTag.item_pk.in_(pks)))
     await session.execute(delete(Item).where(Item.pk.in_(pks)))
@@ -225,6 +228,13 @@ _DEMO_ITEMS = [
         "title": "Explore GitHub issue import",
         "body": "Research a one-way import path without committing to sync semantics.",
         "tags": ["integration", "research"],
+        "external_links": [
+            {
+                "link_type": "github_issue",
+                "label": "GitHub issue #42",
+                "url": "https://github.com/example/issuedeck-demo/issues/42",
+            }
+        ],
     },
     {
         "slug": "mobile-sidebar",

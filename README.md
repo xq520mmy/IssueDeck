@@ -35,6 +35,7 @@ tracker, a web dashboard for humans, and MCP tools for coding agents.
   and numeric ID prefix (e.g. `FEAT-0001`, `BUG-0003`).
 - Full-text search via SQLite FTS5.
 - Bidirectional relationships (`blocks`/`blocked_by`, `related_to`).
+- External links for GitHub issues, pull requests, commits, and other review context.
 - Item activity timeline with automatic lifecycle events and manual comments.
 - Built-in dashboard work queues for backlog, active, blocked, ready-to-ship,
   done, deleted, and recently touched items.

@@ -67,6 +67,13 @@ async def test_create_item_builds_body(fake_client):
     await tools.create_item(
         project_key="demo", kind="feature", title="Add search",
         body="", tags=["ui"], applies_to=["web"],
+        external_links=[
+            {
+                "link_type": "github_pr",
+                "label": "PR #5",
+                "url": "https://github.com/example/repo/pull/5",
+            }
+        ],
     )
     name, args, kwargs = fake_client.calls[0]
     assert name == "create_item"
@@ -77,6 +84,13 @@ async def test_create_item_builds_body(fake_client):
         "body": "",
         "tags": ["ui"],
         "applies_to": ["web"],
+        "external_links": [
+            {
+                "link_type": "github_pr",
+                "label": "PR #5",
+                "url": "https://github.com/example/repo/pull/5",
+            }
+        ],
     }
 
 
@@ -85,9 +99,23 @@ async def test_update_item_omits_unset(fake_client):
         project_key="demo", local_id="FEAT-1",
         title="Renamed", append_body=None, status=None, tags=None,
         applies_to=None, body=None,
+        external_links=[
+            {
+                "link_type": "github_issue",
+                "url": "https://github.com/example/repo/issues/7",
+            }
+        ],
     )
     _, _, kwargs = fake_client.calls[0]
-    assert kwargs["body"] == {"title": "Renamed"}
+    assert kwargs["body"] == {
+        "title": "Renamed",
+        "external_links": [
+            {
+                "link_type": "github_issue",
+                "url": "https://github.com/example/repo/issues/7",
+            }
+        ],
+    }
 
 
 async def test_ship_item_passes_commits(fake_client):

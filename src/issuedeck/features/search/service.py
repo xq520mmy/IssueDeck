@@ -53,6 +53,16 @@ class SearchService:
                 body_preview=_preview(i.body or ""),
                 tags=[t.tag for t in i.tags],
                 applies_to=[a.branch_key for a in i.applies_to],
+                external_links=[
+                    {
+                        "id": link.id,
+                        "link_type": link.link_type,
+                        "label": link.label,
+                        "url": link.url,
+                        "created_at": link.created_at,
+                    }
+                    for link in i.external_links
+                ],
                 created_at=i.created_at, updated_at=i.updated_at,
                 deleted_at=i.deleted_at,
             )

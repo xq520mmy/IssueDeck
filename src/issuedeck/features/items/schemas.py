@@ -13,12 +13,19 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, model_validator
 
 
+class ExternalLinkInput(BaseModel):
+    link_type: Literal["github_issue", "github_pr", "github_commit", "other"]
+    url: str = Field(min_length=1, max_length=2048)
+    label: str | None = Field(default=None, max_length=160)
+
+
 class CreateItemRequest(BaseModel):
     kind: str = Field(min_length=1, max_length=64)
     title: str = Field(min_length=1, max_length=500)
     body: str = ""
     applies_to: list[str] | None = None
     tags: list[str] = []
+    external_links: list[ExternalLinkInput] = []
 
 
 class UpdateItemRequest(BaseModel):
@@ -28,6 +35,7 @@ class UpdateItemRequest(BaseModel):
     status: str | None = None
     applies_to: list[str] | None = None
     tags: list[str] | None = None
+    external_links: list[ExternalLinkInput] | None = None
 
     @model_validator(mode="after")
     def _checks(self) -> UpdateItemRequest:
@@ -71,6 +79,14 @@ class ItemEventOut(BaseModel):
     created_at: str
 
 
+class ExternalLinkOut(BaseModel):
+    id: int
+    link_type: Literal["github_issue", "github_pr", "github_commit", "other"]
+    label: str | None = None
+    url: str
+    created_at: str
+
+
 class ShipRecordOut(BaseModel):
     branch_key: str
     version: str
@@ -93,6 +109,7 @@ class ItemSummary(BaseModel):
     body_preview: str
     tags: list[str]
     applies_to: list[str]
+    external_links: list[ExternalLinkOut] = []
     created_at: str
     updated_at: str
     deleted_at: str | None = None
@@ -107,6 +124,7 @@ class ItemDetail(BaseModel):
     body: str
     tags: list[str]
     applies_to: list[str]
+    external_links: list[ExternalLinkOut] = []
     created_at: str
     updated_at: str
     deleted_at: str | None = None

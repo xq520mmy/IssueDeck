@@ -200,6 +200,40 @@
     </div>
   </div>
 
+  {# External links section #}
+  {% if item.external_links %}
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800
+              bg-white dark:bg-gray-900 shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t("external_links.title") }}</h2>
+    </div>
+    <div class="px-5 py-4">
+      <div class="flex flex-wrap gap-2">
+        {% for link in item.external_links %}
+          <a href="{{ link.url }}"
+             target="_blank"
+             rel="noreferrer"
+             class="inline-flex max-w-full items-center gap-2 px-3 py-2 rounded-md text-sm font-medium
+                    border border-ledger-line dark:border-ledger-darkLine
+                    bg-white dark:bg-ledger-darkPanel
+                    text-gray-700 dark:text-gray-300
+                    hover:border-primary-200 dark:hover:border-primary-900
+                    hover:text-primary-700 dark:hover:text-primary-300 transition-colors">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H18a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h4.5"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 13L20 3m0 0h-6m6 0v6"/>
+            </svg>
+            <span class="truncate">{{ link.label or external_link_labels.get(link.link_type, link.link_type) }}</span>
+            <span class="flex-shrink-0 text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
+              {{ external_link_labels.get(link.link_type, link.link_type) }}
+            </span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   {# ── Body section ── #}
   <div class="rounded-lg border border-gray-200 dark:border-gray-800
               bg-white dark:bg-gray-900 shadow-sm">

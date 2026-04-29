@@ -27,6 +27,7 @@ async def create_item(
     body: str = "",
     tags: list[str] | None = None,
     applies_to: list[str] | None = None,
+    external_links: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Create a new tracker item. Returns the full item with its local_id."""
     payload = _drop_none({
@@ -35,6 +36,7 @@ async def create_item(
         "body": body,
         "tags": tags,
         "applies_to": applies_to,
+        "external_links": external_links,
     })
     return await get_client().create_item(project_key, payload)
 
@@ -48,6 +50,7 @@ async def update_item(
     status: str | None = None,
     tags: list[str] | None = None,
     applies_to: list[str] | None = None,
+    external_links: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Partial update of an item. Pass body OR append_body, not both."""
     payload = _drop_none({
@@ -57,6 +60,7 @@ async def update_item(
         "status": status,
         "tags": tags,
         "applies_to": applies_to,
+        "external_links": external_links,
     })
     return await get_client().update_item(project_key, local_id, payload)
 

@@ -40,7 +40,11 @@ class SearchRepo:
         items = (await self._s.execute(
             select(Item)
             .where(Item.pk.in_(pks))
-            .options(selectinload(Item.tags), selectinload(Item.applies_to))
+            .options(
+                selectinload(Item.tags),
+                selectinload(Item.applies_to),
+                selectinload(Item.external_links),
+            )
         )).scalars().all()
         order = {pk: i for i, pk in enumerate(pks)}
         return sorted(items, key=lambda x: order[x.pk])

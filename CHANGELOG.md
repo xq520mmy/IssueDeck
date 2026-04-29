@@ -14,6 +14,7 @@ versioning once public releases begin.
 - Scoped API tokens for read-only, agent, and admin clients.
 - Project-scoped saved dashboard filters stored in the local runtime data directory.
 - Markdown frontmatter import schema docs plus field alias mapping for legacy trackers.
+- Item external links for GitHub issues, pull requests, and commits in REST, MCP, and dashboard detail views.
 
 ## [0.1.0] - 2026-04-29
 

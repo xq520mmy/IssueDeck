@@ -122,6 +122,12 @@ def _ctx(request: Request, project_key: str | None = None, **extra):
             "blocked_by": t("relationship.blocked_by"),
             "related_to": t("relationship.related_to"),
         },
+        "external_link_labels": {
+            "github_issue": t("external_links.github_issue"),
+            "github_pr": t("external_links.github_pr"),
+            "github_commit": t("external_links.github_commit"),
+            "other": t("external_links.other"),
+        },
         **extra,
     }
 

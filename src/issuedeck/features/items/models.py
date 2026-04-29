@@ -54,6 +54,10 @@ class Item(Base):
     events: Mapped[list[ItemEvent]] = relationship(
         back_populates="item", cascade="all, delete-orphan",
     )
+    external_links: Mapped[list[ItemExternalLink]] = relationship(
+        back_populates="item", cascade="all, delete-orphan",
+        order_by="ItemExternalLink.id",
+    )
 
     __table_args__ = (
         UniqueConstraint("project_key", "local_id", name="uq_items_project_local"),
@@ -89,6 +93,26 @@ class ItemApplyTo(Base):
     )
     branch_key: Mapped[str] = mapped_column(String(64), primary_key=True)
     item: Mapped[Item] = relationship(back_populates="applies_to")
+
+
+class ItemExternalLink(Base):
+    __tablename__ = "item_external_links"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    item_pk: Mapped[int] = mapped_column(
+        Integer, ForeignKey("items.pk", ondelete="CASCADE"), nullable=False,
+    )
+    link_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    label: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    url: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[str] = mapped_column(String(40), nullable=False)
+
+    item: Mapped[Item] = relationship(back_populates="external_links")
+
+    __table_args__ = (
+        UniqueConstraint("item_pk", "url", name="uq_item_external_links_item_url"),
+        Index("ix_item_external_links_item_type", "item_pk", "link_type"),
+    )
 
 
 class ShipRecord(Base):

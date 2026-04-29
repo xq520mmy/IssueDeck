@@ -22,6 +22,7 @@ from issuedeck.features.items.models import (
     Item,
     ItemApplyTo,
     ItemEvent,
+    ItemExternalLink,
     ItemRelationship,
     ShipRecord,
 )
@@ -29,6 +30,8 @@ from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
     CreateItemEventRequest,
     CreateItemRequest,
+    ExternalLinkInput,
+    ExternalLinkOut,
     ItemDetail,
     ItemEventOut,
     ItemListResponse,
@@ -64,7 +67,24 @@ def _changed_fields(req: UpdateItemRequest) -> list[str]:
         fields.append("tags")
     if req.applies_to is not None:
         fields.append("applies_to")
+    if req.external_links is not None:
+        fields.append("external_links")
     return fields
+
+
+def _link_payloads(links: list[ExternalLinkInput]) -> list[dict[str, str | None]]:
+    payloads: list[dict[str, str | None]] = []
+    seen_urls: set[str] = set()
+    for link in links:
+        if link.url in seen_urls:
+            continue
+        seen_urls.add(link.url)
+        payloads.append({
+            "link_type": link.link_type,
+            "label": link.label,
+            "url": link.url,
+        })
+    return payloads
 
 
 class ItemService:
@@ -97,6 +117,7 @@ class ItemService:
             project_key=project_key, local_id=local_id,
             kind=req.kind, status=status, title=req.title, body=req.body,
             tags=req.tags, applies_to=applies,
+            external_links=_link_payloads(req.external_links),
         )
         await self._record_event(
             item,
@@ -130,6 +151,11 @@ class ItemService:
             item,
             title=req.title, body=body, status=req.status,
             tags=req.tags, applies_to=req.applies_to,
+            external_links=(
+                _link_payloads(req.external_links)
+                if req.external_links is not None
+                else None
+            ),
         )
         if changed_fields:
             await self._record_event(
@@ -347,6 +373,7 @@ class ItemService:
             .options(
                 selectinload(Item.tags),
                 selectinload(Item.applies_to),
+                selectinload(Item.external_links),
                 selectinload(Item.ship_records).selectinload(ShipRecord.commits),
             )
         )
@@ -361,6 +388,7 @@ class ItemService:
             body_preview=_preview(item.body or ""),
             tags=[t.tag for t in item.tags],
             applies_to=[a.branch_key for a in item.applies_to],
+            external_links=[self._to_external_link(link) for link in item.external_links],
             created_at=item.created_at, updated_at=item.updated_at,
             deleted_at=item.deleted_at,
         )
@@ -395,10 +423,20 @@ class ItemService:
             body=item.body or "",
             tags=[t.tag for t in item.tags],
             applies_to=[a.branch_key for a in item.applies_to],
+            external_links=[self._to_external_link(link) for link in item.external_links],
             created_at=item.created_at, updated_at=item.updated_at,
             deleted_at=item.deleted_at,
             ship_records=ship_out, relationships=rel_out,
             events=[self._to_event(e) for e in events],
+        )
+
+    def _to_external_link(self, link: ItemExternalLink) -> ExternalLinkOut:
+        return ExternalLinkOut(
+            id=link.id,
+            link_type=link.link_type,
+            label=link.label,
+            url=link.url,
+            created_at=link.created_at,
         )
 
     def _to_event(self, event: ItemEvent) -> ItemEventOut:

@@ -31,6 +31,7 @@ IssueDeck 是一个轻量、自托管的开发事项追踪器，面向小团队�
 - 多项目：每个项目独立配置事项类型、状态、分支和 ID 前缀。
 - SQLite FTS5 全文搜索。
 - 双向关系：`blocks` / `blocked_by` / `related_to`。
+- 外部链接：可关联 GitHub issue、PR、commit 和其他代码审查上下文。
 - Activity Timeline：自动记录生命周期事件，也支持手动评论。
 - Dashboard 工作队列：最近更新、待办、进行中、被阻塞、待发布、已完成、已删除。
 - 已保存筛选：每个项目可以保存常用视图，比如活跃 Bug、阻塞事项、待发布队列或标签队列。
