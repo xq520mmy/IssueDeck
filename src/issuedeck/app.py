@@ -10,7 +10,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
-from issuedeck.core.auth import BearerTokenMiddleware
+from issuedeck.core.auth import BearerTokenCredential, BearerTokenMiddleware
 from issuedeck.core.config import (
     ConfigRegistry,
     load_project_config,
@@ -100,7 +100,14 @@ def create_app(server_toml: Path | str) -> FastAPI:
     install_error_handlers(app)
     app.add_middleware(
         BearerTokenMiddleware,
-        token=server_cfg.api_token.get_secret_value(),
+        tokens=[
+            BearerTokenCredential(
+                name=token.name,
+                token=token.token.get_secret_value(),
+                scopes=frozenset(token.normalized_scopes()),
+            )
+            for token in server_cfg.auth_tokens()
+        ],
         exempt_paths=(
             "/",
             "/healthz",

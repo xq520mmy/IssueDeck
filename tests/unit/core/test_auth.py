@@ -3,19 +3,26 @@ from fastapi.testclient import TestClient
 
 from issuedeck.core.auth import (
     DASHBOARD_SESSION_COOKIE,
+    BearerTokenCredential,
     BearerTokenMiddleware,
     make_dashboard_session_cookie,
 )
 
 
-def _app(token: str) -> FastAPI:
+def _app(
+    token: str | None = None,
+    tokens: list[BearerTokenCredential] | None = None,
+) -> FastAPI:
     app = FastAPI()
-    app.add_middleware(
-        BearerTokenMiddleware,
-        token=token,
-        exempt_paths=("/healthz", "/dashboard/login"),
-        dashboard_paths=("/dashboard",),
-    )
+    kwargs = {
+        "exempt_paths": ("/healthz", "/dashboard/login"),
+        "dashboard_paths": ("/dashboard",),
+    }
+    if tokens is not None:
+        kwargs["tokens"] = tokens
+    else:
+        kwargs["token"] = token
+    app.add_middleware(BearerTokenMiddleware, **kwargs)
 
     @app.get("/healthz")
     def health():
@@ -24,6 +31,10 @@ def _app(token: str) -> FastAPI:
     @app.get("/api/v1/ping")
     def ping():
         return {"pong": True}
+
+    @app.post("/api/v1/ping")
+    def write_ping():
+        return {"written": True}
 
     @app.get("/dashboard/login")
     def login():
@@ -38,6 +49,26 @@ def _app(token: str) -> FastAPI:
         return {"dashboard": True}
 
     return app
+
+
+def _scoped_app() -> FastAPI:
+    return _app(tokens=[
+        BearerTokenCredential(
+            name="read",
+            token="read-token",
+            scopes=frozenset({"read"}),
+        ),
+        BearerTokenCredential(
+            name="agent",
+            token="agent-token",
+            scopes=frozenset({"agent"}),
+        ),
+        BearerTokenCredential(
+            name="admin",
+            token="admin-token",
+            scopes=frozenset({"admin"}),
+        ),
+    ])
 
 
 def test_healthz_is_exempt():
@@ -94,3 +125,40 @@ def test_dashboard_accepts_bearer_token():
     r = c.get("/dashboard/ping", headers={"Authorization": "Bearer secret"})
     assert r.status_code == 200
     assert r.json() == {"dashboard": True}
+
+
+def test_read_token_allows_get_and_denies_write():
+    c = TestClient(_scoped_app())
+    h = {"Authorization": "Bearer read-token"}
+    assert c.get("/api/v1/ping", headers=h).status_code == 200
+
+    r = c.post("/api/v1/ping", headers=h)
+    assert r.status_code == 403
+    assert r.json()["error"]["code"] == "forbidden"
+
+
+def test_agent_token_allows_api_write_but_not_dashboard():
+    c = TestClient(_scoped_app())
+    h = {"Authorization": "Bearer agent-token"}
+    assert c.get("/api/v1/ping", headers=h).status_code == 200
+    assert c.post("/api/v1/ping", headers=h).status_code == 200
+
+    r = c.get("/dashboard/ping", headers=h)
+    assert r.status_code == 403
+
+
+def test_admin_token_allows_api_and_dashboard():
+    c = TestClient(_scoped_app())
+    h = {"Authorization": "Bearer admin-token"}
+    assert c.post("/api/v1/ping", headers=h).status_code == 200
+    assert c.get("/dashboard/ping", headers=h).status_code == 200
+
+
+def test_dashboard_cookie_accepts_any_admin_token():
+    c = TestClient(_scoped_app())
+    c.cookies.set(
+        DASHBOARD_SESSION_COOKIE,
+        make_dashboard_session_cookie("admin-token"),
+    )
+    r = c.get("/dashboard/ping")
+    assert r.status_code == 200

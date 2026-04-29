@@ -22,6 +22,9 @@ async def app_ctx(tmp_path):
         f'host="127.0.0.1"\nport=8765\napi_token="test-tok"\n'
         f'data_dir="{data_dir.as_posix()}"\n'
         f'projects_dir="{projects_dir.as_posix()}"\n'
+        '[[tokens]]\nname="readonly"\ntoken="read-tok"\nscopes=["read"]\n'
+        '[[tokens]]\nname="agent"\ntoken="agent-tok"\nscopes=["agent"]\n'
+        '[[tokens]]\nname="admin"\ntoken="admin-tok"\nscopes=["admin"]\n'
     )
 
     from alembic import command
@@ -88,6 +91,22 @@ async def test_dashboard_requires_login_cookie(app_ctx):
     r = await app_ctx.get("/dashboard/test")
     assert r.status_code == 200
     assert "Test" in r.text
+
+
+async def test_dashboard_login_requires_admin_token(app_ctx):
+    r = await app_ctx.post(
+        "/dashboard/login",
+        data={"token": "agent-tok", "next": "/dashboard/test"},
+    )
+    assert r.status_code == 401
+
+    r = await app_ctx.post(
+        "/dashboard/login",
+        data={"token": "admin-tok", "next": "/dashboard/test"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    assert "issuedeck_dashboard_session" in r.headers["set-cookie"]
 
 
 async def test_dashboard_list_has_work_queues(app_ctx):
@@ -204,3 +223,29 @@ async def test_full_lifecycle_requires_token(app_ctx):
     r = await app_ctx.get("/api/v1/projects", headers=h)
     assert r.status_code == 200
     assert r.json()["projects"][0]["item_count"] == 1
+
+
+async def test_scoped_tokens_allow_and_deny_requests(app_ctx):
+    read_headers = {"Authorization": "Bearer read-tok"}
+    agent_headers = {"Authorization": "Bearer agent-tok"}
+
+    r = await app_ctx.get("/api/v1/projects", headers=read_headers)
+    assert r.status_code == 200
+
+    r = await app_ctx.post(
+        "/api/v1/projects/test/items",
+        headers=read_headers,
+        json={"kind": "feature", "title": "Read token cannot write"},
+    )
+    assert r.status_code == 403
+    assert r.json()["error"]["code"] == "forbidden"
+
+    r = await app_ctx.post(
+        "/api/v1/projects/test/items",
+        headers=agent_headers,
+        json={"kind": "feature", "title": "Agent token can write"},
+    )
+    assert r.status_code == 201, r.text
+
+    r = await app_ctx.get("/dashboard/test", headers=agent_headers)
+    assert r.status_code == 403

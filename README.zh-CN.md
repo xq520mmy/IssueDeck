@@ -71,6 +71,29 @@ uv run issuedeck seed-demo --config server.toml --project-key example
 
 ## 配置项目
 
+`api_token` 会继续作为兼容旧部署的 admin token。需要给多个客户端分配权限时，
+可以在 `server.toml` 里增加 scoped tokens：
+
+```toml
+[[tokens]]
+name = "readonly"
+token = "replace-with-readonly-token"
+scopes = ["read"]
+
+[[tokens]]
+name = "agent"
+token = "replace-with-agent-token"
+scopes = ["agent"]
+
+[[tokens]]
+name = "admin-dashboard"
+token = "replace-with-admin-token"
+scopes = ["admin"]
+```
+
+`read` token 只能调用只读 API；`agent` token 可以读写 REST API，适合 MCP /
+coding agent；`admin` token 拥有完整 API 权限，也可以登录 Dashboard。
+
 项目配置位于 `projects/*.toml`。Dashboard 也提供了轻量的新建项目入口，
 会生成默认的 Feature / Bug / Improvement 类型和 Proposed / In Progress /
 Done / Won't Fix 状态。高级配置仍建议直接编辑 TOML。

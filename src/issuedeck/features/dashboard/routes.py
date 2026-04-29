@@ -255,9 +255,17 @@ async def dashboard_login_submit(
     token: str = Form(...),
     next: str = NEXT_FORM,
 ):
-    server_token = request.app.state.registry.server.api_token.get_secret_value()
+    server_cfg = request.app.state.registry.server
     next_url = _safe_dashboard_next(next)
-    if not hmac.compare_digest(token, server_token):
+    matched_token = None
+    for credential in server_cfg.auth_tokens():
+        if "admin" not in credential.normalized_scopes():
+            continue
+        value = credential.token.get_secret_value()
+        if hmac.compare_digest(token, value):
+            matched_token = value
+            break
+    if matched_token is None:
         return render(
             "pages/login.html", request,
             **_ctx(request),
@@ -269,7 +277,7 @@ async def dashboard_login_submit(
     response = RedirectResponse(url=next_url, status_code=303)
     response.set_cookie(
         DASHBOARD_SESSION_COOKIE,
-        make_dashboard_session_cookie(server_token),
+        make_dashboard_session_cookie(matched_token),
         max_age=DASHBOARD_SESSION_MAX_AGE_SECONDS,
         httponly=True,
         samesite="lax",

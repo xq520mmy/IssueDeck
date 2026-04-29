@@ -6,6 +6,7 @@ import hashlib
 import hmac
 import time
 from collections.abc import Iterable
+from dataclasses import dataclass
 from urllib.parse import quote
 
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -14,6 +15,23 @@ from starlette.responses import JSONResponse, RedirectResponse
 
 DASHBOARD_SESSION_COOKIE = "issuedeck_dashboard_session"
 DASHBOARD_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+
+
+@dataclass(frozen=True)
+class BearerTokenCredential:
+    name: str
+    token: str
+    scopes: frozenset[str]
+
+    def allows(self, required_scope: str) -> bool:
+        if "admin" in self.scopes:
+            return True
+        if required_scope == "read":
+            return bool(self.scopes & {"read", "agent"})
+        if required_scope == "agent":
+            return "agent" in self.scopes
+        return False
 
 
 def make_dashboard_session_cookie(token: str, *, issued_at: int | None = None) -> str:
@@ -59,7 +77,8 @@ class BearerTokenMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app,
-        token: str,
+        token: str | None = None,
+        tokens: Iterable[BearerTokenCredential] | None = None,
         exempt_paths: Iterable[str] = (),
         dashboard_paths: Iterable[str] = (),
         dashboard_login_path: str = "/dashboard/login",
@@ -67,7 +86,21 @@ class BearerTokenMiddleware(BaseHTTPMiddleware):
         dashboard_session_max_age_seconds: int = DASHBOARD_SESSION_MAX_AGE_SECONDS,
     ):
         super().__init__(app)
-        self._token = token
+        if tokens is None:
+            if token is None:
+                raise ValueError("BearerTokenMiddleware requires token or tokens")
+            tokens = (
+                BearerTokenCredential(
+                    name="api_token",
+                    token=token,
+                    scopes=frozenset({"admin"}),
+                ),
+            )
+        self._tokens = tuple(tokens)
+        self._dashboard_session_tokens = tuple(
+            credential.token for credential in self._tokens
+            if credential.allows("admin")
+        )
         self._exempt = tuple(exempt_paths)
         self._dashboard_paths = tuple(dashboard_paths)
         self._dashboard_login_path = dashboard_login_path
@@ -79,17 +112,18 @@ class BearerTokenMiddleware(BaseHTTPMiddleware):
         if any(path == p or path.startswith(p + "/") for p in self._exempt):
             return await call_next(request)
 
-        bearer_error = self._bearer_token_error(request)
-        if bearer_error is None:
-            return await call_next(request)
+        credential, bearer_error = self._authenticate_bearer(request)
+        if credential is not None:
+            required_scope = self._required_scope(request)
+            if credential.allows(required_scope):
+                return await call_next(request)
+            return self._forbidden(
+                f"token scope does not allow {required_scope} access"
+            )
 
         if self._is_dashboard_path(path):
             cookie_value = request.cookies.get(self._dashboard_cookie_name)
-            if is_valid_dashboard_session_cookie(
-                cookie_value,
-                self._token,
-                max_age_seconds=self._dashboard_session_max_age_seconds,
-            ):
+            if self._is_valid_dashboard_session(cookie_value):
                 return await call_next(request)
 
             if request.method in {"GET", "HEAD"}:
@@ -101,14 +135,36 @@ class BearerTokenMiddleware(BaseHTTPMiddleware):
 
         return self._unauth(bearer_error)
 
-    def _bearer_token_error(self, request: Request) -> str | None:
+    def _authenticate_bearer(
+        self, request: Request,
+    ) -> tuple[BearerTokenCredential | None, str]:
         header = request.headers.get("authorization", "")
         if not header.lower().startswith("bearer "):
-            return "missing bearer token"
+            return None, "missing bearer token"
         presented = header.split(" ", 1)[1]
-        if not hmac.compare_digest(presented, self._token):
-            return "invalid bearer token"
-        return None
+        for credential in self._tokens:
+            if hmac.compare_digest(presented, credential.token):
+                return credential, ""
+        return None, "invalid bearer token"
+
+    def _required_scope(self, request: Request) -> str:
+        if self._is_dashboard_path(request.url.path):
+            return "admin"
+        if request.method in SAFE_METHODS:
+            return "read"
+        if request.url.path.startswith("/api/"):
+            return "agent"
+        return "admin"
+
+    def _is_valid_dashboard_session(self, cookie_value: str | None) -> bool:
+        return any(
+            is_valid_dashboard_session_cookie(
+                cookie_value,
+                token,
+                max_age_seconds=self._dashboard_session_max_age_seconds,
+            )
+            for token in self._dashboard_session_tokens
+        )
 
     def _is_dashboard_path(self, path: str) -> bool:
         return any(path == p or path.startswith(p + "/") for p in self._dashboard_paths)
@@ -124,4 +180,11 @@ class BearerTokenMiddleware(BaseHTTPMiddleware):
         return JSONResponse(
             status_code=401,
             content={"error": {"code": "unauthorized", "message": msg, "details": {}}},
+        )
+
+    @staticmethod
+    def _forbidden(msg: str) -> JSONResponse:
+        return JSONResponse(
+            status_code=403,
+            content={"error": {"code": "forbidden", "message": msg, "details": {}}},
         )

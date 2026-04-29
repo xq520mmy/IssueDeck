@@ -107,6 +107,30 @@ PowerShell:
 $env:ISSUEDECK_API_TOKEN = "your-secret-token"
 ```
 
+`api_token` remains the backwards-compatible admin token. For multiple clients,
+add scoped tokens:
+
+```toml
+[[tokens]]
+name = "readonly"
+token = "replace-with-readonly-token"
+scopes = ["read"]
+
+[[tokens]]
+name = "agent"
+token = "replace-with-agent-token"
+scopes = ["agent"]
+
+[[tokens]]
+name = "admin-dashboard"
+token = "replace-with-admin-token"
+scopes = ["admin"]
+```
+
+`read` tokens can call read-only API endpoints. `agent` tokens can read and
+write REST API resources for MCP/coding-agent workflows. `admin` tokens have
+full API access and can sign in to the dashboard.
+
 Project files live in `projects/*.toml`. Each file defines one project and
 must use the same file stem, `key`, and dashboard URL segment. The repository
 includes `projects/example.toml` so the quickstart works immediately:

@@ -21,6 +21,10 @@ reads `ISSUEDECK_API_TOKEN`; the MCP process reads `ISSUEDECK_TOKEN`. In most
 local setups they should have the same value, but they are separate environment
 variables because the server and the client are different processes.
 
+For production, prefer an IssueDeck token with `scopes = ["agent"]` for MCP
+clients. It can read and write REST API resources but cannot sign in to the
+dashboard.
+
 ## Base Stdio Config
 
 Most MCP clients accept a JSON object under `mcpServers`. Use an absolute path

@@ -5,6 +5,25 @@ data_dir = "./data"
 projects_dir = "./projects"
 log_level = "info"
 
+# Optional extra tokens. The legacy api_token above is always treated as admin.
+# Use read for read-only API clients, agent for MCP/coding agents, and admin
+# for dashboard login or full API access.
+#
+# [[tokens]]
+# name = "readonly"
+# token = "replace-with-readonly-token"
+# scopes = ["read"]
+#
+# [[tokens]]
+# name = "agent"
+# token = "replace-with-agent-token"
+# scopes = ["agent"]
+#
+# [[tokens]]
+# name = "admin-dashboard"
+# token = "replace-with-admin-token"
+# scopes = ["admin"]
+
 [sqlite]
 wal_mode = true
 busy_timeout_ms = 5000

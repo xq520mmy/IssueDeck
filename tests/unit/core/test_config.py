@@ -40,6 +40,52 @@ def test_server_env_override(monkeypatch):
     assert cfg.port == 9000
 
 
+def test_server_config_supports_scoped_tokens(tmp_path):
+    cfg_path = tmp_path / "server.toml"
+    cfg_path.write_text(
+        "\n".join([
+            'api_token = "legacy-admin"',
+            "",
+            "[[tokens]]",
+            'name = "readonly"',
+            'token = "read-token"',
+            'scopes = ["read-only"]',
+            "",
+            "[[tokens]]",
+            'name = "agent"',
+            'token = "agent-token"',
+            'scopes = ["agent"]',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    cfg = load_server_config(cfg_path)
+    tokens = {token.name: token for token in cfg.auth_tokens()}
+    assert tokens["api_token"].normalized_scopes() == {"admin"}
+    assert tokens["readonly"].normalized_scopes() == {"read"}
+    assert tokens["agent"].normalized_scopes() == {"agent"}
+
+
+def test_server_config_rejects_duplicate_token_values(tmp_path):
+    cfg_path = tmp_path / "server.toml"
+    cfg_path.write_text(
+        "\n".join([
+            'api_token = "same-token"',
+            "",
+            "[[tokens]]",
+            'name = "agent"',
+            'token = "same-token"',
+            'scopes = ["agent"]',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValidationError, match="duplicate token value"):
+        load_server_config(cfg_path)
+
+
 def test_load_project_config_ok():
     pc = load_project_config(FIX / "project_ok.toml")
     assert pc.key == "sample"

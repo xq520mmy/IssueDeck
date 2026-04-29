@@ -20,6 +20,9 @@ uv run issuedeck demo
 MCP 进程读取 `ISSUEDECK_TOKEN`。本地场景里它们通常是同一个值，但两个变量名
 刻意分开，因为服务端和客户端是两个不同进程。
 
+生产环境建议给 MCP 客户端单独配置 `scopes = ["agent"]` 的 IssueDeck token。
+它可以读写 REST API，但不能登录 Dashboard。
+
 ## 通用 stdio 配置
 
 多数 MCP 客户端都接受 `mcpServers` JSON 配置。建议使用 IssueDeck 仓库的绝对

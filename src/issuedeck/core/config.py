@@ -29,10 +29,29 @@ class SqliteConfig(BaseModel):
     busy_timeout_ms: int = 5000
 
 
+TokenScope = Literal["read", "read-only", "agent", "admin"]
+
+
+class TokenConfig(BaseModel):
+    name: str
+    token: SecretStr
+    scopes: list[TokenScope]
+
+    @model_validator(mode="after")
+    def _validate_scopes(self) -> TokenConfig:
+        if not self.scopes:
+            raise ValueError("token scopes must not be empty")
+        return self
+
+    def normalized_scopes(self) -> set[str]:
+        return {"read" if scope == "read-only" else scope for scope in self.scopes}
+
+
 class ServerConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8765
     api_token: SecretStr
+    tokens: list[TokenConfig] = Field(default_factory=list)
     data_dir: Path = Path("./data")
     projects_dir: Path = Path("./projects")
     log_level: Literal["debug", "info", "warning", "error"] = "info"
@@ -54,6 +73,28 @@ class ServerConfig(BaseModel):
         if pd := os.environ.get("ISSUEDECK_PROJECTS_DIR"):
             data["projects_dir"] = pd
         return data
+
+    @model_validator(mode="after")
+    def _validate_tokens(self) -> ServerConfig:
+        seen_names = {"api_token"}
+        seen_values = {self.api_token.get_secret_value()}
+        for token in self.tokens:
+            if token.name in seen_names:
+                raise ValueError(f"duplicate token name '{token.name}'")
+            seen_names.add(token.name)
+            value = token.token.get_secret_value()
+            if value in seen_values:
+                raise ValueError(f"duplicate token value for '{token.name}'")
+            seen_values.add(value)
+        return self
+
+    def auth_tokens(self) -> list[TokenConfig]:
+        legacy_admin = TokenConfig(
+            name="api_token",
+            token=self.api_token,
+            scopes=["admin"],
+        )
+        return [legacy_admin, *self.tokens]
 
 
 class KindConfig(BaseModel):
