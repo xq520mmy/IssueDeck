@@ -7,6 +7,6 @@
     "build:css": "node scripts/build-css.mjs"
   },
   "devDependencies": {
-    "tailwindcss": "3.4.17"
+    "tailwindcss": "4.2.4"
   }
 }
