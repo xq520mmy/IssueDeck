@@ -97,6 +97,10 @@ curl http://127.0.0.1:8765/healthz
 curl http://127.0.0.1:8765/readyz
 ```
 
+If the first run fails because of a missing `uv`, an occupied port, a token
+problem, SQLite migrations, or Docker Compose startup, see the
+[first-run troubleshooting guide](docs/troubleshooting.md).
+
 Dashboard CSS is committed in the repository, so Node is not required to run
 IssueDeck. If you change dashboard templates, helper class maps, or
 `tailwind.config.cjs`, rebuild the CSS with `npm ci && npm run build:css`.

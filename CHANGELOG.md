@@ -11,6 +11,7 @@ versioning once public releases begin.
 
 - Added dashboard onboarding empty states for fresh installs and empty projects.
 - Added delete controls for project-scoped saved dashboard filters.
+- Added first-run troubleshooting docs for setup, token, SQLite, and Docker issues.
 - Added a gated PyPI Trusted Publishing workflow and PyPI setup guide for future `uvx issuedeck` installs.
 - Added PyPI project URLs and license-file metadata to the Python package.
 - Added Dependabot version updates for Python/uv, npm, and GitHub Actions.

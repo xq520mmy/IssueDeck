@@ -72,6 +72,9 @@ uv run issuedeck demo
 uv run issuedeck demo --open
 ```
 
+如果首次运行卡在 `uv`、端口占用、token、SQLite 迁移或 Docker Compose 启动
+问题上，见[首次运行故障排查](docs/troubleshooting.zh-CN.md)。
+
 ## Docker
 
 默认 Compose 文件会拉取 GitHub Container Registry 上的公开镜像：

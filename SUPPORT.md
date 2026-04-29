@@ -23,6 +23,9 @@ Please include:
 Do not paste real tokens, private project names, production tracker data, or
 private database dumps. Use fake project/item data when sharing examples.
 
+For common first-run problems, start with
+[First-run Troubleshooting](docs/troubleshooting.md).
+
 ## Self-checks
 
 For local development:
