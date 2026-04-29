@@ -42,14 +42,18 @@ IssueDeck 是一个轻量、自托管的开发事项追踪器，面向小团队�
 ## 快速开始
 
 ```bash
-uv sync
-cp server.toml.example server.toml
-uv run alembic upgrade head
-uv run issuedeck seed-demo --config server.toml --project-key example
-uv run issuedeck serve --config server.toml
+uv run issuedeck demo
 ```
 
-打开 `http://127.0.0.1:8765/`，使用 `server.toml` 里的 `api_token` 登录。
+这个命令会在缺少 `server.toml` 时自动生成本地 demo 配置，执行数据库迁移，
+写入 `example` 项目的假数据，并启动 Dashboard。
+
+打开 `http://127.0.0.1:8765/dashboard/example`，使用 `issuedeck-local-token`
+登录。想自动打开浏览器可以运行：
+
+```bash
+uv run issuedeck demo --open
+```
 
 ## 假数据
 
@@ -61,6 +65,9 @@ uv run issuedeck seed-demo --config server.toml --project-key example
 
 如果目标项目已经有事项，命令会拒绝覆盖。确认要替换该项目事项时再加
 `--force-reset`。
+
+第一次体验建议直接使用 `uv run issuedeck demo`，它会自动完成配置、迁移、
+假数据和启动服务。
 
 ## 配置项目
 

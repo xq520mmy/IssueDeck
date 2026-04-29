@@ -55,28 +55,24 @@ tracker, a web dashboard for humans, and MCP tools for coding agents.
 
 ## Quickstart
 
-Start from a fresh clone:
+Start a local dashboard with fake demo data:
 
 ```bash
-uv sync
-cp server.toml.example server.toml
-export ISSUEDECK_API_TOKEN="issuedeck-local-token"
-uv run alembic upgrade head
-uv run issuedeck serve --config server.toml
+uv run issuedeck demo
 ```
 
-PowerShell:
+This creates a local `server.toml` if one does not exist, applies database
+migrations, seeds the `example` project with fake items, and starts the server.
+Then open `http://127.0.0.1:8765/dashboard/example` and sign in with
+`issuedeck-local-token`.
 
-```powershell
-uv sync
-Copy-Item server.toml.example server.toml
-$env:ISSUEDECK_API_TOKEN = "issuedeck-local-token"
-uv run alembic upgrade head
-uv run issuedeck serve --config server.toml
+To open the dashboard automatically:
+
+```bash
+uv run issuedeck demo --open
 ```
 
-Then open `http://127.0.0.1:8765/dashboard/example` and sign in with the same
-token. Health endpoints:
+Health endpoints:
 
 ```bash
 curl http://127.0.0.1:8765/healthz
@@ -86,12 +82,6 @@ curl http://127.0.0.1:8765/readyz
 Dashboard CSS is committed in the repository, so Node is not required to run
 IssueDeck. If you change dashboard templates, helper class maps, or
 `tailwind.config.cjs`, rebuild the CSS with `npm ci && npm run build:css`.
-
-For a populated demo, run:
-
-```bash
-uv run issuedeck seed-demo --config server.toml --project-key example
-```
 
 ## Configure
 
@@ -133,12 +123,14 @@ Dashboard: `http://127.0.0.1:8765/dashboard/myproject`
 Use fake data for screenshots, docs, or a clean local demo:
 
 ```bash
-uv run alembic upgrade head
 uv run issuedeck seed-demo --config server.toml --project-key example
 ```
 
 If the target project already has items, the command refuses to overwrite it.
 To intentionally replace that project's items, add `--force-reset`.
+
+For the full first-run flow, prefer `uv run issuedeck demo`; it creates config,
+runs migrations, seeds fake data, and starts the dashboard.
 
 ## Run the server
 

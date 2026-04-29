@@ -7,6 +7,10 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+### Added
+
+- One-command local demo flow via `issuedeck demo`.
+
 ## [0.1.0] - 2026-04-29
 
 ### Added
