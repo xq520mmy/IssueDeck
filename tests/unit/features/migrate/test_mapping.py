@@ -78,6 +78,52 @@ Body
     assert row.applies_to == ["v3", "v2"]
 
 
+def test_github_preset_maps_export_url():
+    mapping = FrontmatterMapping.from_alias_options([], presets=["github"])
+    fm = frontmatter.loads("""---
+id: BUG-0011
+type: bug
+state: proposed
+title: GitHub export
+labels: [migration]
+html_url: https://github.com/example/repo/issues/11?from=export
+---
+Body
+""")
+
+    row = map_frontmatter_to_row(fm, is_archived=False, mapping=mapping)
+
+    assert row.external_links == [{
+        "link_type": "github_issue",
+        "label": "Issue #11",
+        "url": "https://github.com/example/repo/issues/11",
+    }]
+
+
+def test_linear_preset_maps_identifier_and_links():
+    mapping = FrontmatterMapping.from_alias_options([], presets=["linear"])
+    fm = frontmatter.loads("""---
+identifier: FEAT-0012
+type: feature
+workflow_state: done
+title: Linear export
+label_names: [migration, ux]
+branch: v3
+links:
+  - https://github.com/example/repo/pull/12
+---
+Body
+""")
+
+    row = map_frontmatter_to_row(fm, is_archived=False, mapping=mapping)
+
+    assert row.local_id == "FEAT-0012"
+    assert row.status == "done"
+    assert row.tags == ["migration", "ux"]
+    assert row.applies_to == ["v3"]
+    assert row.external_links[0]["link_type"] == "github_pr"
+
+
 def test_unknown_alias_field_fails_fast():
     try:
         FrontmatterMapping.from_alias_options(["unknown=legacy"])
@@ -85,3 +131,12 @@ def test_unknown_alias_field_fails_fast():
         assert "unknown frontmatter field" in str(exc)
     else:
         raise AssertionError("expected invalid alias mapping to fail")
+
+
+def test_unknown_preset_fails_fast():
+    try:
+        FrontmatterMapping.from_alias_options([], presets=["unknown"])
+    except ValueError as exc:
+        assert "unknown frontmatter preset" in str(exc)
+    else:
+        raise AssertionError("expected invalid preset to fail")

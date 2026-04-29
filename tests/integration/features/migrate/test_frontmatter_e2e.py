@@ -12,12 +12,20 @@ from issuedeck.core.config import (
     ServerConfig,
     StatusConfig,
 )
-from issuedeck.features.items.models import Base, Item, ShipCommit, ShipRecord
+from issuedeck.features.items.models import (
+    Base,
+    Item,
+    ItemExternalLink,
+    ShipCommit,
+    ShipRecord,
+)
 from issuedeck.features.migrate.frontmatter import FrontmatterMapping, migrate_frontmatter_bundle
 
 FIX_ROOT = Path(__file__).parent / "fixtures"
 FIX_ALIASES = Path(__file__).parent / "fixtures_aliases"
 FIX_CUSTOM_ALIASES = Path(__file__).parent / "fixtures_custom_aliases"
+FIX_PRESET_GITHUB = Path(__file__).parent / "fixtures_preset_github"
+FIX_PRESET_LINEAR = Path(__file__).parent / "fixtures_preset_linear"
 
 
 def _registry():
@@ -134,3 +142,44 @@ async def test_custom_alias_fixture_migrates(session):
     assert item.local_id == "FEAT-0100"
     assert item.kind == "feature"
     assert item.status == "done"
+
+
+async def test_github_preset_fixture_migrates_external_link(session):
+    mapping = FrontmatterMapping.from_alias_options([], presets=["github"])
+    report = await migrate_frontmatter_bundle(
+        source_dir=FIX_PRESET_GITHUB,
+        project_key="sample",
+        registry=_registry(),
+        db=session,
+        dry_run=False,
+        mapping=mapping,
+    )
+
+    assert report.items_written == 1
+    assert report.external_links == 1
+    item = (await session.execute(select(Item))).scalar_one()
+    assert item.local_id == "BUG-0200"
+    link = (await session.execute(select(ItemExternalLink))).scalar_one()
+    assert link.link_type == "github_issue"
+    assert link.label == "Issue #200"
+    assert link.url == "https://github.com/example/repo/issues/200"
+
+
+async def test_linear_preset_fixture_migrates(session):
+    mapping = FrontmatterMapping.from_alias_options([], presets=["linear"])
+    report = await migrate_frontmatter_bundle(
+        source_dir=FIX_PRESET_LINEAR,
+        project_key="sample",
+        registry=_registry(),
+        db=session,
+        dry_run=False,
+        mapping=mapping,
+    )
+
+    assert report.items_written == 1
+    assert report.external_links == 1
+    item = (await session.execute(select(Item))).scalar_one()
+    assert item.local_id == "FEAT-0200"
+    assert item.status == "done"
+    link = (await session.execute(select(ItemExternalLink))).scalar_one()
+    assert link.link_type == "github_pr"

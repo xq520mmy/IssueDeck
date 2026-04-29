@@ -33,6 +33,7 @@ Optional fields:
 | `created_at` | `created_at` | ISO timestamp; defaults to import time. |
 | `updated_at` | `updated_at` | ISO timestamp; defaults to import time. |
 | `deleted_at` | `deleted_at` | Used for files imported from `items/.archive/`; defaults to import time. |
+| `external_links` | `external_links` | URL string, YAML list, or objects with `url`, `label`, and `link_type`. GitHub URLs are normalized automatically. |
 | ship record | `shipped_in_v3`, `shipped_in_v2` | Creates ship records for the built-in branch keys. |
 | ship commits | `commits_v3`, `commits_v2` | YAML list or comma-separated string. |
 
@@ -48,6 +49,8 @@ tags: [dashboard, workflow]
 applies_to: [v3]
 shipped_in_v3: "0.2.0"
 commits_v3: [abc123, def456]
+external_links:
+  - https://github.com/example/repo/pull/42
 created_at: "2026-04-01T00:00:00+00:00"
 updated_at: "2026-04-02T00:00:00+00:00"
 ---
@@ -77,5 +80,38 @@ uv run issuedeck migrate \
   --field-alias applies_to=branches
 ```
 
-Mappable IssueDeck fields are `id`, `kind`, `status`, `title`, `tags`, and
-`applies_to`.
+Mappable IssueDeck fields are `id`, `kind`, `status`, `title`, `tags`,
+`applies_to`, and `external_links`.
+
+## Adapter Presets
+
+Presets add common aliases before any custom `--field-alias` options. They do
+not change validation: imported kinds, statuses, and branches still need to
+match your project config.
+
+```bash
+uv run issuedeck migrate \
+  --config server.toml \
+  --from-frontmatter /path/to/markdown-tracker \
+  --project-key myproject \
+  --preset github
+```
+
+Available presets:
+
+| Preset | Useful for | Added aliases |
+| --- | --- | --- |
+| `github` | GitHub issue exports or issue-like Markdown | `number`, `issue_number`, `html_url`, `url` |
+| `linear` | Linear-style Markdown exports | `identifier`, `issue_id`, `workflow_state`, `label_names`, `branch`, `links`, `attachments` |
+| `generic` | Older custom Markdown trackers | `key`, `local_id`, `category`, `workflow`, `keywords`, `branch`, `branches`, `links`, `refs`, `references` |
+
+You can combine a preset with explicit aliases:
+
+```bash
+uv run issuedeck migrate \
+  --config server.toml \
+  --from-frontmatter /path/to/markdown-tracker \
+  --project-key myproject \
+  --preset linear \
+  --field-alias status=phase
+```

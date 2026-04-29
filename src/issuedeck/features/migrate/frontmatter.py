@@ -11,9 +11,11 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from issuedeck.core.config import ConfigRegistry
+from issuedeck.features.items.external_links import normalize_external_link_payload
 from issuedeck.features.items.models import (
     Item,
     ItemApplyTo,
+    ItemExternalLink,
     ItemTag,
     ShipCommit,
     ShipRecord,
@@ -32,15 +34,33 @@ class FrontmatterMapping:
     title: tuple[str, ...] = ("title",)
     tags: tuple[str, ...] = ("tags", "labels")
     applies_to: tuple[str, ...] = ("applies_to",)
+    external_links: tuple[str, ...] = ("external_links",)
 
     @classmethod
-    def from_alias_options(cls, options: list[str] | None) -> FrontmatterMapping:
+    def from_alias_options(
+        cls,
+        options: list[str] | None,
+        *,
+        presets: list[str] | None = None,
+    ) -> FrontmatterMapping:
         mapping = cls()
-        if not options:
-            return mapping
 
         aliases_by_field = {field: list(getattr(mapping, field)) for field in _MAPPABLE_FIELDS}
-        for option in options:
+        for preset in presets or []:
+            preset_key = preset.strip().lower()
+            try:
+                preset_aliases = _MAPPING_PRESETS[preset_key]
+            except KeyError as exc:
+                expected = ", ".join(sorted(_MAPPING_PRESETS))
+                raise ValueError(
+                    f"unknown frontmatter preset '{preset}'; expected one of: {expected}"
+                ) from exc
+            for field, aliases in preset_aliases.items():
+                for alias in aliases:
+                    if alias not in aliases_by_field[field]:
+                        aliases_by_field[field].append(alias)
+
+        for option in options or []:
             if "=" not in option:
                 raise ValueError(
                     f"invalid field alias '{option}'; expected FIELD=alias[,alias...]"
@@ -50,7 +70,10 @@ class FrontmatterMapping:
             if field == "id":
                 field = "local_id"
             if field not in aliases_by_field:
-                expected = ", ".join(["id", "kind", "status", "title", "tags", "applies_to"])
+                expected = ", ".join([
+                    "id", "kind", "status", "title", "tags",
+                    "applies_to", "external_links",
+                ])
                 raise ValueError(
                     f"unknown frontmatter field '{field}'; expected one of: {expected}"
                 )
@@ -61,8 +84,43 @@ class FrontmatterMapping:
 
         return cls(**{field: tuple(aliases) for field, aliases in aliases_by_field.items()})
 
+    @classmethod
+    def available_presets(cls) -> tuple[str, ...]:
+        return tuple(sorted(_MAPPING_PRESETS))
 
-_MAPPABLE_FIELDS = ("local_id", "kind", "status", "title", "tags", "applies_to")
+
+_MAPPABLE_FIELDS = (
+    "local_id",
+    "kind",
+    "status",
+    "title",
+    "tags",
+    "applies_to",
+    "external_links",
+)
+_MAPPING_PRESETS: dict[str, dict[str, tuple[str, ...]]] = {
+    "github": {
+        "local_id": ("number", "issue_number"),
+        "status": ("state",),
+        "tags": ("labels",),
+        "external_links": ("html_url", "url"),
+    },
+    "linear": {
+        "local_id": ("identifier", "issue_id"),
+        "status": ("workflow_state",),
+        "tags": ("label_names",),
+        "applies_to": ("branch", "branches"),
+        "external_links": ("url", "links", "attachments"),
+    },
+    "generic": {
+        "local_id": ("key", "local_id"),
+        "kind": ("category",),
+        "status": ("workflow",),
+        "tags": ("keywords",),
+        "applies_to": ("branch", "branches"),
+        "external_links": ("links", "refs", "references"),
+    },
+}
 _MISSING = object()
 
 
@@ -82,6 +140,7 @@ class MigrationRow:
     body: str
     tags: list[str]
     applies_to: list[str]
+    external_links: list[dict[str, str | None]]
     ship_records: list[ShipRow]
     created_at: str
     updated_at: str
@@ -96,6 +155,7 @@ class MigrationReport:
     ship_commits: int = 0
     tags: int = 0
     applies_to: int = 0
+    external_links: int = 0
 
 
 def _iso_now() -> str:
@@ -136,6 +196,7 @@ def map_frontmatter_to_row(
         body=fm.content or "",
         tags=_normalize_string_list(_optional_field(d, mapping.tags)),
         applies_to=_normalize_string_list(_optional_field(d, mapping.applies_to)),
+        external_links=_normalize_external_links(_optional_field(d, mapping.external_links)),
         ship_records=ship,
         created_at=d.get("created_at") or _iso_now(),
         updated_at=d.get("updated_at") or _iso_now(),
@@ -215,6 +276,7 @@ async def migrate_frontmatter_bundle(
         items_planned=len(parsed),
         tags=sum(len(r.tags) for r in parsed),
         applies_to=sum(len(r.applies_to) for r in parsed),
+        external_links=sum(len(r.external_links) for r in parsed),
         ship_records=sum(len(r.ship_records) for r in parsed),
         ship_commits=sum(sum(len(s.commits) for s in r.ship_records) for r in parsed),
     )
@@ -240,6 +302,14 @@ async def migrate_frontmatter_bundle(
             db.add(ItemTag(item_pk=item.pk, tag=t))
         for b in row.applies_to:
             db.add(ItemApplyTo(item_pk=item.pk, branch_key=b))
+        for link in row.external_links:
+            db.add(ItemExternalLink(
+                item_pk=item.pk,
+                link_type=str(link["link_type"]),
+                label=link.get("label"),
+                url=str(link["url"]),
+                created_at=row.created_at,
+            ))
         for sr in row.ship_records:
             sr_obj = ShipRecord(
                 item_pk=item.pk, branch_key=sr.branch_key,
@@ -264,6 +334,52 @@ async def migrate_frontmatter_bundle(
         )
 
     return report
+
+
+def _normalize_external_links(value: object) -> list[dict[str, str | None]]:
+    if value is _MISSING or value is None:
+        return []
+
+    raw_values: list[object]
+    if isinstance(value, str):
+        raw_values = [line.strip() for line in value.splitlines() if line.strip()]
+        if len(raw_values) == 1 and "," in raw_values[0]:
+            raw_values = [part.strip() for part in raw_values[0].split(",") if part.strip()]
+    elif isinstance(value, list | tuple | set):
+        raw_values = list(value)
+    else:
+        raw_values = [value]
+
+    normalized: list[dict[str, str | None]] = []
+    seen_urls: set[str] = set()
+    for raw in raw_values:
+        payload = _external_link_payload(raw)
+        if payload is None:
+            continue
+        link = normalize_external_link_payload(payload)
+        url = str(link["url"])
+        if not url or url in seen_urls:
+            continue
+        seen_urls.add(url)
+        normalized.append({
+            "link_type": str(link["link_type"]),
+            "label": link.get("label"),
+            "url": url,
+        })
+    return normalized
+
+
+def _external_link_payload(raw: object) -> dict[str, object] | None:
+    if isinstance(raw, str):
+        return {"url": raw.strip()}
+    if isinstance(raw, dict):
+        payload = dict(raw)
+        url = payload.get("url") or payload.get("href") or payload.get("html_url")
+        if url is None:
+            return None
+        payload["url"] = url
+        return payload
+    return {"url": str(raw).strip()}
 
 
 def _optional_field(metadata: dict, aliases: tuple[str, ...]) -> object:

@@ -18,6 +18,17 @@ def test_issuedeck_help_lists_subcommands():
         assert cmd in out, f"{cmd} missing from --help"
 
 
+def test_migrate_help_lists_presets():
+    r = subprocess.run(
+        [sys.executable, "-m", "issuedeck", "migrate", "--help"],
+        capture_output=True, text=True,
+    )
+    out = r.stdout + r.stderr
+    assert "--preset" in out
+    assert "github" in out
+    assert "linear" in out
+
+
 def test_ensure_demo_config_writes_missing_config(tmp_path):
     cfg_path = tmp_path / "server.toml"
 

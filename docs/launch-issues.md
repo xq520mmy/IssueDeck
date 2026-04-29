@@ -4,7 +4,8 @@ These are candidate public issues for the next open-source iterations. The
 original launch backlog has mostly shipped: one-command demo mode, MCP client
 examples, scoped tokens, saved dashboard filters, Markdown frontmatter aliases,
 external links, GitHub URL inference, keyboard-friendly dashboard triage,
-restore smoke tests, and the screenshot gallery.
+Markdown import adapter presets, restore smoke tests, and the screenshot
+gallery.
 
 ## 1. Publish the PyPI package with Trusted Publishing
 
@@ -24,23 +25,7 @@ Acceptance criteria:
 - Verify a fresh machine can run `uvx issuedeck demo --open`.
 - Update README copy once the PyPI path is live.
 
-## 2. Add Markdown import adapter presets
-
-Labels: `enhancement`, `help wanted`, `area: migration`
-
-The frontmatter importer supports common aliases today, but teams often have
-their own Markdown issue shapes. Adapter presets would make migration less
-manual.
-
-Acceptance criteria:
-
-- Add named presets for at least two common Markdown tracker shapes.
-- Keep the default importer behavior unchanged.
-- Include fixtures that cover status, kind, tags, branch/applicability, and
-  external links.
-- Document how to pick a preset and how to override fields.
-
-## 3. Add lifecycle webhooks
+## 2. Add lifecycle webhooks
 
 Labels: `enhancement`, `help wanted`, `area: integrations`
 

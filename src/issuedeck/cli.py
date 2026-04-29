@@ -88,6 +88,13 @@ def main(argv: list[str] | None = None) -> int:
     p_mig.add_argument("--dry-run", action="store_true")
     p_mig.add_argument("--force-reset", action="store_true")
     p_mig.add_argument(
+        "--preset",
+        action="append",
+        default=[],
+        choices=["generic", "github", "linear"],
+        help="Apply a named frontmatter adapter preset before custom aliases",
+    )
+    p_mig.add_argument(
         "--field-alias",
         action="append",
         default=[],
@@ -127,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
         return asyncio.run(_cmd_migrate(
             Path(args.config), Path(args.from_frontmatter),
             args.project_key, args.dry_run, args.force_reset,
-            args.field_alias,
+            args.field_alias, args.preset,
         ))
     if args.cmd == "export":
         return asyncio.run(_cmd_export(
@@ -317,7 +324,7 @@ def _demo_token_hint(config_created: bool) -> str:
 
 async def _cmd_migrate(
     config_path: Path, source_dir: Path, project_key: str,
-    dry_run: bool, force_reset: bool, field_aliases: list[str],
+    dry_run: bool, force_reset: bool, field_aliases: list[str], presets: list[str],
 ) -> int:
     from issuedeck.core.db import make_engine, make_session_factory
     from issuedeck.features.migrate.frontmatter import (
@@ -326,7 +333,7 @@ async def _cmd_migrate(
     )
 
     registry = _build_registry(config_path)
-    mapping = FrontmatterMapping.from_alias_options(field_aliases)
+    mapping = FrontmatterMapping.from_alias_options(field_aliases, presets=presets)
     db_path = registry.server.data_dir / "tracker.db"
     engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
     session_factory = make_session_factory(engine)
@@ -342,7 +349,8 @@ async def _cmd_migrate(
                 f"[{'dry-run' if dry_run else 'ok'}] planned={report.items_planned} "
                 f"written={report.items_written} "
                 f"ship_records={report.ship_records} "
-                f"ship_commits={report.ship_commits}",
+                f"ship_commits={report.ship_commits} "
+                f"external_links={report.external_links}",
                 file=sys.stderr,
             )
     finally:
