@@ -26,6 +26,9 @@ tracker, a web dashboard for humans, and MCP tools for coding agents.
 
 ![IssueDeck dashboard demo](docs/assets/issuedeck-demo.gif)
 
+See the [screenshot gallery](docs/gallery.md) for list, kanban, detail,
+search, and project creation surfaces.
+
 ## Features
 
 - Agent-ready: MCP tools let coding agents create, update, search, relate, and

@@ -25,6 +25,8 @@ IssueDeck 是一个轻量、自托管的开发事项追踪器，面向小团队�
 
 ![IssueDeck dashboard demo](docs/assets/issuedeck-demo.gif)
 
+更多界面见[截图画廊](docs/gallery.zh-CN.md)，包含列表、看板、详情、搜索和新建项目。
+
 ## 功能
 
 - 面向 Agent：MCP tools 让 coding agent 可以直接创建、更新、搜索、关联和发布事项。

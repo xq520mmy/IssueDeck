@@ -16,6 +16,7 @@ versioning once public releases begin.
 - Markdown frontmatter import schema docs plus field alias mapping for legacy trackers.
 - Item external links for GitHub issues, pull requests, and commits in REST, MCP, and dashboard detail views.
 - SQLite backup restore smoke script with copy-pasteable Docker restore docs.
+- Screenshot gallery for list, kanban, item detail, search, and project creation surfaces.
 
 ## [0.1.0] - 2026-04-29
 
