@@ -10,6 +10,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
+from issuedeck import __version__
 from issuedeck.core.auth import BearerTokenCredential, BearerTokenMiddleware
 from issuedeck.core.config import (
     ConfigRegistry,
@@ -92,7 +93,7 @@ def create_app(server_toml: Path | str) -> FastAPI:
         yield
         await engine.dispose()
 
-    app = FastAPI(title="IssueDeck", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="IssueDeck", version=__version__, lifespan=lifespan)
     app.state.registry = registry
     app.state.engine = engine
     app.state.session_factory = session_factory
@@ -140,13 +141,13 @@ def create_app(server_toml: Path | str) -> FastAPI:
 
     @app.get("/healthz")
     async def healthz():
-        return {"status": "ok", "version": "0.1.0"}
+        return {"status": "ok", "version": __version__}
 
     @app.get("/readyz")
     async def readyz():
         return {
             "status": "ready",
-            "version": "0.1.0",
+            "version": __version__,
             "projects": len(registry.all_projects()),
         }
 
