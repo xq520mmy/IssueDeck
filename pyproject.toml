@@ -21,7 +21,7 @@ classifiers = [
     "Topic :: Software Development",
 ]
 dependencies = [
-    "fastapi>=0.110",
+    "fastapi>=0.136.1",
     "uvicorn[standard]>=0.46.0",
     "sqlalchemy[asyncio]>=2.0",
     "aiosqlite>=0.19",
