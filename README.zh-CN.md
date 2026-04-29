@@ -140,6 +140,12 @@ coding agent；`admin` token 拥有完整 API 权限，也可以登录 Dashboard
 Feature / Bug / Improvement 类型和 Proposed / In Progress / Done / Won't Fix
 状态。高级配置仍建议直接编辑 TOML。
 
+## Webhooks
+
+IssueDeck 支持可选的签名生命周期 Webhooks，可以在事项创建、更新、发布、删除、
+恢复时通知外部自动化系统。配置示例和签名校验方式见
+[生命周期 Webhooks](docs/webhooks.zh-CN.md)。
+
 ## MCP
 
 客户端配置示例见 [MCP 客户端接入](docs/mcp-clients.zh-CN.md)。

@@ -15,6 +15,7 @@ versioning once public releases begin.
 - Added GitHub URL inference for item external links in API/MCP payloads and dashboard forms.
 - Added keyboard-friendly dashboard shortcuts for search, create, filters, navigation, and item focus.
 - Added Markdown import adapter presets for GitHub, Linear, and generic tracker exports.
+- Added signed asynchronous lifecycle webhooks for item create, update, ship, delete, and restore events.
 - Added a gated PyPI Trusted Publishing workflow and PyPI setup guide for future `uvx issuedeck` installs.
 - Added PyPI project URLs and license-file metadata to the Python package.
 - Added Dependabot version updates for Python/uv, npm, and GitHub Actions.

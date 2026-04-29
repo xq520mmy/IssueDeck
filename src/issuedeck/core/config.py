@@ -47,6 +47,39 @@ class TokenConfig(BaseModel):
         return {"read" if scope == "read-only" else scope for scope in self.scopes}
 
 
+WebhookEvent = Literal[
+    "item.created",
+    "item.updated",
+    "item.shipped",
+    "item.deleted",
+    "item.restored",
+]
+
+DEFAULT_WEBHOOK_EVENTS: list[WebhookEvent] = [
+    "item.created",
+    "item.updated",
+    "item.shipped",
+    "item.deleted",
+    "item.restored",
+]
+
+
+class WebhookConfig(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    url: str = Field(min_length=1, max_length=2048)
+    secret: SecretStr
+    events: list[WebhookEvent] = Field(default_factory=lambda: DEFAULT_WEBHOOK_EVENTS.copy())
+    retries: int = Field(default=3, ge=0, le=10)
+    timeout_seconds: float = Field(default=5.0, gt=0, le=30)
+    backoff_seconds: float = Field(default=0.5, ge=0, le=10)
+
+    @model_validator(mode="after")
+    def _validate_events(self) -> WebhookConfig:
+        if not self.events:
+            raise ValueError("webhook events must not be empty")
+        return self
+
+
 class ServerConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8765
@@ -56,6 +89,7 @@ class ServerConfig(BaseModel):
     projects_dir: Path = Path("./projects")
     log_level: Literal["debug", "info", "warning", "error"] = "info"
     sqlite: SqliteConfig = SqliteConfig()
+    webhooks: list[WebhookConfig] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -86,6 +120,15 @@ class ServerConfig(BaseModel):
             if value in seen_values:
                 raise ValueError(f"duplicate token value for '{token.name}'")
             seen_values.add(value)
+        return self
+
+    @model_validator(mode="after")
+    def _validate_webhooks(self) -> ServerConfig:
+        seen_names: set[str] = set()
+        for webhook in self.webhooks:
+            if webhook.name in seen_names:
+                raise ValueError(f"duplicate webhook name '{webhook.name}'")
+            seen_names.add(webhook.name)
         return self
 
     def auth_tokens(self) -> list[TokenConfig]:

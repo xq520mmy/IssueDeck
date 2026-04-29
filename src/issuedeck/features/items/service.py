@@ -8,12 +8,13 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
+from typing import Protocol
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from issuedeck.core.config import ConfigRegistry
+from issuedeck.core.config import ConfigRegistry, WebhookEvent
 from issuedeck.core.errors import (
     ItemNotFound,
     ShipRequiresBranchConfig,
@@ -41,6 +42,11 @@ from issuedeck.features.items.schemas import (
     ShipRecordOut,
     UpdateItemRequest,
 )
+
+
+class WebhookEmitter(Protocol):
+    def emit(self, event: WebhookEvent, item: ItemSummary) -> None:
+        ...
 
 
 def _iso_now() -> str:
@@ -89,11 +95,17 @@ def _link_payloads(links: list[ExternalLinkInput]) -> list[dict[str, str | None]
 
 class ItemService:
     def __init__(
-        self, repo: ItemRepo, registry: ConfigRegistry, session: AsyncSession,
+        self,
+        repo: ItemRepo,
+        registry: ConfigRegistry,
+        session: AsyncSession,
+        *,
+        webhook_dispatcher: WebhookEmitter | None = None,
     ):
         self._repo = repo
         self._registry = registry
         self._s = session
+        self._webhook_dispatcher = webhook_dispatcher
 
     async def create(
         self, project_key: str, req: CreateItemRequest,
@@ -127,7 +139,9 @@ class ItemService:
         )
         await self._s.commit()
         item = await self._load_eager(project_key, local_id)
-        return self._to_summary(item)
+        summary = self._to_summary(item)
+        self._emit_webhook("item.created", summary)
+        return summary
 
     async def update(
         self, project_key: str, local_id: str, req: UpdateItemRequest,
@@ -166,7 +180,10 @@ class ItemService:
             )
         await self._s.commit()
         item = await self._load_eager(project_key, local_id)
-        return self._to_summary(item)
+        summary = self._to_summary(item)
+        if changed_fields:
+            self._emit_webhook("item.updated", summary)
+        return summary
 
     async def ship(
         self, project_key: str, local_id: str, req: ShipItemRequest,
@@ -210,7 +227,9 @@ class ItemService:
         )
         await self._s.commit()
         item = await self._load_eager(project_key, local_id)
-        return self._to_summary(item)
+        summary = self._to_summary(item)
+        self._emit_webhook("item.shipped", summary)
+        return summary
 
     async def soft_delete(
         self, project_key: str, local_id: str, *, reason: str = "",
@@ -226,6 +245,9 @@ class ItemService:
         )
         await self._repo.soft_delete(item.pk, deleted_at=deleted_at)
         await self._s.commit()
+        item = await self._load_eager(project_key, local_id, include_deleted=True)
+        if item is not None:
+            self._emit_webhook("item.deleted", self._to_summary(item))
 
     async def restore(self, project_key: str, local_id: str) -> ItemSummary:
         item = await self._repo.get_by_local_id(
@@ -247,7 +269,9 @@ class ItemService:
         )
         await self._s.commit()
         item = await self._load_eager(project_key, local_id, include_deleted=False)
-        return self._to_summary(item)
+        summary = self._to_summary(item)
+        self._emit_webhook("item.restored", summary)
+        return summary
 
     async def add_event(
         self, project_key: str, local_id: str, req: CreateItemEventRequest,
@@ -392,6 +416,11 @@ class ItemService:
             created_at=item.created_at, updated_at=item.updated_at,
             deleted_at=item.deleted_at,
         )
+
+    def _emit_webhook(self, event: WebhookEvent, item: ItemSummary) -> None:
+        if self._webhook_dispatcher is None:
+            return
+        self._webhook_dispatcher.emit(event, item)
 
     async def _to_detail(self, item: Item) -> ItemDetail:
         events = await self._repo.list_events(item.pk)

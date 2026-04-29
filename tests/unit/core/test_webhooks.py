@@ -1,0 +1,102 @@
+import hmac
+
+import httpx
+
+from issuedeck.core.config import WebhookConfig
+from issuedeck.core.webhooks import (
+    build_webhook_headers,
+    build_webhook_payload,
+    deliver_webhook,
+    encode_webhook_body,
+    webhook_signature,
+)
+from issuedeck.features.items.schemas import ItemSummary
+
+
+def _summary() -> ItemSummary:
+    return ItemSummary(
+        project_key="example",
+        local_id="FEAT-0001",
+        kind="feature",
+        status="proposed",
+        title="Webhook payload",
+        body_preview="Short body",
+        tags=["integration"],
+        applies_to=["main"],
+        external_links=[],
+        created_at="2026-04-29T00:00:00+00:00",
+        updated_at="2026-04-29T00:00:00+00:00",
+    )
+
+
+def test_webhook_payload_shape_is_stable():
+    payload = build_webhook_payload(
+        "item.created",
+        _summary(),
+        occurred_at="2026-04-29T01:00:00+00:00",
+    )
+
+    assert payload["event"] == "item.created"
+    assert payload["occurred_at"] == "2026-04-29T01:00:00+00:00"
+    assert payload["item"]["project_key"] == "example"
+    assert payload["item"]["local_id"] == "FEAT-0001"
+    assert payload["item"]["tags"] == ["integration"]
+
+
+def test_webhook_signature_uses_hmac_sha256():
+    body = b'{"event":"item.created"}'
+    expected = hmac.digest(b"shared-secret", body, "sha256").hex()
+
+    assert webhook_signature("shared-secret", body) == f"sha256={expected}"
+
+
+def test_webhook_headers_include_delivery_context():
+    webhook = WebhookConfig(
+        name="automation",
+        url="https://example.com/hooks/issuedeck",
+        secret="shared-secret",
+    )
+    body = encode_webhook_body({"event": "item.created"})
+
+    headers = build_webhook_headers(
+        webhook,
+        "item.created",
+        body,
+        delivery_id="delivery-123",
+    )
+
+    assert headers["Content-Type"] == "application/json"
+    assert headers["User-Agent"] == "IssueDeck"
+    assert headers["X-IssueDeck-Event"] == "item.created"
+    assert headers["X-IssueDeck-Delivery"] == "delivery-123"
+    assert headers["X-IssueDeck-Signature"].startswith("sha256=")
+
+
+async def test_deliver_webhook_retries_until_success():
+    seen: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        if len(seen) == 1:
+            return httpx.Response(500)
+        return httpx.Response(204)
+
+    webhook = WebhookConfig(
+        name="automation",
+        url="https://example.com/hooks/issuedeck",
+        secret="shared-secret",
+        retries=1,
+        backoff_seconds=0,
+    )
+
+    delivered = await deliver_webhook(
+        webhook,
+        build_webhook_payload("item.updated", _summary()),
+        "item.updated",
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert delivered is True
+    assert len(seen) == 2
+    assert seen[0].headers["X-IssueDeck-Event"] == "item.updated"
+    assert seen[1].headers["X-IssueDeck-Signature"].startswith("sha256=")

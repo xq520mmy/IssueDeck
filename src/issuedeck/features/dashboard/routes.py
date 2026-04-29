@@ -83,7 +83,16 @@ PROJECT_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]{1,62}$")
 def _item_svc(request: Request):
     session = request.app.state.session_factory()
     registry = request.app.state.registry
-    return ItemService(ItemRepo(session), registry, session), session
+    webhook_dispatcher = getattr(request.app.state, "webhook_dispatcher", None)
+    return (
+        ItemService(
+            ItemRepo(session),
+            registry,
+            session,
+            webhook_dispatcher=webhook_dispatcher,
+        ),
+        session,
+    )
 
 
 def _search_svc(request: Request):

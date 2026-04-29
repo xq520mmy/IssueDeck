@@ -53,6 +53,34 @@ async def service():
     await engine.dispose()
 
 
+class RecordingWebhookDispatcher:
+    def __init__(self) -> None:
+        self.events = []
+
+    def emit(self, event, item):
+        self.events.append((event, item.local_id, item.deleted_at))
+
+
+@pytest.fixture
+async def service_with_webhooks():
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    Session = async_sessionmaker(engine, expire_on_commit=False)
+    dispatcher = RecordingWebhookDispatcher()
+    async with Session() as s:
+        yield (
+            ItemService(
+                ItemRepo(s),
+                _make_registry(),
+                s,
+                webhook_dispatcher=dispatcher,
+            ),
+            dispatcher,
+        )
+    await engine.dispose()
+
+
 async def test_create_item_assigns_local_id(service):
     summary = await service.create(
         "test", CreateItemRequest(kind="feature", title="Hello"),
@@ -200,3 +228,29 @@ async def test_soft_delete_hides_from_get(service):
         await service.get("test", "FEAT-0001")
     restored = await service.get("test", "FEAT-0001", include_deleted=True)
     assert restored.deleted_at is not None
+
+
+async def test_lifecycle_actions_emit_webhooks(service_with_webhooks):
+    service, dispatcher = service_with_webhooks
+
+    await service.create("test", CreateItemRequest(kind="feature", title="t"))
+    await service.update("test", "FEAT-0001", UpdateItemRequest(title="updated"))
+    await service.update("test", "FEAT-0001", UpdateItemRequest())
+    await service.ship(
+        "test",
+        "FEAT-0001",
+        ShipItemRequest(branch="main", version="0.1.0"),
+    )
+    await service.soft_delete("test", "FEAT-0001")
+    await service.restore("test", "FEAT-0001")
+
+    assert [event for event, _local_id, _deleted_at in dispatcher.events] == [
+        "item.created",
+        "item.updated",
+        "item.shipped",
+        "item.deleted",
+        "item.restored",
+    ]
+    assert all(local_id == "FEAT-0001" for _event, local_id, _deleted_at in dispatcher.events)
+    assert dispatcher.events[-2][2] is not None
+    assert dispatcher.events[-1][2] is None

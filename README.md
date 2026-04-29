@@ -42,6 +42,8 @@ Daily triage shortcuts are documented in
 - Bidirectional relationships (`blocks`/`blocked_by`, `related_to`).
 - External links for GitHub issues, pull requests, commits, and other review context.
 - Item activity timeline with automatic lifecycle events and manual comments.
+- Signed lifecycle webhooks for downstream automation on create, update, ship,
+  delete, and restore events.
 - Built-in dashboard work queues for backlog, active, blocked, ready-to-ship,
   done, deleted, and recently touched items.
 - Project-scoped saved dashboard filters for reusable views such as active
@@ -155,6 +157,10 @@ scopes = ["admin"]
 `read` tokens can call read-only API endpoints. `agent` tokens can read and
 write REST API resources for MCP/coding-agent workflows. `admin` tokens have
 full API access and can sign in to the dashboard.
+
+Optional signed lifecycle webhooks can notify downstream automation when items
+are created, updated, shipped, deleted, or restored; see
+[Lifecycle Webhooks](docs/webhooks.md).
 
 Project files live in `projects/*.toml`. Each file defines one project and
 must use the same file stem, `key`, and dashboard URL segment. The repository

@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from issuedeck.core.config import (
     ConfigRegistry,
     ServerConfig,
+    WebhookConfig,
     load_project_config,
     load_server_config,
 )
@@ -84,6 +85,51 @@ def test_server_config_rejects_duplicate_token_values(tmp_path):
 
     with pytest.raises(ValidationError, match="duplicate token value"):
         load_server_config(cfg_path)
+
+
+def test_server_config_supports_lifecycle_webhooks(tmp_path):
+    cfg_path = tmp_path / "server.toml"
+    cfg_path.write_text(
+        "\n".join([
+            'api_token = "legacy-admin"',
+            "",
+            "[[webhooks]]",
+            'name = "automation"',
+            'url = "https://example.com/hooks/issuedeck"',
+            'secret = "shared-secret"',
+            'events = ["item.created", "item.shipped"]',
+            "retries = 2",
+            "timeout_seconds = 3",
+            "backoff_seconds = 0.1",
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    cfg = load_server_config(cfg_path)
+
+    assert cfg.webhooks[0].name == "automation"
+    assert cfg.webhooks[0].events == ["item.created", "item.shipped"]
+    assert cfg.webhooks[0].secret.get_secret_value() == "shared-secret"
+
+
+def test_server_config_rejects_duplicate_webhook_names():
+    with pytest.raises(ValidationError, match="duplicate webhook name"):
+        ServerConfig(
+            api_token="legacy-admin",
+            webhooks=[
+                WebhookConfig(
+                    name="automation",
+                    url="https://example.com/one",
+                    secret="one",
+                ),
+                WebhookConfig(
+                    name="automation",
+                    url="https://example.com/two",
+                    secret="two",
+                ),
+            ],
+        )
 
 
 def test_load_project_config_ok():

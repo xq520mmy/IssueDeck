@@ -29,8 +29,17 @@ RELATION_TYPE_QUERY = Query(None)
 def _service(request: Request):
     session_factory = request.app.state.session_factory
     registry = request.app.state.registry
+    webhook_dispatcher = getattr(request.app.state, "webhook_dispatcher", None)
     session = session_factory()
-    return ItemService(ItemRepo(session), registry, session), session
+    return (
+        ItemService(
+            ItemRepo(session),
+            registry,
+            session,
+            webhook_dispatcher=webhook_dispatcher,
+        ),
+        session,
+    )
 
 
 @router.post("", response_model=ItemSummary, status_code=status.HTTP_201_CREATED)

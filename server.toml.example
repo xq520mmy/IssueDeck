@@ -24,6 +24,19 @@ log_level = "info"
 # token = "replace-with-admin-token"
 # scopes = ["admin"]
 
+# Optional lifecycle webhooks. Requests are signed with
+# X-IssueDeck-Signature: sha256=<hmac>, delivered asynchronously, and retried
+# without blocking the item mutation.
+#
+# [[webhooks]]
+# name = "automation"
+# url = "https://example.com/hooks/issuedeck"
+# secret = "replace-with-a-long-random-secret"
+# events = ["item.created", "item.updated", "item.shipped", "item.deleted", "item.restored"]
+# retries = 3
+# timeout_seconds = 5
+# backoff_seconds = 0.5
+
 [sqlite]
 wal_mode = true
 busy_timeout_ms = 5000

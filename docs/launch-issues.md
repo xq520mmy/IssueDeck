@@ -4,8 +4,8 @@ These are candidate public issues for the next open-source iterations. The
 original launch backlog has mostly shipped: one-command demo mode, MCP client
 examples, scoped tokens, saved dashboard filters, Markdown frontmatter aliases,
 external links, GitHub URL inference, keyboard-friendly dashboard triage,
-Markdown import adapter presets, restore smoke tests, and the screenshot
-gallery.
+Markdown import adapter presets, lifecycle webhooks, restore smoke tests, and
+the screenshot gallery.
 
 ## 1. Publish the PyPI package with Trusted Publishing
 
@@ -24,18 +24,3 @@ Acceptance criteria:
   `PYPI_PUBLISH=true` or run the workflow manually against a release tag.
 - Verify a fresh machine can run `uvx issuedeck demo --open`.
 - Update README copy once the PyPI path is live.
-
-## 2. Add lifecycle webhooks
-
-Labels: `enhancement`, `help wanted`, `area: integrations`
-
-Teams may want lightweight notifications or automation when items change state,
-are shipped, or are restored.
-
-Acceptance criteria:
-
-- Emit webhook payloads for item created, item updated, item shipped, item
-  deleted, and item restored events.
-- Support signed requests with a shared secret.
-- Include retry/backoff behavior that cannot block the main item mutation.
-- Add tests for payload shape and signature verification.

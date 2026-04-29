@@ -20,6 +20,7 @@ from issuedeck.core.config import (
 from issuedeck.core.db import make_engine, make_session_factory
 from issuedeck.core.errors import ConfigError, install_error_handlers
 from issuedeck.core.logging import configure_logging
+from issuedeck.core.webhooks import WebhookDispatcher
 from issuedeck.features.dashboard.routes import router as dashboard_router
 from issuedeck.features.items.models import Item
 from issuedeck.features.items.routes import router as items_router
@@ -97,6 +98,7 @@ def create_app(server_toml: Path | str) -> FastAPI:
     app.state.registry = registry
     app.state.engine = engine
     app.state.session_factory = session_factory
+    app.state.webhook_dispatcher = WebhookDispatcher(server_cfg.webhooks)
 
     install_error_handlers(app)
     app.add_middleware(
