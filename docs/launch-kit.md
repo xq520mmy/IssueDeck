@@ -20,7 +20,7 @@ uvx issuedeck demo --open
 
 ## Social Post
 
-I just released IssueDeck v0.3.0.
+I just released IssueDeck v0.3.2.
 
 It is a local-first issue deck for small teams and AI coding workflows:
 

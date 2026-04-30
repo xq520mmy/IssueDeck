@@ -20,7 +20,7 @@ uvx issuedeck demo --open
 
 ## 社交平台短文案
 
-我发布了 IssueDeck v0.3.0。
+我发布了 IssueDeck v0.3.2。
 
 它是一个面向小团队和 AI coding 工作流的本地优先事项看板：
 

@@ -49,7 +49,7 @@ PYPI_PUBLISH=true
 
 Without that variable, tag pushes build GitHub release assets but skip PyPI
 upload. You can still publish manually from GitHub Actions by running
-`pypi-publish` with a tag such as `v0.3.0`.
+`pypi-publish` with a tag such as `v0.3.2`.
 
 ## Release Flow
 
@@ -90,7 +90,7 @@ The matching PyPI pending publisher should be:
 - Environment name: `pypi`
 
 After fixing the publisher configuration, rerun the `pypi-publish` workflow
-with the release tag, for example `v0.3.0`.
+with the release tag, for example `v0.3.2`.
 
 ## Local Package Smoke Test
 

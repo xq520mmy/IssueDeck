@@ -43,6 +43,7 @@ git diff --exit-code -- src/issuedeck/features/dashboard/static/css/dashboard.cs
 - [ ] Confirm package metadata in `pyproject.toml`.
 - [ ] Confirm Docker image starts from the built artifact.
 - [ ] Confirm the wheel installs in a clean virtual environment and `issuedeck --help` runs.
+- [ ] Confirm `uvx issuedeck demo --open` starts a healthy demo from PyPI.
 - [ ] Tag the release.
 - [ ] Publish package/image artifacts.
 - [ ] If `PYPI_PUBLISH=true`, confirm PyPI Trusted Publishing uploaded the release.

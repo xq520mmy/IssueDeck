@@ -3,7 +3,7 @@
 IssueDeck is starting small on purpose: a local-first issue deck, a dashboard,
 and MCP tools that make coding-agent workflows easier to track.
 
-Current public release: `v0.3.0`.
+Current public release: `v0.3.2`.
 
 The `main` branch may include unreleased contributor-experience improvements
 listed in `CHANGELOG.md`.
@@ -26,16 +26,18 @@ listed in `CHANGELOG.md`.
   and item focus.
 - Signed asynchronous lifecycle webhooks for item create, update, ship, delete,
   and restore events.
+- PyPI/uvx distribution so new users can try IssueDeck without cloning the repo.
+- Webhook receiver examples for FastAPI, Flask, and Node/Express.
+- Docker Compose hardening examples for small production deployments.
+- Dashboard accessibility smoke checklist for UI contributors.
 
 ## Near Term
 
-- PyPI/uvx distribution so new users can try IssueDeck without cloning the repo.
 - A tighter first-run onboarding path inside the dashboard after login.
 - GitHub import/link helpers that turn issues or PRs into IssueDeck external
   links without requiring a full sync engine.
 - More import/export adapters for common Markdown issue formats.
-- Webhook receiver examples for common stacks such as FastAPI, Flask, and Node.
-- Docker Compose hardening examples for small production deployments.
+- Release-announcement polish for project pages, screenshots, and examples.
 
 ## Later
 
