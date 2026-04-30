@@ -20,6 +20,12 @@ versioning once public releases begin.
   `tasks`.
 - Added a compact dashboard setup checklist for first-run projects after login.
 
+### Changed
+
+- Expanded the launch kit with GitHub project-page copy, suggested topics,
+  demo assets, feature bullets, and 30-second demo scripts in English and
+  Chinese.
+
 ### Fixed
 
 - `issuedeck serve` and `issuedeck seed-demo` now apply database migrations

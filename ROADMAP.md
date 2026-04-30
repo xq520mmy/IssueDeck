@@ -38,11 +38,12 @@ listed in `CHANGELOG.md`.
 - Webhook receiver examples for FastAPI, Flask, and Node/Express.
 - Docker Compose hardening examples for small production deployments.
 - Dashboard accessibility smoke checklist for UI contributors.
+- Maintainer launch kit with project-page copy, topics, demo script, and
+  public sharing snippets.
 
 ## Near Term
 
 - Hosted tracker export helpers for GitHub, Linear, and Jira.
-- Release-announcement polish for project pages, screenshots, and examples.
 
 ## Later
 
