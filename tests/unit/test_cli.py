@@ -8,6 +8,7 @@ import pytest
 from issuedeck.cli import (
     _build_registry,
     _cmd_demo,
+    _cmd_import_csv,
     _cmd_import_github_url,
     _cmd_import_markdown_list,
     _cmd_seed_demo,
@@ -33,6 +34,7 @@ def test_issuedeck_help_lists_subcommands():
         "seed-demo",
         "import-github-url",
         "import-markdown-list",
+        "import-csv",
         "mcp",
     ):
         assert cmd in out, f"{cmd} missing from --help"
@@ -312,6 +314,69 @@ def test_import_markdown_list_creates_items_from_tasks(tmp_path):
         ).fetchall()
     assert row == ("FEAT-0001", "Import markdown task", "proposed")
     assert tags == [("markdown",), ("todo",)]
+
+
+def test_import_csv_creates_items_from_tracker_export(tmp_path):
+    cfg_path = tmp_path / "server.toml"
+    _ensure_demo_config(cfg_path)
+    server_cfg = load_server_config(cfg_path)
+    _ensure_demo_project_config(server_cfg.projects_dir, "example")
+    source = tmp_path / "issues.csv"
+    source.write_text(
+        "\n".join([
+            "Issue,Type,State,Labels,Branches,URL,Description,ID",
+            (
+                "Import CSV export,Bug,Verified,\"migration,urgent\",Main,"
+                "https://github.com/example/repo/issues/42,"
+                "Keep importer notes,GH-42"
+            ),
+        ]),
+        encoding="utf-8",
+    )
+
+    rc = asyncio.run(_cmd_import_csv(
+        cfg_path,
+        "example",
+        source,
+        kind="feature",
+        default_status=None,
+        tags=["imported"],
+        applies_to=None,
+        presets=["github"],
+        field_aliases=["title=Issue"],
+        status_maps=["Verified=done"],
+        dry_run=False,
+    ))
+
+    assert rc == 0
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        row = conn.execute(
+            """
+            select items.local_id, items.kind, items.status, items.title,
+                   item_external_links.link_type
+            from items
+            join item_external_links on item_external_links.item_pk = items.pk
+            where items.title = 'Import CSV export'
+            """
+        ).fetchone()
+        tags = conn.execute(
+            """
+            select tag from item_tags
+            join items on items.pk = item_tags.item_pk
+            where items.title = 'Import CSV export'
+            order by tag
+            """
+        ).fetchall()
+        applies_to = conn.execute(
+            """
+            select branch_key from item_applies_to
+            join items on items.pk = item_applies_to.item_pk
+            where items.title = 'Import CSV export'
+            """
+        ).fetchall()
+    assert row == ("BUG-0001", "bug", "done", "Import CSV export", "github_issue")
+    assert tags == [("csv",), ("imported",), ("migration",), ("urgent",)]
+    assert applies_to == [("main",)]
 
 
 def test_cli_registry_rejects_project_key_filename_mismatch(tmp_path):
