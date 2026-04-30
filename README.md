@@ -18,19 +18,19 @@ tracker, a web dashboard for humans, and MCP tools for coding agents.
 
 ## Try It in 30 Seconds
 
-Run the latest GitHub version with fake demo data:
+Run the latest PyPI release with fake demo data:
 
 ```bash
-uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
+uvx issuedeck demo --open
 ```
 
 No clone or real project data is needed. The demo creates a local `example`
 project and opens the dashboard. Sign in with `issuedeck-local-token`.
 
-After the PyPI package is published, this will shorten to:
+To try the latest unreleased `main` branch instead:
 
 ```bash
-uvx issuedeck demo --open
+uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 ```
 
 ## Why IssueDeck
@@ -83,16 +83,16 @@ Daily triage shortcuts are documented in
 
 ## Quickstart
 
-Try the latest GitHub version without cloning:
-
-```bash
-uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
-```
-
-After the PyPI package is published, the command becomes:
+Try the latest PyPI release without cloning:
 
 ```bash
 uvx issuedeck demo --open
+```
+
+To try unreleased changes from GitHub:
+
+```bash
+uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 ```
 
 Start a local dashboard with fake demo data:

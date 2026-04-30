@@ -15,7 +15,7 @@ IssueDeck 是一个本地优先、自托管的事项看板，面向小团队和 
 试用：
 
 ```bash
-uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
+uvx issuedeck demo --open
 ```
 
 ## 社交平台短文案
@@ -31,10 +31,10 @@ uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 - Docker/GHCR 镜像发布
 - 签名生命周期 Webhooks
 
-从 GitHub 直接试用：
+直接试用：
 
 ```bash
-uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
+uvx issuedeck demo --open
 ```
 
 Repo: https://github.com/xq520mmy/IssueDeck
@@ -55,15 +55,15 @@ Activity Timeline、Ship 记录、Markdown 导入导出、scoped tokens、Docker
 默认 demo 使用假数据：
 
 ```bash
-uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
+uvx issuedeck demo --open
 ```
 
-PyPI 发布还差账号侧 Trusted Publishing 配置；在那之前，`uvx --from git+...`
-是最快试用方式。
+如果想试还没发布的 `main` 分支，可以使用 `uvx --from git+...`。
 
 ## 常用链接
 
 - 仓库：https://github.com/xq520mmy/IssueDeck
+- PyPI：https://pypi.org/project/issuedeck/
 - 最新 release：https://github.com/xq520mmy/IssueDeck/releases/latest
 - 截图画廊：https://github.com/xq520mmy/IssueDeck/blob/main/docs/gallery.zh-CN.md
 - 路线图：https://github.com/xq520mmy/IssueDeck/blob/main/ROADMAP.md

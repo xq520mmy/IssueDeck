@@ -3,16 +3,16 @@
 IssueDeck is ready for PyPI Trusted Publishing. This avoids long-lived PyPI API
 tokens in GitHub secrets and uses GitHub Actions OIDC instead.
 
-## Public Install Goal
+## Public Install
 
-After the PyPI project is published, users can try IssueDeck without cloning the
+IssueDeck is published on PyPI, so users can try it without cloning the
 repository:
 
 ```bash
 uvx issuedeck demo --open
 ```
 
-Until the PyPI project exists, users can still run the latest GitHub version:
+To test unreleased changes from GitHub:
 
 ```bash
 uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
@@ -20,7 +20,8 @@ uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 
 ## One-time PyPI Setup
 
-Create a pending publisher on PyPI:
+The canonical IssueDeck project has already completed this setup. For forks,
+mirrors, or future project-name changes, create a pending publisher on PyPI:
 
 - PyPI project name: `issuedeck`
 - Owner: `xq520mmy`
@@ -28,9 +29,9 @@ Create a pending publisher on PyPI:
 - Workflow filename: `pypi-publish.yml`
 - Environment name: `pypi`
 
-The project name is not reserved until the first successful publish. If someone
-else registers `issuedeck` before the first publish, the pending publisher will
-no longer work.
+The project name is not reserved until the first successful publish. After the
+first successful publish, the pending publisher becomes a normal project
+publisher.
 
 ## GitHub Setup
 
@@ -88,8 +89,8 @@ The matching PyPI pending publisher should be:
 - Workflow filename: `pypi-publish.yml`
 - Environment name: `pypi`
 
-After creating the pending publisher, rerun the `pypi-publish` workflow with
-the release tag, for example `v0.3.0`.
+After fixing the publisher configuration, rerun the `pypi-publish` workflow
+with the release tag, for example `v0.3.0`.
 
 ## Local Package Smoke Test
 

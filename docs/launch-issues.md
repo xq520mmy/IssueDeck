@@ -11,25 +11,22 @@ smoke tests, and the screenshot gallery.
 ## 1. Publish the PyPI package with Trusted Publishing
 
 GitHub issue: <https://github.com/xq520mmy/IssueDeck/issues/20>
-Status: GitHub environment and `PYPI_PUBLISH=true` are configured. A manual
-publish run reached PyPI and failed with `invalid-publisher`, which confirms
-the remaining blocker is the PyPI pending publisher configuration.
+Status: completed. `issuedeck` is published on PyPI, `PYPI_PUBLISH=true` is
+configured for future tags, and the PyPI smoke test passed.
 
 Labels: `enhancement`, `area: deployment`, `area: docs`
 
-IssueDeck can already be installed from GitHub with `uvx --from git+...`.
-Publishing to PyPI will make the short `uvx issuedeck demo --open` path work
-for new users.
+IssueDeck can be installed from PyPI with `uvx issuedeck demo --open`.
 
 Acceptance criteria:
 
-- Configure the PyPI project `issuedeck` with Trusted Publishing for owner
+- [x] Configure the PyPI project `issuedeck` with Trusted Publishing for owner
   `xq520mmy`, repository `IssueDeck`, workflow `pypi-publish.yml`, and
   environment `pypi`.
-- Enable the guarded publish path with the repository variable
+- [x] Enable the guarded publish path with the repository variable
   `PYPI_PUBLISH=true` or run the workflow manually against a release tag.
-- Verify a fresh machine can run `uvx issuedeck demo --open`.
-- Update README copy once the PyPI path is live.
+- [x] Verify a fresh machine can run `uvx issuedeck demo --open`.
+- [x] Update README copy once the PyPI path is live.
 
 ## 2. Add a webhook receiver examples page
 

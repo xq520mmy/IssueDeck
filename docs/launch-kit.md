@@ -15,7 +15,7 @@ Tagline:
 Try it:
 
 ```bash
-uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
+uvx issuedeck demo --open
 ```
 
 ## Social Post
@@ -31,10 +31,10 @@ It is a local-first issue deck for small teams and AI coding workflows:
 - Docker/GHCR release images
 - Signed lifecycle webhooks
 
-Try it from GitHub:
+Try it:
 
 ```bash
-uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
+uvx issuedeck demo --open
 ```
 
 Repo: https://github.com/xq520mmy/IssueDeck
@@ -56,15 +56,15 @@ webhooks.
 The demo path uses fake data by default:
 
 ```bash
-uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
+uvx issuedeck demo --open
 ```
 
-PyPI publishing is next; until then, `uvx --from git+...` is the fastest way to
-try it.
+To test unreleased changes from `main`, use `uvx --from git+...`.
 
 ## Useful Links
 
 - Repository: https://github.com/xq520mmy/IssueDeck
+- PyPI: https://pypi.org/project/issuedeck/
 - Latest release: https://github.com/xq520mmy/IssueDeck/releases/latest
 - Screenshot gallery: https://github.com/xq520mmy/IssueDeck/blob/main/docs/gallery.md
 - Roadmap: https://github.com/xq520mmy/IssueDeck/blob/main/ROADMAP.md

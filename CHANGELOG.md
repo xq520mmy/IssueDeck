@@ -7,6 +7,8 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-04-30
+
 ### Added
 
 - Added launch-kit docs with reusable public release copy and links for first
@@ -18,6 +20,7 @@ versioning once public releases begin.
 - Added a dashboard accessibility smoke checklist for UI contributions.
 - Added PyPI Trusted Publishing troubleshooting notes for `invalid-publisher`
   failures.
+- Updated public install docs now that `issuedeck` is published on PyPI.
 
 ### Changed
 

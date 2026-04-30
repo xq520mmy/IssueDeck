@@ -18,19 +18,19 @@ Dashboard，也给 coding agent 提供 MCP tools。
 
 ## 30 秒试用
 
-直接运行 GitHub 最新版本，使用假数据启动本地 demo：
+直接运行 PyPI 最新正式版本，使用假数据启动本地 demo：
 
 ```bash
-uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
+uvx issuedeck demo --open
 ```
 
 不需要 clone，也不会接触你的真实项目数据。命令会创建本地 `example` 项目并打开
 Dashboard，登录 token 是 `issuedeck-local-token`。
 
-PyPI 包发布后，命令会缩短为：
+如果想试还没发布的 `main` 分支：
 
 ```bash
-uvx issuedeck demo --open
+uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 ```
 
 ## 为什么用 IssueDeck
@@ -62,16 +62,16 @@ uvx issuedeck demo --open
 
 ## 快速开始
 
-不用 clone 仓库，直接运行 GitHub 最新版本：
-
-```bash
-uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
-```
-
-PyPI 包发布后，可以直接运行：
+不用 clone 仓库，直接运行 PyPI 最新正式版本：
 
 ```bash
 uvx issuedeck demo --open
+```
+
+如果想试还没发布的 GitHub main 分支：
+
+```bash
+uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 ```
 
 本地 demo：
