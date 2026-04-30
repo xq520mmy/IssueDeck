@@ -21,6 +21,7 @@ listed in `CHANGELOG.md`.
 - Docker Compose deployment, GHCR images, release assets, and SHA256 checksums.
 - GitHub issue forms, PR template, and security policy.
 - Dashboard onboarding empty states for fresh installs and empty projects.
+- Dashboard first-run setup checklist after login for new or demo projects.
 - Delete controls for saved dashboard filters.
 - Keyboard-friendly dashboard triage for search, filters, create, navigation,
   and item focus.
@@ -35,7 +36,6 @@ listed in `CHANGELOG.md`.
 
 ## Near Term
 
-- A tighter first-run onboarding path inside the dashboard after login.
 - More import/export adapters for common Markdown issue formats.
 - Release-announcement polish for project pages, screenshots, and examples.
 

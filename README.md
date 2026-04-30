@@ -73,7 +73,7 @@ Daily triage shortcuts are documented in
 - Frontmatter migration from existing Markdown trackers.
 - Server-rendered dashboard with list, kanban, detail, search, and create/edit flows.
 - Keyboard-friendly dashboard triage for search, filters, create, and item focus.
-- Dashboard project creation and language switch foundation.
+- Dashboard project creation, language switching, and first-run setup checklist.
 - MCP tools for coding-agent workflows.
 
 ## Requirements

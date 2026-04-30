@@ -122,8 +122,34 @@ async def test_dashboard_requires_login_cookie(app_ctx):
     r = await app_ctx.get("/dashboard/test")
     assert r.status_code == 200
     assert "Test" in r.text
+    assert "Setup checklist" in r.text
+    assert "Project ready" in r.text
+    assert "Open the queue" in r.text
     assert "Start the queue" in r.text
     assert "/dashboard/test/items-new" in r.text
+
+
+async def test_dashboard_overview_onboarding_is_translated(app_ctx):
+    await app_ctx.post(
+        "/dashboard/login",
+        data={"token": "test-tok", "next": "/dashboard/test"},
+        follow_redirects=False,
+    )
+
+    r = await app_ctx.post(
+        "/dashboard/language",
+        data={"lang": "zh-CN", "next": "/dashboard/test"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+
+    r = await app_ctx.get("/dashboard/test")
+    assert r.status_code == 200
+    assert '<html lang="zh-CN"' in r.text
+    assert "启动清单" in r.text
+    assert "项目已就绪" in r.text
+    assert "打开队列" in r.text
+    assert "Setup checklist" not in r.text
 
 
 async def test_dashboard_empty_install_has_onboarding(empty_app_ctx):

@@ -60,7 +60,7 @@ uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 - 软删除和恢复。
 - Ship 记录：绑定版本和 commit。
 - Markdown 导出和通用 frontmatter 迁移。
-- Dashboard 新建项目入口、中英文切换和键盘友好的分诊快捷键。
+- Dashboard 新建项目入口、中英文切换、首次启动清单和键盘友好的分诊快捷键。
 
 ## 快速开始
 

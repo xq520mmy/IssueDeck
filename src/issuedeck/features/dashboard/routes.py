@@ -217,6 +217,55 @@ def _work_queue_filters(project: ProjectConfig, view: str) -> dict:
     return filters
 
 
+def _overview_onboarding_steps(
+    project_key: str,
+    project: ProjectConfig,
+    total: int,
+    status_counts: dict[str, int],
+) -> list[dict[str, object]]:
+    terminal_count = sum(
+        status_counts.get(key, 0)
+        for key, cfg in project.statuses.items()
+        if cfg.terminal
+    )
+    active_count = sum(
+        status_counts.get(key, 0)
+        for key, cfg in project.statuses.items()
+        if not cfg.terminal
+    )
+    ready_view = "done" if terminal_count else "ready_to_ship"
+    return [
+        {
+            "complete": True,
+            "title": "onboarding.step_project_title",
+            "body": "onboarding.step_project_body",
+            "href": "/dashboard/projects-new",
+            "action": "onboarding.step_project_action",
+        },
+        {
+            "complete": total > 0,
+            "title": "onboarding.step_item_title",
+            "body": "onboarding.step_item_body",
+            "href": f"/dashboard/{project_key}/items-new",
+            "action": "onboarding.step_item_action",
+        },
+        {
+            "complete": active_count > 0,
+            "title": "onboarding.step_queue_title",
+            "body": "onboarding.step_queue_body",
+            "href": f"/dashboard/{project_key}/list?view=active",
+            "action": "onboarding.step_queue_action",
+        },
+        {
+            "complete": terminal_count > 0,
+            "title": "onboarding.step_ship_title",
+            "body": "onboarding.step_ship_body",
+            "href": f"/dashboard/{project_key}/list?view={ready_view}",
+            "action": "onboarding.step_ship_action",
+        },
+    ]
+
+
 def _work_queue_nav(project_key: str, active_view: str) -> list[dict[str, str | bool]]:
     queues = [
         ("recent", "Recently touched", "Clock"),
@@ -498,6 +547,10 @@ async def project_overview(project_key: str, request: Request):
         status_counts=status_counts,
         kind_counts=kind_counts,
         recent_items=recent.items,
+        show_setup_checklist=total <= 8,
+        setup_checklist_steps=_overview_onboarding_steps(
+            project_key, project, total, status_counts,
+        ),
         status_chart_json=json.dumps(status_chart),
         kind_chart_json=json.dumps(kind_chart),
         active_page="overview",

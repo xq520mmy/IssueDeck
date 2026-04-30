@@ -11,6 +11,13 @@ versioning once public releases begin.
 
 - Added `issuedeck import-github-url` for creating IssueDeck items linked to
   GitHub issue, pull request, and commit URLs.
+- Added a compact dashboard setup checklist for first-run projects after login.
+
+### Fixed
+
+- `issuedeck serve` and `issuedeck seed-demo` now apply database migrations
+  before touching SQLite, preventing stale local databases from returning
+  dashboard 500 errors after upgrades.
 
 ## [0.3.2] - 2026-04-30
 
