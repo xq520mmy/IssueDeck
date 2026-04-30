@@ -16,6 +16,23 @@ IssueDeck is a local-first, self-hosted issue deck for small teams and AI
 coding workflows. It gives multiple projects one shared FastAPI + SQLite
 tracker, a web dashboard for humans, and MCP tools for coding agents.
 
+## Try It in 30 Seconds
+
+Run the latest GitHub version with fake demo data:
+
+```bash
+uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
+```
+
+No clone or real project data is needed. The demo creates a local `example`
+project and opens the dashboard. Sign in with `issuedeck-local-token`.
+
+After the PyPI package is published, this will shorten to:
+
+```bash
+uvx issuedeck demo --open
+```
+
 ## Why IssueDeck
 
 - Replace project-specific Markdown trackers with one structured source of
@@ -312,6 +329,9 @@ npm run build:css
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 Dashboard UI work should follow [DESIGN.md](DESIGN.md).
 See [ROADMAP.md](ROADMAP.md) for planned work and contribution areas.
+Starter contribution candidates live in
+[Starter Issue Backlog](docs/launch-issues.md).
+Maintainer launch copy is collected in [Launch Kit](docs/launch-kit.md).
 For support and issue-reporting guidance, see [SUPPORT.md](SUPPORT.md).
 For sensitive vulnerabilities, follow [SECURITY.md](SECURITY.md).
 For PyPI Trusted Publishing setup, see

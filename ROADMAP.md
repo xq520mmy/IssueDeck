@@ -8,7 +8,7 @@ Current public release: `v0.3.0`.
 The `main` branch may include unreleased contributor-experience improvements
 listed in `CHANGELOG.md`.
 
-## Shipped in v0.2
+## Shipped in v0.3
 
 - One-command local demo mode with fake project data.
 - MCP client setup guides for Claude Desktop, Claude Code, and Cursor.
@@ -20,6 +20,12 @@ listed in `CHANGELOG.md`.
   context.
 - Docker Compose deployment, GHCR images, release assets, and SHA256 checksums.
 - GitHub issue forms, PR template, and security policy.
+- Dashboard onboarding empty states for fresh installs and empty projects.
+- Delete controls for saved dashboard filters.
+- Keyboard-friendly dashboard triage for search, filters, create, navigation,
+  and item focus.
+- Signed asynchronous lifecycle webhooks for item create, update, ship, delete,
+  and restore events.
 
 ## Near Term
 
@@ -27,12 +33,12 @@ listed in `CHANGELOG.md`.
 - A tighter first-run onboarding path inside the dashboard after login.
 - GitHub import/link helpers that turn issues or PRs into IssueDeck external
   links without requiring a full sync engine.
-- Keyboard-friendly dashboard triage for list and kanban views.
 - More import/export adapters for common Markdown issue formats.
+- Webhook receiver examples for common stacks such as FastAPI, Flask, and Node.
+- Docker Compose hardening examples for small production deployments.
 
 ## Later
 
-- Webhooks for item lifecycle events and ship records.
 - Optional notification hooks for Slack, Discord, or email.
 - A lightweight plugin surface for custom item fields and project templates.
 - Project-level audit/export bundles for teams that need periodic snapshots.

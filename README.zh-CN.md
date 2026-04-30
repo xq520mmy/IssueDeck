@@ -16,6 +16,23 @@ IssueDeck 是一个本地优先、自托管的事项看板，面向小团队和 
 工作流。它用一套 FastAPI + SQLite 服务管理多个项目，给人提供 Web
 Dashboard，也给 coding agent 提供 MCP tools。
 
+## 30 秒试用
+
+直接运行 GitHub 最新版本，使用假数据启动本地 demo：
+
+```bash
+uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
+```
+
+不需要 clone，也不会接触你的真实项目数据。命令会创建本地 `example` 项目并打开
+Dashboard，登录 token 是 `issuedeck-local-token`。
+
+PyPI 包发布后，命令会缩短为：
+
+```bash
+uvx issuedeck demo --open
+```
+
 ## 为什么用 IssueDeck
 
 - 用结构化服务替代散落在项目里的 Markdown tracker，让事项、commit、分支和
@@ -167,6 +184,9 @@ ISSUEDECK_TOKEN=your-secret-token
 
 `data/*` 和除 `projects/example.toml` 之外的项目配置已经被 `.gitignore` 忽略。
 发版前请确认本地真实项目数据没有被加入 git。
+
+首发传播文案见 [Launch Kit](docs/launch-kit.zh-CN.md)。
+适合新贡献者认领的方向见 [Starter Issue Backlog](docs/launch-issues.md)。
 
 ## License
 

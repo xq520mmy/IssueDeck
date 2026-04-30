@@ -7,6 +7,18 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+### Added
+
+- Added launch-kit docs with reusable public release copy and links for first
+  open-source sharing.
+- Expanded the starter issue backlog for contributor-friendly docs and
+  deployment follow-ups.
+
+### Changed
+
+- Refreshed README, roadmap, and security policy copy for the `v0.3.0` public
+  release.
+
 ## [0.3.0] - 2026-04-30
 
 ### Added
