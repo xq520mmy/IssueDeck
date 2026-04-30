@@ -215,6 +215,57 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_csv.add_argument("--dry-run", action="store_true", help="Print the import summary only")
 
+    p_json = sub.add_parser(
+        "import-json",
+        help="Create items from JSON tracker exports",
+    )
+    p_json.add_argument("source", help="JSON file exported from a tracker")
+    p_json.add_argument("--config", default="server.toml")
+    p_json.add_argument("--project-key", required=True)
+    p_json.add_argument(
+        "--kind",
+        default=None,
+        help="Default IssueDeck kind; row kind/type fields can override it",
+    )
+    p_json.add_argument(
+        "--default-status",
+        default=None,
+        help=(
+            "Status to use when an object has no status; "
+            "defaults to the first non-terminal status"
+        ),
+    )
+    p_json.add_argument("--tag", action="append", default=[], help="Add a tag")
+    p_json.add_argument(
+        "--applies-to",
+        action="append",
+        default=None,
+        metavar="BRANCH",
+        help="Default target branch; repeat for multiple branches",
+    )
+    p_json.add_argument(
+        "--preset",
+        action="append",
+        default=[],
+        choices=["generic", "github", "jira", "linear"],
+        help="Apply common JSON field aliases",
+    )
+    p_json.add_argument(
+        "--field-alias",
+        action="append",
+        default=[],
+        metavar="FIELD=ALIAS[,ALIAS...]",
+        help="Add JSON field aliases, e.g. title=Issue, status=Workflow",
+    )
+    p_json.add_argument(
+        "--status-map",
+        action="append",
+        default=[],
+        metavar="SOURCE=TARGET",
+        help="Map source statuses to project statuses, e.g. Closed=done",
+    )
+    p_json.add_argument("--dry-run", action="store_true", help="Print the import summary only")
+
     sub.add_parser("mcp", help="Run the MCP stdio server")
 
     args = parser.parse_args(argv)
@@ -270,6 +321,20 @@ def main(argv: list[str] | None = None) -> int:
         ))
     if args.cmd == "import-csv":
         return asyncio.run(_cmd_import_csv(
+            Path(args.config),
+            args.project_key,
+            Path(args.source),
+            kind=args.kind,
+            default_status=args.default_status,
+            tags=args.tag,
+            applies_to=args.applies_to,
+            presets=args.preset,
+            field_aliases=args.field_alias,
+            status_maps=args.status_map,
+            dry_run=args.dry_run,
+        ))
+    if args.cmd == "import-json":
+        return asyncio.run(_cmd_import_json(
             Path(args.config),
             args.project_key,
             Path(args.source),
@@ -717,6 +782,74 @@ async def _cmd_import_csv(
             print(
                 f"[{label}] rows={report.rows_found} "
                 f"skipped={report.rows_skipped} "
+                f"planned={report.items_planned} "
+                f"written={report.items_written} "
+                f"status_mapped={report.status_mapped} "
+                f"external_links={report.external_links}",
+                file=sys.stderr,
+            )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    finally:
+        await engine.dispose()
+    return 0
+
+
+async def _cmd_import_json(
+    config_path: Path,
+    project_key: str,
+    source: Path,
+    *,
+    kind: str | None,
+    default_status: str | None,
+    tags: list[str],
+    applies_to: list[str] | None,
+    presets: list[str],
+    field_aliases: list[str],
+    status_maps: list[str],
+    dry_run: bool,
+) -> int:
+    from issuedeck.core.db import make_engine, make_session_factory
+    from issuedeck.features.migrate.csv_items import parse_status_map_options
+    from issuedeck.features.migrate.json_items import (
+        JsonItemMapping,
+        import_json_items,
+    )
+
+    try:
+        mapping = JsonItemMapping.from_alias_options(field_aliases, presets=presets)
+        status_map = parse_status_map_options(status_maps)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    _upgrade_database(config_path)
+    registry = _build_registry(config_path)
+    project = registry.project(project_key)
+    item_kind = kind or next(iter(project.kinds.keys()))
+    db_path = registry.server.data_dir / "tracker.db"
+    engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_factory = make_session_factory(engine)
+    try:
+        async with session_factory() as session:
+            report = await import_json_items(
+                source,
+                project_key,
+                registry,
+                session,
+                kind=item_kind,
+                default_status=default_status,
+                tags=tags or None,
+                applies_to=applies_to,
+                status_map=status_map,
+                mapping=mapping,
+                dry_run=dry_run,
+            )
+            label = "dry-run" if dry_run else "ok"
+            print(
+                f"[{label}] objects={report.objects_found} "
+                f"skipped={report.objects_skipped} "
                 f"planned={report.items_planned} "
                 f"written={report.items_written} "
                 f"status_mapped={report.status_mapped} "

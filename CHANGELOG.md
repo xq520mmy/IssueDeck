@@ -15,6 +15,9 @@ versioning once public releases begin.
   into IssueDeck items.
 - Added `issuedeck import-csv` with common tracker presets, custom column
   aliases, status mapping, and dry-run validation.
+- Added `issuedeck import-json` for top-level arrays, single objects, and
+  wrapped tracker exports such as `items`, `issues`, `data`, `records`, or
+  `tasks`.
 - Added a compact dashboard setup checklist for first-run projects after login.
 
 ### Fixed

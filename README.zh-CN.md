@@ -54,8 +54,8 @@ uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 - 外部链接：关联 GitHub issue、PR、commit 和其他审查上下文。
 - GitHub URL helper：从 issue、PR、commit URL 创建带 external link 的
   IssueDeck item，不做完整同步。
-- CSV 和 Markdown task-list 导入：把 tracker 导出、`TODO.md` 和 GitHub
-  checklist 转成 IssueDeck item。
+- CSV、JSON 和 Markdown task-list 导入：把 tracker 导出、`TODO.md` 和
+  GitHub checklist 转成 IssueDeck item。
 - Activity Timeline：自动记录生命周期事件，也支持手动评论。
 - Dashboard 工作队列：最近更新、待办、进行中、被阻塞、待发布、已完成、已删除。
 - 已保存筛选：每个项目保存常用视图，例如活跃 Bug、阻塞事项和待发布队列。
@@ -214,6 +214,22 @@ uv run issuedeck import-csv issues.csv \
 
 自定义表头可以用 `--field-alias`，写入前建议先用 `--dry-run` 校验。详见
 [CSV 导入](docs/csv-import.zh-CN.md)。
+
+## JSON 导入
+
+导入 JSON 数组，或 `{ "issues": [...] }` 这类带包装字段的 tracker export：
+
+```bash
+uv run issuedeck import-json issues.json \
+  --config server.toml \
+  --project-key example \
+  --preset github \
+  --status-map open=proposed \
+  --status-map closed=done
+```
+
+自定义 key 可以用 `--field-alias`，写入前建议先用 `--dry-run` 校验。详见
+[JSON 导入](docs/json-import.zh-CN.md)。
 
 ## MCP
 

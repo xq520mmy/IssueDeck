@@ -34,13 +34,14 @@ listed in `CHANGELOG.md`.
   checklist-style issue descriptions.
 - CSV importer for tracker exports and spreadsheet rows, with presets, column
   aliases, status mapping, and dry-run validation.
+- JSON importer for arrays, single objects, and wrapped tracker exports.
 - Webhook receiver examples for FastAPI, Flask, and Node/Express.
 - Docker Compose hardening examples for small production deployments.
 - Dashboard accessibility smoke checklist for UI contributors.
 
 ## Near Term
 
-- More import/export adapters for JSON and hosted tracker exports.
+- Hosted tracker export helpers for GitHub, Linear, and Jira.
 - Release-announcement polish for project pages, screenshots, and examples.
 
 ## Later
