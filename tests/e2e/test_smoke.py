@@ -3,6 +3,8 @@ from pathlib import Path
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from issuedeck import __version__
+
 
 @pytest.fixture
 async def app_ctx(tmp_path):
@@ -81,7 +83,7 @@ async def test_healthz(app_ctx):
 async def test_readyz(app_ctx):
     r = await app_ctx.get("/readyz")
     assert r.status_code == 200
-    assert r.json() == {"status": "ready", "version": "0.3.0", "projects": 1}
+    assert r.json() == {"status": "ready", "version": __version__, "projects": 1}
 
 
 async def test_root_redirects_to_dashboard(app_ctx):

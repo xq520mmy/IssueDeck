@@ -7,6 +7,13 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-04-30
+
+### Fixed
+
+- Aligned the runtime `issuedeck.__version__` value with the published package
+  version so health checks report the current release.
+
 ## [0.3.1] - 2026-04-30
 
 ### Added
