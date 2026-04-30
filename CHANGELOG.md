@@ -7,6 +7,8 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-30
+
 ### Added
 
 - Added dashboard onboarding empty states for fresh installs and empty projects.
@@ -24,6 +26,12 @@ versioning once public releases begin.
 ### Fixed
 
 - Fixed fresh dashboard installs rendering broken project links when no projects exist yet.
+- Fixed generated Tailwind CSS drift between Windows and Linux builds.
+
+### Changed
+
+- Raised Python dependency floors for FastAPI, Uvicorn, SQLAlchemy, Pydantic, and Pydantic Settings.
+- Upgraded dashboard CSS builds to Tailwind CSS v4.
 
 ## [0.2.1] - 2026-04-29
 

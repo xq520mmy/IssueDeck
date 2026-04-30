@@ -49,13 +49,13 @@ ISSUEDECK_IMAGE=issuedeck:local docker compose up -d
 Release tags are also published to GHCR. Pin an exact version in production:
 
 ```bash
-ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.2.1 docker compose up -d
+ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.3.0 docker compose up -d
 ```
 
 Available GHCR tags:
 
 - `latest`: newest stable release tag.
-- `0.2.1`, `0.2`, and `v0.2.1`: versioned release tags.
+- `0.3.0`, `0.3`, and `v0.3.0`: versioned release tags.
 - `edge`: latest `main` branch image.
 
 ## Production Checklist

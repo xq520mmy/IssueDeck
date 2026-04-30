@@ -75,13 +75,13 @@ curl http://127.0.0.1:8765/readyz
 生产环境建议固定版本，而不是长期使用 `latest`：
 
 ```bash
-ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.2.1 docker compose up -d
+ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.3.0 docker compose up -d
 ```
 
 可用镜像标签：
 
 - `latest`：最新稳定 release。
-- `0.2.1`、`0.2`、`v0.2.1`：版本标签。
+- `0.3.0`、`0.3`、`v0.3.0`：版本标签。
 - `edge`：最新 `main` 分支镜像。
 
 如果要运行本地源码构建的镜像：
