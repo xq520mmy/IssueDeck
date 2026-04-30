@@ -11,6 +11,9 @@ smoke tests, and the screenshot gallery.
 ## 1. Publish the PyPI package with Trusted Publishing
 
 GitHub issue: <https://github.com/xq520mmy/IssueDeck/issues/20>
+Status: GitHub environment and `PYPI_PUBLISH=true` are configured. A manual
+publish run reached PyPI and failed with `invalid-publisher`, which confirms
+the remaining blocker is the PyPI pending publisher configuration.
 
 Labels: `enhancement`, `area: deployment`, `area: docs`
 

@@ -38,7 +38,9 @@ Create a GitHub environment named `pypi`. It does not need secrets for Trusted
 Publishing. Optional protection rules are useful if releases should require a
 manual reviewer.
 
-For automatic publishing on future tags, add a repository variable:
+For automatic publishing on future tags, add a repository variable. The
+canonical IssueDeck repository already has this enabled; forks or new mirrors
+need to configure it themselves:
 
 ```text
 PYPI_PUBLISH=true
@@ -61,6 +63,33 @@ upload. You can still publish manually from GitHub Actions by running
 uvx issuedeck --help
 uvx issuedeck demo --open
 ```
+
+## Troubleshooting `invalid-publisher`
+
+If the publish job fails with `invalid-publisher`, GitHub OIDC worked but PyPI
+could not find a matching trusted publisher. Check the PyPI pending publisher
+against the claims printed in the failed workflow log.
+
+For this repository, the expected GitHub Actions claims are:
+
+```text
+sub: repo:xq520mmy/IssueDeck:environment:pypi
+repository: xq520mmy/IssueDeck
+repository_owner: xq520mmy
+workflow: pypi-publish.yml
+environment: pypi
+```
+
+The matching PyPI pending publisher should be:
+
+- PyPI project name: `issuedeck`
+- Owner: `xq520mmy`
+- Repository: `IssueDeck`
+- Workflow filename: `pypi-publish.yml`
+- Environment name: `pypi`
+
+After creating the pending publisher, rerun the `pypi-publish` workflow with
+the release tag, for example `v0.3.0`.
 
 ## Local Package Smoke Test
 
