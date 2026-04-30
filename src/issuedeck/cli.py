@@ -243,6 +243,7 @@ def _cmd_serve(config_path: Path, *, host: str | None, port: int | None) -> int:
     import uvicorn
 
     from issuedeck.app import create_app
+    _upgrade_database(config_path)
     app = create_app(config_path)
     cfg = app.state.registry.server
     uvicorn.run(app, host=host or cfg.host, port=port or cfg.port,
@@ -423,6 +424,7 @@ async def _cmd_seed_demo(
     from issuedeck.core.db import make_engine, make_session_factory
     from issuedeck.features.demo.seed import seed_demo_project
 
+    _upgrade_database(config_path)
     registry = _build_registry(config_path)
     db_path = registry.server.data_dir / "tracker.db"
     engine = make_engine(f"sqlite+aiosqlite:///{db_path}")

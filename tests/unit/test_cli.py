@@ -9,6 +9,8 @@ from issuedeck.cli import (
     _build_registry,
     _cmd_demo,
     _cmd_import_github_url,
+    _cmd_seed_demo,
+    _cmd_serve,
     _ensure_demo_config,
     _ensure_demo_project_config,
 )
@@ -86,6 +88,58 @@ def test_demo_prepare_creates_config_project_db_and_fake_data(tmp_path, monkeypa
             "select count(*) from items where project_key = 'example'"
         ).fetchone()[0]
     assert item_count == 8
+
+
+def test_serve_runs_database_migrations_before_starting(tmp_path, monkeypatch):
+    cfg_path = tmp_path / "server.toml"
+    _ensure_demo_config(cfg_path)
+    server_cfg = load_server_config(cfg_path)
+    _ensure_demo_project_config(server_cfg.projects_dir, "example")
+
+    run_calls = []
+
+    def fake_run(app, **kwargs):
+        run_calls.append((app, kwargs))
+
+    monkeypatch.setattr("uvicorn.run", fake_run)
+
+    rc = _cmd_serve(cfg_path, host="127.0.0.1", port=9999)
+
+    assert rc == 0
+    assert run_calls
+    assert run_calls[0][1]["host"] == "127.0.0.1"
+    assert run_calls[0][1]["port"] == 9999
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        table = conn.execute(
+            """
+            select name from sqlite_master
+            where type = 'table' and name = 'item_external_links'
+            """
+        ).fetchone()
+    assert table == ("item_external_links",)
+
+
+def test_seed_demo_runs_migrations_for_empty_database(tmp_path):
+    cfg_path = tmp_path / "server.toml"
+    _ensure_demo_config(cfg_path)
+    server_cfg = load_server_config(cfg_path)
+    _ensure_demo_project_config(server_cfg.projects_dir, "example")
+
+    rc = asyncio.run(_cmd_seed_demo(cfg_path, "example", force_reset=False))
+
+    assert rc == 0
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        item_count = conn.execute(
+            "select count(*) from items where project_key = 'example'"
+        ).fetchone()[0]
+        external_link_table = conn.execute(
+            """
+            select name from sqlite_master
+            where type = 'table' and name = 'item_external_links'
+            """
+        ).fetchone()
+    assert item_count == 8
+    assert external_link_table == ("item_external_links",)
 
 
 def test_import_github_url_dry_run_prints_create_payload(tmp_path, capsys):

@@ -93,11 +93,11 @@ Common causes:
 
 ## SQLite Migration Errors
 
-The demo command runs migrations automatically. For manual server startup, run:
+The `demo`, `serve`, `seed-demo`, and `import-github-url` commands run database
+migrations automatically. If you call Alembic directly, use:
 
 ```bash
 uv run alembic upgrade head
-uv run issuedeck serve --config server.toml
 ```
 
 If the database path is wrong, confirm `data_dir` in `server.toml` and create

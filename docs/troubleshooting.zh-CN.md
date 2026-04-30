@@ -92,11 +92,11 @@ uv run issuedeck serve --config server.toml
 
 ## SQLite 迁移错误
 
-demo 命令会自动执行迁移。手动启动服务时先运行：
+`demo`、`serve`、`seed-demo` 和 `import-github-url` 命令都会自动执行数据库迁移。
+如果你直接调用 Alembic，可以运行：
 
 ```bash
 uv run alembic upgrade head
-uv run issuedeck serve --config server.toml
 ```
 
 如果数据库路径不对，检查 `server.toml` 里的 `data_dir`，并创建目录：

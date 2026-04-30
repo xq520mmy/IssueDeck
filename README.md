@@ -226,10 +226,7 @@ Use `--dry-run` to preview the create payload before writing. See
 ## Run the server
 
 ```bash
-# Apply database migrations first
-uv run alembic upgrade head
-
-# Start the server
+# Start the server; it applies database migrations before listening.
 export ISSUEDECK_API_TOKEN="your-secret-token"
 uv run issuedeck serve --config server.toml
 ```
