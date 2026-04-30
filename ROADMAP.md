@@ -30,13 +30,15 @@ listed in `CHANGELOG.md`.
 - PyPI/uvx distribution so new users can try IssueDeck without cloning the repo.
 - GitHub URL helper that creates linked IssueDeck items from issue, pull
   request, and commit URLs without a full sync engine.
+- Markdown task-list importer for `TODO.md`, planning files, and GitHub
+  checklist-style issue descriptions.
 - Webhook receiver examples for FastAPI, Flask, and Node/Express.
 - Docker Compose hardening examples for small production deployments.
 - Dashboard accessibility smoke checklist for UI contributors.
 
 ## Near Term
 
-- More import/export adapters for common Markdown issue formats.
+- More import/export adapters for CSV, JSON, and hosted tracker exports.
 - Release-announcement polish for project pages, screenshots, and examples.
 
 ## Later

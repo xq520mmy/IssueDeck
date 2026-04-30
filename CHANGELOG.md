@@ -11,6 +11,8 @@ versioning once public releases begin.
 
 - Added `issuedeck import-github-url` for creating IssueDeck items linked to
   GitHub issue, pull request, and commit URLs.
+- Added `issuedeck import-markdown-list` for turning plain Markdown task lists
+  into IssueDeck items.
 - Added a compact dashboard setup checklist for first-run projects after login.
 
 ### Fixed

@@ -54,6 +54,8 @@ uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 - 外部链接：关联 GitHub issue、PR、commit 和其他审查上下文。
 - GitHub URL helper：从 issue、PR、commit URL 创建带 external link 的
   IssueDeck item，不做完整同步。
+- Markdown task-list 导入：把 `TODO.md` 和 GitHub checklist 转成 IssueDeck
+  item。
 - Activity Timeline：自动记录生命周期事件，也支持手动评论。
 - Dashboard 工作队列：最近更新、待办、进行中、被阻塞、待发布、已完成、已删除。
 - 已保存筛选：每个项目保存常用视图，例如活跃 Bug、阻塞事项和待发布队列。
@@ -181,6 +183,21 @@ uv run issuedeck import-github-url \
 
 加 `--dry-run` 可以先预览 create payload。详见
 [GitHub URL 导入](docs/github-import.zh-CN.md)。
+
+## Markdown 任务清单导入
+
+从文件或目录导入普通 Markdown checkbox：
+
+```bash
+uv run issuedeck import-markdown-list TODO.md \
+  --config server.toml \
+  --project-key example \
+  --kind feature \
+  --tag planning
+```
+
+默认会跳过已勾选任务；加 `--include-checked` 可以把它们导入到第一个 terminal
+status。详见 [Markdown 任务清单导入](docs/markdown-task-list-import.zh-CN.md)。
 
 ## MCP
 

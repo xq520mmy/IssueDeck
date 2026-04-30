@@ -60,6 +60,8 @@ Daily triage shortcuts are documented in
 - External links for GitHub issues, pull requests, commits, and other review context.
 - GitHub URL helper to create linked IssueDeck items from issue, pull request,
   or commit URLs without a full sync engine.
+- Markdown task-list import for turning `TODO.md` and GitHub checklist items
+  into IssueDeck work items.
 - Item activity timeline with automatic lifecycle events and manual comments.
 - Signed lifecycle webhooks for downstream automation on create, update, ship,
   delete, and restore events.
@@ -222,6 +224,22 @@ uv run issuedeck import-github-url \
 
 Use `--dry-run` to preview the create payload before writing. See
 [GitHub URL Import](docs/github-import.md).
+
+## Markdown Task List Import
+
+Import ordinary Markdown checklists from a file or directory:
+
+```bash
+uv run issuedeck import-markdown-list TODO.md \
+  --config server.toml \
+  --project-key example \
+  --kind feature \
+  --tag planning
+```
+
+Checked tasks are skipped by default; add `--include-checked` to import them
+into the first terminal project status. See
+[Markdown Task List Import](docs/markdown-task-list-import.md).
 
 ## Run the server
 

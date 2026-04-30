@@ -9,6 +9,7 @@ from issuedeck.cli import (
     _build_registry,
     _cmd_demo,
     _cmd_import_github_url,
+    _cmd_import_markdown_list,
     _cmd_seed_demo,
     _cmd_serve,
     _ensure_demo_config,
@@ -31,6 +32,7 @@ def test_issuedeck_help_lists_subcommands():
         "export",
         "seed-demo",
         "import-github-url",
+        "import-markdown-list",
         "mcp",
     ):
         assert cmd in out, f"{cmd} missing from --help"
@@ -265,6 +267,51 @@ def test_import_github_url_runs_migrations_for_empty_database(tmp_path):
         "Review GitHub issue #42 from example/repo",
         "github_issue",
     )
+
+
+def test_import_markdown_list_creates_items_from_tasks(tmp_path):
+    cfg_path = tmp_path / "server.toml"
+    _ensure_demo_config(cfg_path)
+    server_cfg = load_server_config(cfg_path)
+    _ensure_demo_project_config(server_cfg.projects_dir, "example")
+    source = tmp_path / "TODO.md"
+    source.write_text(
+        "\n".join([
+            "- [ ] Import markdown task",
+            "- [x] Skip checked by default",
+        ]),
+        encoding="utf-8",
+    )
+
+    rc = asyncio.run(_cmd_import_markdown_list(
+        cfg_path,
+        "example",
+        source,
+        kind="feature",
+        tags=["todo"],
+        applies_to=None,
+        include_checked=False,
+        dry_run=False,
+    ))
+
+    assert rc == 0
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        row = conn.execute(
+            """
+            select local_id, title, status
+            from items
+            where project_key = 'example'
+            """
+        ).fetchone()
+        tags = conn.execute(
+            """
+            select tag from item_tags
+            join items on items.pk = item_tags.item_pk
+            order by tag
+            """
+        ).fetchall()
+    assert row == ("FEAT-0001", "Import markdown task", "proposed")
+    assert tags == [("markdown",), ("todo",)]
 
 
 def test_cli_registry_rejects_project_key_filename_mismatch(tmp_path):

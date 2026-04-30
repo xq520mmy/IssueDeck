@@ -140,6 +140,33 @@ def main(argv: list[str] | None = None) -> int:
     p_gh.add_argument("--link-label", default=None, help="Override the external link label")
     p_gh.add_argument("--dry-run", action="store_true", help="Print the create payload only")
 
+    p_md = sub.add_parser(
+        "import-markdown-list",
+        help="Create items from GitHub-style Markdown task lists",
+    )
+    p_md.add_argument("source", help="Markdown file or directory containing *.md files")
+    p_md.add_argument("--config", default="server.toml")
+    p_md.add_argument("--project-key", required=True)
+    p_md.add_argument(
+        "--kind",
+        default=None,
+        help="IssueDeck kind to create; defaults to the first kind in the project config",
+    )
+    p_md.add_argument("--tag", action="append", default=[], help="Add a tag")
+    p_md.add_argument(
+        "--applies-to",
+        action="append",
+        default=None,
+        metavar="BRANCH",
+        help="Target branch; repeat for multiple branches",
+    )
+    p_md.add_argument(
+        "--include-checked",
+        action="store_true",
+        help="Import checked tasks into the first terminal project status",
+    )
+    p_md.add_argument("--dry-run", action="store_true", help="Print the import summary only")
+
     sub.add_parser("mcp", help="Run the MCP stdio server")
 
     args = parser.parse_args(argv)
@@ -180,6 +207,17 @@ def main(argv: list[str] | None = None) -> int:
             tags=args.tag,
             applies_to=args.applies_to,
             link_label=args.link_label,
+            dry_run=args.dry_run,
+        ))
+    if args.cmd == "import-markdown-list":
+        return asyncio.run(_cmd_import_markdown_list(
+            Path(args.config),
+            args.project_key,
+            Path(args.source),
+            kind=args.kind,
+            tags=args.tag,
+            applies_to=args.applies_to,
+            include_checked=args.include_checked,
             dry_run=args.dry_run,
         ))
     if args.cmd == "mcp":
@@ -506,6 +544,58 @@ async def _cmd_import_github_url(
                 file=sys.stderr,
             )
             print(item.local_id)
+    finally:
+        await engine.dispose()
+    return 0
+
+
+async def _cmd_import_markdown_list(
+    config_path: Path,
+    project_key: str,
+    source: Path,
+    *,
+    kind: str | None,
+    tags: list[str],
+    applies_to: list[str] | None,
+    include_checked: bool,
+    dry_run: bool,
+) -> int:
+    from issuedeck.core.db import make_engine, make_session_factory
+    from issuedeck.features.migrate.markdown_tasks import import_markdown_task_list
+
+    _upgrade_database(config_path)
+    registry = _build_registry(config_path)
+    project = registry.project(project_key)
+    item_kind = kind or next(iter(project.kinds.keys()))
+    db_path = registry.server.data_dir / "tracker.db"
+    engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_factory = make_session_factory(engine)
+    try:
+        async with session_factory() as session:
+            report = await import_markdown_task_list(
+                source,
+                project_key,
+                registry,
+                session,
+                kind=item_kind,
+                tags=tags or None,
+                applies_to=applies_to,
+                include_checked=include_checked,
+                dry_run=dry_run,
+            )
+            label = "dry-run" if dry_run else "ok"
+            print(
+                f"[{label}] tasks={report.tasks_found} "
+                f"planned={report.items_planned} "
+                f"written={report.items_written} "
+                f"checked={report.checked_tasks} "
+                f"skipped_checked={report.skipped_checked} "
+                f"external_links={report.external_links}",
+                file=sys.stderr,
+            )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     finally:
         await engine.dispose()
     return 0
