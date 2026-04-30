@@ -1,4 +1,4 @@
-"""CLI entry point. Subcommands: demo / serve / migrate / export / mcp."""
+"""CLI entry point. Subcommands for local demo, server, import, export, and MCP."""
 
 from __future__ import annotations
 
@@ -115,6 +115,31 @@ def main(argv: list[str] | None = None) -> int:
     p_seed.add_argument("--project-key", default="example")
     p_seed.add_argument("--force-reset", action="store_true")
 
+    p_gh = sub.add_parser(
+        "import-github-url",
+        help="Create an item linked to a GitHub issue, pull request, or commit URL",
+    )
+    p_gh.add_argument("url", help="GitHub issue, pull request, or commit URL")
+    p_gh.add_argument("--config", default="server.toml")
+    p_gh.add_argument("--project-key", required=True)
+    p_gh.add_argument(
+        "--kind",
+        default=None,
+        help="IssueDeck kind to create; defaults to the first kind in the project config",
+    )
+    p_gh.add_argument("--title", default=None, help="Override the generated item title")
+    p_gh.add_argument("--body", default=None, help="Override the generated item body")
+    p_gh.add_argument("--tag", action="append", default=[], help="Add a tag")
+    p_gh.add_argument(
+        "--applies-to",
+        action="append",
+        default=None,
+        metavar="BRANCH",
+        help="Target branch; repeat for multiple branches",
+    )
+    p_gh.add_argument("--link-label", default=None, help="Override the external link label")
+    p_gh.add_argument("--dry-run", action="store_true", help="Print the create payload only")
+
     sub.add_parser("mcp", help="Run the MCP stdio server")
 
     args = parser.parse_args(argv)
@@ -143,6 +168,19 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "seed-demo":
         return asyncio.run(_cmd_seed_demo(
             Path(args.config), args.project_key, args.force_reset,
+        ))
+    if args.cmd == "import-github-url":
+        return asyncio.run(_cmd_import_github_url(
+            Path(args.config),
+            args.project_key,
+            args.url,
+            kind=args.kind,
+            title=args.title,
+            body=args.body,
+            tags=args.tag,
+            applies_to=args.applies_to,
+            link_label=args.link_label,
+            dry_run=args.dry_run,
         ))
     if args.cmd == "mcp":
         from issuedeck.mcp.__main__ import run as mcp_run
@@ -402,6 +440,70 @@ async def _cmd_seed_demo(
                 f"for project '{report.project_key}'",
                 file=sys.stderr,
             )
+    finally:
+        await engine.dispose()
+    return 0
+
+
+async def _cmd_import_github_url(
+    config_path: Path,
+    project_key: str,
+    url: str,
+    *,
+    kind: str | None,
+    title: str | None,
+    body: str | None,
+    tags: list[str],
+    applies_to: list[str] | None,
+    link_label: str | None,
+    dry_run: bool,
+) -> int:
+    from pydantic import ValidationError
+
+    from issuedeck.core.db import make_engine, make_session_factory
+    from issuedeck.features.items.external_links import github_import_payload
+    from issuedeck.features.items.repo import ItemRepo
+    from issuedeck.features.items.schemas import CreateItemRequest
+    from issuedeck.features.items.service import ItemService
+
+    registry = _build_registry(config_path)
+    project = registry.project(project_key)
+    item_kind = kind or next(iter(project.kinds.keys()))
+    try:
+        payload = github_import_payload(
+            url,
+            kind=item_kind,
+            title=title,
+            body=body,
+            tags=tags or None,
+            applies_to=applies_to,
+            link_label=link_label,
+        )
+        req = CreateItemRequest.model_validate(payload)
+    except ValidationError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if dry_run:
+        print(req.model_dump_json(indent=2))
+        return 0
+
+    _upgrade_database(config_path)
+    db_path = registry.server.data_dir / "tracker.db"
+    engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_factory = make_session_factory(engine)
+    try:
+        async with session_factory() as session:
+            service = ItemService(ItemRepo(session), registry, session)
+            item = await service.create(project_key, req)
+            print(
+                f"[ok] created {item.local_id} from {req.external_links[0].url}",
+                file=sys.stderr,
+            )
+            print(item.local_id)
     finally:
         await engine.dispose()
     return 0

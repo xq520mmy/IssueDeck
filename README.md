@@ -58,6 +58,8 @@ Daily triage shortcuts are documented in
 - Full-text search via SQLite FTS5.
 - Bidirectional relationships (`blocks`/`blocked_by`, `related_to`).
 - External links for GitHub issues, pull requests, commits, and other review context.
+- GitHub URL helper to create linked IssueDeck items from issue, pull request,
+  or commit URLs without a full sync engine.
 - Item activity timeline with automatic lifecycle events and manual comments.
 - Signed lifecycle webhooks for downstream automation on create, update, ship,
   delete, and restore events.
@@ -205,6 +207,21 @@ To intentionally replace that project's items, add `--force-reset`.
 
 For the full first-run flow, prefer `uv run issuedeck demo`; it creates config,
 runs migrations, seeds fake data, and starts the dashboard.
+
+## GitHub URL Helper
+
+Create an IssueDeck item from a GitHub issue, pull request, or commit URL:
+
+```bash
+uv run issuedeck import-github-url \
+  --config server.toml \
+  --project-key example \
+  --kind feature \
+  https://github.com/example/repo/issues/42
+```
+
+Use `--dry-run` to preview the create payload before writing. See
+[GitHub URL Import](docs/github-import.md).
 
 ## Run the server
 

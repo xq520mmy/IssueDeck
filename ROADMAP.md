@@ -27,6 +27,8 @@ listed in `CHANGELOG.md`.
 - Signed asynchronous lifecycle webhooks for item create, update, ship, delete,
   and restore events.
 - PyPI/uvx distribution so new users can try IssueDeck without cloning the repo.
+- GitHub URL helper that creates linked IssueDeck items from issue, pull
+  request, and commit URLs without a full sync engine.
 - Webhook receiver examples for FastAPI, Flask, and Node/Express.
 - Docker Compose hardening examples for small production deployments.
 - Dashboard accessibility smoke checklist for UI contributors.
@@ -34,8 +36,6 @@ listed in `CHANGELOG.md`.
 ## Near Term
 
 - A tighter first-run onboarding path inside the dashboard after login.
-- GitHub import/link helpers that turn issues or PRs into IssueDeck external
-  links without requiring a full sync engine.
 - More import/export adapters for common Markdown issue formats.
 - Release-announcement polish for project pages, screenshots, and examples.
 

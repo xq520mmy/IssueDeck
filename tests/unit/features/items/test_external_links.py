@@ -1,4 +1,10 @@
-from issuedeck.features.items.external_links import infer_external_link
+import pytest
+
+from issuedeck.features.items.external_links import (
+    github_import_payload,
+    infer_external_link,
+    parse_github_reference,
+)
 from issuedeck.features.items.schemas import ExternalLinkInput
 
 
@@ -60,3 +66,39 @@ def test_schema_preserves_custom_label():
 
     assert link.link_type == "github_issue"
     assert link.label == "Customer report"
+
+
+def test_parse_github_reference_exposes_structured_metadata():
+    ref = parse_github_reference("https://github.com/example/repo/issues/42")
+
+    assert ref == {
+        "link_type": "github_issue",
+        "label": "Issue #42",
+        "url": "https://github.com/example/repo/issues/42",
+        "owner": "example",
+        "repo": "repo",
+        "number": 42,
+    }
+
+
+def test_github_import_payload_generates_create_item_payload():
+    payload = github_import_payload(
+        "https://github.com/example/repo/pull/12",
+        kind="feature",
+        applies_to=["main"],
+    )
+
+    assert payload["kind"] == "feature"
+    assert payload["title"] == "Review GitHub PR #12 from example/repo"
+    assert payload["tags"] == ["github"]
+    assert payload["applies_to"] == ["main"]
+    assert payload["external_links"] == [{
+        "url": "https://github.com/example/repo/pull/12",
+        "link_type": "github_pr",
+        "label": "PR #12",
+    }]
+
+
+def test_github_import_payload_rejects_non_github_urls():
+    with pytest.raises(ValueError, match="GitHub issue"):
+        github_import_payload("https://example.com/review/1", kind="feature")

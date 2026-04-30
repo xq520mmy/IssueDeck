@@ -52,6 +52,8 @@ uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 - SQLite FTS5 全文搜索。
 - 双向关系：`blocks`、`blocked_by`、`related_to`。
 - 外部链接：关联 GitHub issue、PR、commit 和其他审查上下文。
+- GitHub URL helper：从 issue、PR、commit URL 创建带 external link 的
+  IssueDeck item，不做完整同步。
 - Activity Timeline：自动记录生命周期事件，也支持手动评论。
 - Dashboard 工作队列：最近更新、待办、进行中、被阻塞、待发布、已完成、已删除。
 - 已保存筛选：每个项目保存常用视图，例如活跃 Bug、阻塞事项和待发布队列。
@@ -164,6 +166,21 @@ IssueDeck 支持可选的签名生命周期 Webhooks，可以在事项创建、�
 恢复时通知外部自动化系统。配置示例和签名校验方式见
 [生命周期 Webhooks](docs/webhooks.zh-CN.md)。FastAPI、Flask、Node/Express 的
 receiver 示例见 [Webhook Receiver 示例](docs/webhook-receivers.zh-CN.md)。
+
+## GitHub URL Helper
+
+从 GitHub issue、PR 或 commit URL 创建 IssueDeck item：
+
+```bash
+uv run issuedeck import-github-url \
+  --config server.toml \
+  --project-key example \
+  --kind feature \
+  https://github.com/example/repo/issues/42
+```
+
+加 `--dry-run` 可以先预览 create payload。详见
+[GitHub URL 导入](docs/github-import.zh-CN.md)。
 
 ## MCP
 

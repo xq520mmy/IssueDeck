@@ -7,6 +7,11 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+### Added
+
+- Added `issuedeck import-github-url` for creating IssueDeck items linked to
+  GitHub issue, pull request, and commit URLs.
+
 ## [0.3.2] - 2026-04-30
 
 ### Fixed
