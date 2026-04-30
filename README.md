@@ -273,6 +273,12 @@ uv run issuedeck import-json issues.json \
 Use `--field-alias` for custom keys and `--dry-run` to validate before writing.
 See [JSON Import](docs/json-import.md).
 
+## Hosted Tracker Exports
+
+For GitHub Issues, Linear, Jira, and generic table exports, see
+[Hosted Tracker Export Helpers](docs/hosted-tracker-exports.md). The guide
+shows source export commands and matching `import-json` / `import-csv` calls.
+
 ## Run the server
 
 ```bash

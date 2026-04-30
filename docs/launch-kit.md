@@ -125,3 +125,4 @@ To test unreleased changes from `main`, use `uvx --from git+...`.
 - Starter issues: https://github.com/xq520mmy/IssueDeck/blob/main/docs/launch-issues.md
 - CSV import: https://github.com/xq520mmy/IssueDeck/blob/main/docs/csv-import.md
 - JSON import: https://github.com/xq520mmy/IssueDeck/blob/main/docs/json-import.md
+- Hosted tracker exports: https://github.com/xq520mmy/IssueDeck/blob/main/docs/hosted-tracker-exports.md

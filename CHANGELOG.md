@@ -19,6 +19,8 @@ versioning once public releases begin.
   wrapped tracker exports such as `items`, `issues`, `data`, `records`, or
   `tasks`.
 - Added a compact dashboard setup checklist for first-run projects after login.
+- Added hosted tracker export helper docs for GitHub Issues, Linear, Jira, and
+  generic table sources.
 
 ### Changed
 

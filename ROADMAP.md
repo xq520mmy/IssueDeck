@@ -40,10 +40,13 @@ listed in `CHANGELOG.md`.
 - Dashboard accessibility smoke checklist for UI contributors.
 - Maintainer launch kit with project-page copy, topics, demo script, and
   public sharing snippets.
+- Hosted tracker export helper docs for GitHub Issues, Linear, Jira, and
+  generic tables.
 
 ## Near Term
 
-- Hosted tracker export helpers for GitHub, Linear, and Jira.
+- Prepare the next tagged release with the new import helpers and launch kit
+  polish.
 
 ## Later
 

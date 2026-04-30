@@ -231,6 +231,12 @@ uv run issuedeck import-json issues.json \
 自定义 key 可以用 `--field-alias`，写入前建议先用 `--dry-run` 校验。详见
 [JSON 导入](docs/json-import.zh-CN.md)。
 
+## 托管 Tracker 导出
+
+GitHub Issues、Linear、Jira 和通用表格的导出方式见
+[托管 Tracker 导出指南](docs/hosted-tracker-exports.zh-CN.md)。里面包含源工具导出命令，
+以及对应的 `import-json` / `import-csv` 调用。
+
 ## MCP
 
 客户端配置示例见 [MCP 客户端接入](docs/mcp-clients.zh-CN.md)。

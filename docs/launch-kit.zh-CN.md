@@ -124,3 +124,4 @@ uvx issuedeck demo --open
 - 新贡献者任务：https://github.com/xq520mmy/IssueDeck/blob/main/docs/launch-issues.md
 - CSV 导入：https://github.com/xq520mmy/IssueDeck/blob/main/docs/csv-import.zh-CN.md
 - JSON 导入：https://github.com/xq520mmy/IssueDeck/blob/main/docs/json-import.zh-CN.md
+- 托管 tracker 导出：https://github.com/xq520mmy/IssueDeck/blob/main/docs/hosted-tracker-exports.zh-CN.md
