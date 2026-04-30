@@ -58,6 +58,11 @@ Available GHCR tags:
 - `0.3.0`, `0.3`, and `v0.3.0`: versioned release tags.
 - `edge`: latest `main` branch image.
 
+For a hardened Compose example with localhost-only port binding, pinned image
+tags, host-mounted data, logging limits, backup scheduling, and reverse-proxy
+assumptions, see
+[Docker Compose Hardening](docs/docker-compose-hardening.md).
+
 ## Production Checklist
 
 - Set a random `ISSUEDECK_API_TOKEN`; do not use `change-me`.

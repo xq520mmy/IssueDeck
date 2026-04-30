@@ -177,7 +177,9 @@ full API access and can sign in to the dashboard.
 
 Optional signed lifecycle webhooks can notify downstream automation when items
 are created, updated, shipped, deleted, or restored; see
-[Lifecycle Webhooks](docs/webhooks.md).
+[Lifecycle Webhooks](docs/webhooks.md). Receiver examples for FastAPI, Flask,
+and Node/Express live in
+[Webhook Receiver Examples](docs/webhook-receivers.md).
 
 Project files live in `projects/*.toml`. Each file defines one project and
 must use the same file stem, `key`, and dashboard URL segment. The repository
@@ -251,7 +253,9 @@ ISSUEDECK_IMAGE=issuedeck:local docker compose up -d
 
 For offline or server deployment details, see [DEPLOY.md](DEPLOY.md). A longer
 Chinese deployment guide is available at
-[docs/deployment.zh.md](docs/deployment.zh.md).
+[docs/deployment.zh.md](docs/deployment.zh.md). For a small production
+hardening checklist, see
+[Docker Compose Hardening](docs/docker-compose-hardening.md).
 
 ## MCP stdio process
 
@@ -328,6 +332,9 @@ npm run build:css
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 Dashboard UI work should follow [DESIGN.md](DESIGN.md).
+Use the
+[Dashboard Accessibility Smoke Checklist](docs/accessibility-checklist.md) for
+UI changes.
 See [ROADMAP.md](ROADMAP.md) for planned work and contribution areas.
 Starter contribution candidates live in
 [Starter Issue Backlog](docs/launch-issues.md).

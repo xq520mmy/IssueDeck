@@ -13,6 +13,9 @@ versioning once public releases begin.
   open-source sharing.
 - Expanded the starter issue backlog for contributor-friendly docs and
   deployment follow-ups.
+- Added webhook receiver examples for FastAPI, Flask, and Node/Express.
+- Added Docker Compose hardening notes for small self-hosted deployments.
+- Added a dashboard accessibility smoke checklist for UI contributions.
 
 ### Changed
 

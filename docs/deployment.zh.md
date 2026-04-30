@@ -91,6 +91,10 @@ docker build -t issuedeck:local .
 ISSUEDECK_IMAGE=issuedeck:local docker compose up -d
 ```
 
+如果要把服务放到小型生产环境，建议参考
+[Docker Compose 加固示例](docker-compose-hardening.zh-CN.md)，其中包含固定镜像版本、
+只绑定 localhost、host-mounted data、日志限制、备份计划和反向代理假设。
+
 ## 生产检查清单
 
 - 设置随机 `ISSUEDECK_API_TOKEN`，不要使用 `change-me`。

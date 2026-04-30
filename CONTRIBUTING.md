@@ -70,6 +70,9 @@ npm run build:css
 Then include `src/issuedeck/features/dashboard/static/css/dashboard.css` in the
 same change.
 
+Before submitting dashboard UI changes, run the lightweight
+[Dashboard Accessibility Smoke Checklist](docs/accessibility-checklist.md).
+
 ## Pull Request Guidelines
 
 - Keep changes focused and easy to review.

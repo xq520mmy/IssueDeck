@@ -86,6 +86,9 @@ if not hmac.compare_digest(expected, request.headers["X-IssueDeck-Signature"]):
     raise ValueError("invalid IssueDeck webhook signature")
 ```
 
+For complete receiver examples in FastAPI, Flask, and Node/Express, see
+[Webhook Receiver Examples](webhook-receivers.md).
+
 ## Delivery Behavior
 
 IssueDeck starts webhook delivery after the item mutation commits. A failing or

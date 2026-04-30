@@ -1,11 +1,12 @@
 # Starter Issue Backlog
 
-These are candidate public issues for the next open-source iterations. The
-original launch backlog has mostly shipped: one-command demo mode, MCP client
-examples, scoped tokens, saved dashboard filters, Markdown frontmatter aliases,
-external links, GitHub URL inference, keyboard-friendly dashboard triage,
-Markdown import adapter presets, lifecycle webhooks, restore smoke tests, and
-the screenshot gallery.
+These track public issues for the next open-source iterations. Completed items
+remain here as examples of contributor-sized work with clear acceptance
+criteria. The original launch backlog has mostly shipped: one-command demo
+mode, MCP client examples, scoped tokens, saved dashboard filters, Markdown
+frontmatter aliases, external links, GitHub URL inference, keyboard-friendly
+dashboard triage, Markdown import adapter presets, lifecycle webhooks, restore
+smoke tests, and the screenshot gallery.
 
 ## 1. Publish the PyPI package with Trusted Publishing
 
@@ -30,6 +31,7 @@ Acceptance criteria:
 ## 2. Add a webhook receiver examples page
 
 GitHub issue: <https://github.com/xq520mmy/IssueDeck/issues/26>
+Status: implemented in `docs/webhook-receivers.md`.
 
 Labels: `good first issue`, `enhancement`, `area: docs`
 
@@ -47,6 +49,7 @@ Acceptance criteria:
 ## 3. Add a Docker Compose hardening example
 
 GitHub issue: <https://github.com/xq520mmy/IssueDeck/issues/27>
+Status: implemented in `docs/docker-compose-hardening.md`.
 
 Labels: `good first issue`, `area: deployment`, `area: docs`
 
@@ -65,6 +68,7 @@ Acceptance criteria:
 ## 4. Add a dashboard accessibility smoke checklist
 
 GitHub issue: <https://github.com/xq520mmy/IssueDeck/issues/28>
+Status: implemented in `docs/accessibility-checklist.md`.
 
 Labels: `good first issue`, `area: dashboard`, `area: docs`
 

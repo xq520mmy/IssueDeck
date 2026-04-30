@@ -115,7 +115,8 @@ ISSUEDECK_IMAGE=issuedeck:local docker compose up -d
 ```
 
 更完整的服务器部署、离线迁移、备份和恢复说明见
-[中文部署指南](docs/deployment.zh.md)。
+[中文部署指南](docs/deployment.zh.md)。小型生产环境的 Compose 加固示例见
+[Docker Compose 加固示例](docs/docker-compose-hardening.zh-CN.md)。
 
 ## 假数据
 
@@ -161,7 +162,8 @@ Feature / Bug / Improvement 类型和 Proposed / In Progress / Done / Won't Fix
 
 IssueDeck 支持可选的签名生命周期 Webhooks，可以在事项创建、更新、发布、删除、
 恢复时通知外部自动化系统。配置示例和签名校验方式见
-[生命周期 Webhooks](docs/webhooks.zh-CN.md)。
+[生命周期 Webhooks](docs/webhooks.zh-CN.md)。FastAPI、Flask、Node/Express 的
+receiver 示例见 [Webhook Receiver 示例](docs/webhook-receivers.zh-CN.md)。
 
 ## MCP
 

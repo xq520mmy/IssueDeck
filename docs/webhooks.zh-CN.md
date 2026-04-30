@@ -86,6 +86,9 @@ if not hmac.compare_digest(expected, request.headers["X-IssueDeck-Signature"]):
     raise ValueError("invalid IssueDeck webhook signature")
 ```
 
+FastAPI、Flask、Node/Express 的完整 receiver 示例见
+[Webhook Receiver 示例](webhook-receivers.zh-CN.md)。
+
 ## 投递行为
 
 IssueDeck 会在事项变更事务提交后启动 Webhook 投递。慢响应或失败的端点只会被
