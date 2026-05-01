@@ -15,7 +15,7 @@ Traefik.
 ```yaml
 services:
   issuedeck:
-    image: ${ISSUEDECK_IMAGE:-ghcr.io/xq520mmy/issuedeck:0.3.2}
+    image: ${ISSUEDECK_IMAGE:-ghcr.io/xq520mmy/issuedeck:0.4.0}
     container_name: issuedeck
     restart: unless-stopped
     init: true
@@ -64,7 +64,7 @@ Then edit `.env` and set a random token:
 ```env
 ISSUEDECK_API_TOKEN=replace-with-random-token
 ISSUEDECK_PORT=8765
-ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.3.2
+ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.4.0
 ```
 
 ## Reverse Proxy Assumptions
@@ -112,10 +112,10 @@ python scripts/restore_smoke.py backups/tracker-YYYYMMDD-HHMMSS.db.gz \
 Pin production to a release tag, not `latest`. To upgrade:
 
 ```bash
-ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.3.2 docker compose pull
-ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.3.2 docker compose up -d
+ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.4.0 docker compose pull
+ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.4.0 docker compose up -d
 curl -fsS http://127.0.0.1:8765/readyz
 ```
 
-For future releases, replace `0.3.2` with the target release tag and keep the
+For future releases, replace `0.4.0` with the target release tag and keep the
 old database backup until the new container has passed `/readyz`.

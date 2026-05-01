@@ -13,7 +13,7 @@
 ```yaml
 services:
   issuedeck:
-    image: ${ISSUEDECK_IMAGE:-ghcr.io/xq520mmy/issuedeck:0.3.2}
+    image: ${ISSUEDECK_IMAGE:-ghcr.io/xq520mmy/issuedeck:0.4.0}
     container_name: issuedeck
     restart: unless-stopped
     init: true
@@ -62,7 +62,7 @@ cp .env.example .env
 ```env
 ISSUEDECK_API_TOKEN=replace-with-random-token
 ISSUEDECK_PORT=8765
-ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.3.2
+ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.4.0
 ```
 
 ## 反向代理假设
@@ -108,9 +108,9 @@ python scripts/restore_smoke.py backups/tracker-YYYYMMDD-HHMMSS.db.gz \
 生产环境建议固定 release tag，不要长期使用 `latest`。升级方式：
 
 ```bash
-ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.3.2 docker compose pull
-ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.3.2 docker compose up -d
+ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.4.0 docker compose pull
+ISSUEDECK_IMAGE=ghcr.io/xq520mmy/issuedeck:0.4.0 docker compose up -d
 curl -fsS http://127.0.0.1:8765/readyz
 ```
 
-后续版本把 `0.3.2` 替换成目标 release tag。新容器通过 `/readyz` 前，保留旧数据库备份。
+后续版本把 `0.4.0` 替换成目标 release tag。新容器通过 `/readyz` 前，保留旧数据库备份。

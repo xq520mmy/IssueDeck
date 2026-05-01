@@ -7,6 +7,8 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-01
+
 ### Added
 
 - Added `issuedeck import-github-url` for creating IssueDeck items linked to
