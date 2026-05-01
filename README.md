@@ -49,6 +49,8 @@ Daily triage shortcuts are documented in
 [Keyboard Shortcuts](docs/keyboard-shortcuts.md).
 Agent handoffs and progress tracking are covered in
 [Agent Work Sessions](docs/agent-work-sessions.md).
+GitHub backlog imports are covered in
+[GitHub Issues Import](docs/github-issues-import.md).
 
 ## Features
 
@@ -64,6 +66,8 @@ Agent handoffs and progress tracking are covered in
 - External links for GitHub issues, pull requests, commits, and other review context.
 - GitHub URL helper to create linked IssueDeck items from issue, pull request,
   or commit URLs without a full sync engine.
+- GitHub Issues importer for pulling repository issues into IssueDeck with
+  state/label filters and duplicate skipping.
 - CSV, JSON, and Markdown task-list import for turning tracker exports,
   `TODO.md`, and GitHub checklist items into IssueDeck work items.
 - Item activity timeline with automatic lifecycle events and manual comments.
@@ -228,6 +232,23 @@ uv run issuedeck import-github-url \
 
 Use `--dry-run` to preview the create payload before writing. See
 [GitHub URL Import](docs/github-import.md).
+
+## GitHub Issues Import
+
+Import open issues from a repository and safely rerun later without duplicating
+items that already have the same GitHub external link:
+
+```bash
+uv run issuedeck import-github-issues example/repo \
+  --config server.toml \
+  --project-key example \
+  --kind feature \
+  --state all \
+  --status-map closed=done
+```
+
+Use `GITHUB_TOKEN` or `--github-token` for private repositories or higher rate
+limits. See [GitHub Issues Import](docs/github-issues-import.md).
 
 ## Markdown Task List Import
 

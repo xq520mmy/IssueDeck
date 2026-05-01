@@ -7,6 +7,19 @@
 
 ## GitHub Issues
 
+如果希望直接通过 GitHub API 导入，并自动跳过已导入过的 issue URL，优先使用：
+
+```bash
+uv run issuedeck import-github-issues OWNER/REPO \
+  --config server.toml \
+  --project-key example \
+  --state all \
+  --status-map closed=done \
+  --dry-run
+```
+
+下面的文件导出方式仍然适合需要先审阅或归档源 JSON 的场景。
+
 使用 GitHub CLI：
 
 ```bash

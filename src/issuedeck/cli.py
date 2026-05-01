@@ -140,6 +140,68 @@ def main(argv: list[str] | None = None) -> int:
     p_gh.add_argument("--link-label", default=None, help="Override the external link label")
     p_gh.add_argument("--dry-run", action="store_true", help="Print the create payload only")
 
+    p_gh_issues = sub.add_parser(
+        "import-github-issues",
+        help="Import issues from a GitHub repository without creating duplicates",
+    )
+    p_gh_issues.add_argument("repo", help="GitHub owner/repo or repository URL")
+    p_gh_issues.add_argument("--config", default="server.toml")
+    p_gh_issues.add_argument("--project-key", required=True)
+    p_gh_issues.add_argument(
+        "--kind",
+        default=None,
+        help="IssueDeck kind to create; defaults to the first kind in the project config",
+    )
+    p_gh_issues.add_argument(
+        "--default-status",
+        default=None,
+        help="Status for open issues; defaults to the first non-terminal status",
+    )
+    p_gh_issues.add_argument("--tag", action="append", default=[], help="Add a tag")
+    p_gh_issues.add_argument(
+        "--applies-to",
+        action="append",
+        default=None,
+        metavar="BRANCH",
+        help="Target branch; repeat for multiple branches",
+    )
+    p_gh_issues.add_argument(
+        "--status-map",
+        action="append",
+        default=[],
+        metavar="SOURCE=TARGET",
+        help="Map GitHub states to project statuses, e.g. closed=done",
+    )
+    p_gh_issues.add_argument(
+        "--state",
+        choices=["open", "closed", "all"],
+        default="open",
+        help="GitHub issue state to fetch",
+    )
+    p_gh_issues.add_argument(
+        "--label",
+        action="append",
+        default=[],
+        help="Only fetch GitHub issues with this label; repeat for multiple labels",
+    )
+    p_gh_issues.add_argument(
+        "--since",
+        default=None,
+        help="Only fetch issues updated after this ISO-8601 timestamp",
+    )
+    p_gh_issues.add_argument("--limit", type=int, default=50, help="Maximum issues to import")
+    p_gh_issues.add_argument(
+        "--include-pulls",
+        action="store_true",
+        help="Also import pull requests returned by GitHub's issues endpoint",
+    )
+    p_gh_issues.add_argument(
+        "--github-token",
+        default=None,
+        help="GitHub token; defaults to GITHUB_TOKEN or GH_TOKEN",
+    )
+    p_gh_issues.add_argument("--dry-run", action="store_true", help="Print the import summary only")
+
     p_md = sub.add_parser(
         "import-markdown-list",
         help="Create items from GitHub-style Markdown task lists",
@@ -306,6 +368,24 @@ def main(argv: list[str] | None = None) -> int:
             tags=args.tag,
             applies_to=args.applies_to,
             link_label=args.link_label,
+            dry_run=args.dry_run,
+        ))
+    if args.cmd == "import-github-issues":
+        return asyncio.run(_cmd_import_github_issues(
+            Path(args.config),
+            args.project_key,
+            args.repo,
+            kind=args.kind,
+            default_status=args.default_status,
+            tags=args.tag,
+            applies_to=args.applies_to,
+            status_maps=args.status_map,
+            state=args.state,
+            labels=args.label,
+            since=args.since,
+            limit=args.limit,
+            include_pulls=args.include_pulls,
+            github_token=args.github_token,
             dry_run=args.dry_run,
         ))
     if args.cmd == "import-markdown-list":
@@ -671,6 +751,91 @@ async def _cmd_import_github_url(
                 file=sys.stderr,
             )
             print(item.local_id)
+    finally:
+        await engine.dispose()
+    return 0
+
+
+async def _cmd_import_github_issues(
+    config_path: Path,
+    project_key: str,
+    repo_value: str,
+    *,
+    kind: str | None,
+    default_status: str | None,
+    tags: list[str],
+    applies_to: list[str] | None,
+    status_maps: list[str],
+    state: str,
+    labels: list[str],
+    since: str | None,
+    limit: int,
+    include_pulls: bool,
+    github_token: str | None,
+    dry_run: bool,
+) -> int:
+    from issuedeck.core.db import make_engine, make_session_factory
+    from issuedeck.features.migrate.csv_items import parse_status_map_options
+    from issuedeck.features.migrate.github_issues import (
+        fetch_github_issue_rows,
+        import_github_issue_rows,
+        parse_github_repo,
+    )
+
+    try:
+        repo_ref = parse_github_repo(repo_value)
+        status_map = parse_status_map_options(status_maps)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    _upgrade_database(config_path)
+    registry = _build_registry(config_path)
+    project = registry.project(project_key)
+    item_kind = kind or next(iter(project.kinds.keys()))
+    db_path = registry.server.data_dir / "tracker.db"
+    engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_factory = make_session_factory(engine)
+    try:
+        rows, fetch_report = await fetch_github_issue_rows(
+            repo_ref,
+            token=github_token,
+            state=state,
+            labels=labels,
+            since=since,
+            limit=limit,
+            include_pulls=include_pulls,
+        )
+        async with session_factory() as session:
+            report = await import_github_issue_rows(
+                rows,
+                project_key,
+                registry,
+                session,
+                kind=item_kind,
+                default_status=default_status,
+                tags=tags or None,
+                applies_to=applies_to,
+                status_map=status_map,
+                dry_run=dry_run,
+            )
+            report.issues_fetched = fetch_report.issues_fetched
+            report.pulls_skipped = fetch_report.pulls_skipped
+            label = "dry-run" if dry_run else "ok"
+            print(
+                f"[{label}] repo={repo_ref.owner}/{repo_ref.repo} "
+                f"fetched={report.issues_fetched} "
+                f"pulls_skipped={report.pulls_skipped} "
+                f"existing_skipped={report.existing_skipped} "
+                f"planned={report.items_planned} "
+                f"written={report.items_written} "
+                f"status_mapped={report.status_mapped} "
+                f"external_links={report.external_links}",
+                file=sys.stderr,
+            )
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     finally:
         await engine.dispose()
     return 0

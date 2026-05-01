@@ -8,6 +8,9 @@ call the GitHub API, mirror comments, or keep state up to date. It creates one
 local item with a normalized external link so the work can be tracked in
 IssueDeck.
 
+For repository-wide issue imports through the GitHub API, use
+[`import-github-issues`](github-issues-import.md).
+
 ## Create an Item
 
 ```bash

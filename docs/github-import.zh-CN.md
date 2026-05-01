@@ -7,6 +7,9 @@
 更新状态。它只创建一个本地 item，并写入规范化的 external link，方便把 GitHub 上的
 工作纳入 IssueDeck 跟踪。
 
+如果要通过 GitHub API 批量导入整个仓库的 issues，请使用
+[`import-github-issues`](github-issues-import.zh-CN.md)。
+
 ## 创建 Item
 
 ```bash

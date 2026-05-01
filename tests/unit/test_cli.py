@@ -9,6 +9,7 @@ from issuedeck.cli import (
     _build_registry,
     _cmd_demo,
     _cmd_import_csv,
+    _cmd_import_github_issues,
     _cmd_import_github_url,
     _cmd_import_json,
     _cmd_import_markdown_list,
@@ -34,6 +35,7 @@ def test_issuedeck_help_lists_subcommands():
         "export",
         "seed-demo",
         "import-github-url",
+        "import-github-issues",
         "import-markdown-list",
         "import-csv",
         "import-json",
@@ -271,6 +273,72 @@ def test_import_github_url_runs_migrations_for_empty_database(tmp_path):
         "Review GitHub issue #42 from example/repo",
         "github_issue",
     )
+
+
+def test_import_github_issues_dry_run_uses_fetcher(tmp_path, monkeypatch, capsys):
+    from issuedeck.features.migrate.github_issues import (
+        GitHubIssueImportReport,
+        GitHubIssueRow,
+    )
+
+    cfg_path = tmp_path / "server.toml"
+    _ensure_demo_config(cfg_path)
+    server_cfg = load_server_config(cfg_path)
+    _ensure_demo_project_config(server_cfg.projects_dir, "example")
+
+    async def fake_fetch(repo, **kwargs):
+        assert repo.owner == "example"
+        assert repo.repo == "repo"
+        assert kwargs["state"] == "all"
+        assert kwargs["labels"] == ["bug"]
+        return (
+            [
+                GitHubIssueRow(
+                    number=42,
+                    title="Fix auth",
+                    body="Body",
+                    state="open",
+                    labels=["bug"],
+                    html_url="https://github.com/example/repo/issues/42",
+                    api_url="https://api.github.com/repos/example/repo/issues/42",
+                    author="octo",
+                    created_at="2026-01-01T00:00:00Z",
+                    updated_at="2026-01-02T00:00:00Z",
+                    comments=0,
+                    is_pull_request=False,
+                )
+            ],
+            GitHubIssueImportReport(issues_fetched=1),
+        )
+
+    monkeypatch.setattr(
+        "issuedeck.features.migrate.github_issues.fetch_github_issue_rows",
+        fake_fetch,
+    )
+
+    rc = asyncio.run(_cmd_import_github_issues(
+        cfg_path,
+        "example",
+        "example/repo",
+        kind="feature",
+        default_status=None,
+        tags=["imported"],
+        applies_to=None,
+        status_maps=[],
+        state="all",
+        labels=["bug"],
+        since=None,
+        limit=10,
+        include_pulls=False,
+        github_token=None,
+        dry_run=True,
+    ))
+
+    assert rc == 0
+    err = capsys.readouterr().err
+    assert "[dry-run] repo=example/repo" in err
+    assert "fetched=1" in err
+    assert "planned=1" in err
 
 
 def test_import_markdown_list_creates_items_from_tasks(tmp_path):

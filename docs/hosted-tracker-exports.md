@@ -8,6 +8,20 @@ your local IssueDeck project.
 
 ## GitHub Issues
 
+For a direct GitHub API import that skips already-imported issue URLs, prefer:
+
+```bash
+uv run issuedeck import-github-issues OWNER/REPO \
+  --config server.toml \
+  --project-key example \
+  --state all \
+  --status-map closed=done \
+  --dry-run
+```
+
+The file-export path below is still useful when you want to review or archive
+the source JSON before importing.
+
 With the GitHub CLI:
 
 ```bash
