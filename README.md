@@ -439,6 +439,8 @@ npm run build:css
 ```
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+Maintainer and AI coding-window handoff rules are documented in
+[Maintainer Workflow](docs/maintainer-workflow.md).
 Dashboard UI work should follow [DESIGN.md](DESIGN.md).
 Use the
 [Dashboard Accessibility Smoke Checklist](docs/accessibility-checklist.md) for

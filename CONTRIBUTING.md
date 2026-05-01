@@ -53,6 +53,10 @@ uv build
 All should pass. CI also verifies the generated dashboard CSS is committed and
 builds the Docker image to catch packaging and deployment regressions.
 
+For maintainer-side requirement intake, AI coding-window handoffs, git commits,
+pushes, CI verification, and release hygiene, follow
+[Maintainer Workflow](docs/maintainer-workflow.md).
+
 ## Design Work
 
 Read `DESIGN.md` before changing dashboard UI, templates, colors, spacing, or

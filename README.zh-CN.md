@@ -291,6 +291,8 @@ ISSUEDECK_TOKEN=your-secret-token
 
 首发传播文案见 [Launch Kit](docs/launch-kit.zh-CN.md)。
 适合新贡献者认领的方向见 [Starter Issue Backlog](docs/launch-issues.md)。
+维护者和后续 AI coding 窗口的提交规范见
+[维护者工作流规范](docs/maintainer-workflow.zh-CN.md)。
 
 ## License
 
