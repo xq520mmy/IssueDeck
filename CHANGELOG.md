@@ -27,6 +27,8 @@ versioning once public releases begin.
   from a recorded import batch.
 - Added maintainer workflow docs and repo-level AI agent guidance for
   requirements, validation, git commits, pushes, and CI checks.
+- Documented local browser recovery steps and disabled caching for root
+  dashboard redirects to reduce stale preview pages.
 
 ## [0.4.0] - 2026-05-01
 

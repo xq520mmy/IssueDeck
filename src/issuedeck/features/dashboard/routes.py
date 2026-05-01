@@ -714,9 +714,11 @@ async def dashboard_home(request: Request):
     projects = request.app.state.registry.all_projects()
     if not projects:
         return render("pages/home.html", request, **_ctx(request), empty=True)
-    return RedirectResponse(
+    response = RedirectResponse(
         url=f"/dashboard/{projects[0].key}", status_code=302,
     )
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 # ---------------------------------------------------------------------------

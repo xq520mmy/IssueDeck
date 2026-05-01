@@ -60,6 +60,38 @@ $env:ISSUEDECK_PORT = "8775"
 
 Then open `http://127.0.0.1:8775/dashboard/example`.
 
+## Browser Opens the Wrong Page
+
+The root URL redirects into the dashboard:
+
+```text
+http://127.0.0.1:8775/
+```
+
+If you are not signed in, the browser will land on `/dashboard/login`. Sign in
+with the token printed by the `demo` command. For the local demo default, use:
+
+```text
+issuedeck-local-token
+```
+
+If you are running `serve` with `ISSUEDECK_API_TOKEN`, use that environment
+token instead. After login, `/dashboard/` opens the first configured project.
+
+If the browser still shows old labels, raw i18n keys such as
+`nav.import_history`, or a page from another port, stop stale local servers and
+start one fresh preview:
+
+```powershell
+Get-NetTCPConnection -LocalPort 8775,8776,8777,8778 -ErrorAction SilentlyContinue |
+  Select-Object LocalPort,OwningProcess,State
+Stop-Process -Id <PID>
+$env:ISSUEDECK_API_TOKEN = "issuedeck-local-token"
+uv run issuedeck demo --port 8775 --open
+```
+
+Then hard-refresh `http://127.0.0.1:8775/dashboard/example`.
+
 ## Dashboard Token Fails
 
 For `uv run issuedeck demo`, the default local token is:

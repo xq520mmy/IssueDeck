@@ -60,6 +60,37 @@ $env:ISSUEDECK_PORT = "8775"
 
 然后打开 `http://127.0.0.1:8775/dashboard/example`。
 
+## 浏览器打开了错误页面
+
+根地址会自动跳到 Dashboard：
+
+```text
+http://127.0.0.1:8775/
+```
+
+如果还没登录，浏览器会进入 `/dashboard/login`。使用 `demo` 命令打印出来的 token
+登录。本地 demo 默认 token 是：
+
+```text
+issuedeck-local-token
+```
+
+如果你用 `ISSUEDECK_API_TOKEN` 运行 `serve`，就使用该环境变量里的 token。登录后，
+`/dashboard/` 会打开第一个已配置项目。
+
+如果浏览器仍然显示旧文案、`nav.import_history` 这类原始 i18n key，或者看起来连到了
+其他端口，先停掉残留的本地服务，只保留一个新的预览：
+
+```powershell
+Get-NetTCPConnection -LocalPort 8775,8776,8777,8778 -ErrorAction SilentlyContinue |
+  Select-Object LocalPort,OwningProcess,State
+Stop-Process -Id <PID>
+$env:ISSUEDECK_API_TOKEN = "issuedeck-local-token"
+uv run issuedeck demo --port 8775 --open
+```
+
+然后强制刷新 `http://127.0.0.1:8775/dashboard/example`。
+
 ## Dashboard token 登录失败
 
 `uv run issuedeck demo` 的默认本地 token 是：

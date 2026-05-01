@@ -141,7 +141,9 @@ def create_app(server_toml: Path | str) -> FastAPI:
 
     @app.get("/", include_in_schema=False)
     async def root():
-        return RedirectResponse(url="/dashboard/", status_code=303)
+        response = RedirectResponse(url="/dashboard/", status_code=303)
+        response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.get("/healthz")
     async def healthz():

@@ -90,6 +90,21 @@ async def test_root_redirects_to_dashboard(app_ctx):
     r = await app_ctx.get("/", follow_redirects=False)
     assert r.status_code == 303
     assert r.headers["location"] == "/dashboard/"
+    assert r.headers["cache-control"] == "no-store"
+
+
+async def test_dashboard_home_redirect_is_not_cached(app_ctx):
+    await app_ctx.post(
+        "/dashboard/login",
+        data={"token": "test-tok", "next": "/dashboard/"},
+        follow_redirects=False,
+    )
+
+    r = await app_ctx.get("/dashboard/", follow_redirects=False)
+
+    assert r.status_code == 302
+    assert r.headers["location"] == "/dashboard/test"
+    assert r.headers["cache-control"] == "no-store"
 
 
 async def test_dashboard_requires_login_cookie(app_ctx):
