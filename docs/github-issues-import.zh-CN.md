@@ -15,6 +15,10 @@ external link，重复运行时跳过已经导入过的 issue，不会镜像评�
 建议先点“预览导入”，确认拉取、跳过、将创建和重复项数量，不会写入数据库。
 确认后再点“导入 issues”创建新的 IssueDeck items。
 
+成功的 Dashboard 导入会给本次写入的事项自动添加唯一的
+`github-import-YYYYMMDD-HHMMSS-xxxx` 批次标签。结果面板会直接链接到按该
+标签筛选后的列表，方便只分诊这一批新事项。
+
 如果一次导入了很多 backlog，可继续用
 [Dashboard 批量分诊](dashboard-bulk-triage.zh-CN.md) 多选事项，一次性分配状态、
 标签、类型或分支。

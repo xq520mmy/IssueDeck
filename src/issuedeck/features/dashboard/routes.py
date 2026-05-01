@@ -5,6 +5,8 @@ from __future__ import annotations
 import hmac
 import json
 import re
+import secrets
+from datetime import UTC, datetime
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import httpx
@@ -244,6 +246,11 @@ def _split_form_tokens(raw: str) -> list[str]:
         if clean and clean not in values:
             values.append(clean)
     return values
+
+
+def _github_import_batch_tag() -> str:
+    timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+    return f"github-import-{timestamp}-{secrets.token_hex(2)}"
 
 
 def _status_map_options_from_text(raw: str) -> list[str]:
@@ -739,6 +746,9 @@ async def github_import_submit(
             limit=clean_limit,
             include_pulls=include_pulls,
         )
+        user_tags = _split_form_tokens(tags)
+        batch_tag = None if dry_run else _github_import_batch_tag()
+        import_tags = [*user_tags, batch_tag] if batch_tag else user_tags
         session = request.app.state.session_factory()
         try:
             report = await import_github_issue_rows(
@@ -748,7 +758,7 @@ async def github_import_submit(
                 session,
                 kind=item_kind,
                 default_status=clean_default_status,
-                tags=_split_form_tokens(tags),
+                tags=import_tags,
                 applies_to=applies_to if applies_to else None,
                 status_map=status_map,
                 dry_run=dry_run,
@@ -779,6 +789,14 @@ async def github_import_submit(
             status_code=422,
         )
 
+    triage_url = (
+        _dashboard_url_with_params(
+            f"/dashboard/{project_key}/list",
+            tag=batch_tag,
+        )
+        if batch_tag and report.items_written
+        else None
+    )
     result = {
         "mode": "dry_run" if dry_run else "import",
         "repo": f"{repo_ref.owner}/{repo_ref.repo}",
@@ -789,6 +807,8 @@ async def github_import_submit(
         "items_written": report.items_written,
         "status_mapped": report.status_mapped,
         "external_links": report.external_links,
+        "batch_tag": batch_tag if report.items_written else None,
+        "triage_url": triage_url,
     }
     return render(
         "pages/github_import.html", request,

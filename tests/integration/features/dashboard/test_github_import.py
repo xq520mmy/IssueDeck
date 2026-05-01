@@ -15,7 +15,7 @@ from issuedeck.core.config import (
 from issuedeck.core.errors import install_error_handlers
 from issuedeck.features.dashboard import routes as dashboard_routes
 from issuedeck.features.dashboard.routes import router as dashboard_router
-from issuedeck.features.items.models import Base, Item
+from issuedeck.features.items.models import Base, Item, ItemTag
 from issuedeck.features.migrate.github_issues import (
     GitHubIssueImportReport,
     GitHubIssueRow,
@@ -132,6 +132,8 @@ async def test_github_import_preview_does_not_write_items(dashboard_client, monk
     assert response.status_code == 200, response.text
     assert "example/repo" in response.text
     assert "Planned" in response.text
+    assert "Triage this import" not in response.text
+    assert "/dashboard/test/list?tag=github-import-" not in response.text
     async with Session() as session:
         item_count = await session.scalar(select(func.count()).select_from(Item))
     assert item_count == 0
@@ -160,8 +162,12 @@ async def test_github_import_submit_writes_items(dashboard_client, monkeypatch):
 
     assert response.status_code == 200, response.text
     assert "Written" in response.text
+    assert "Triage this import" in response.text
+    assert "/dashboard/test/list?tag=github-import-" in response.text
     async with Session() as session:
         items = (await session.execute(select(Item))).scalars().all()
+        tags = (await session.execute(select(ItemTag.tag))).scalars().all()
     assert [(item.local_id, item.title, item.status) for item in items] == [
         ("FEAT-0001", "Import me", "done")
     ]
+    assert any(tag.startswith("github-import-") for tag in tags)

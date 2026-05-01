@@ -248,6 +248,21 @@
             </div>
           {% endfor %}
         </dl>
+        {% if result.triage_url %}
+          <div class="mt-4 space-y-2">
+            <a href="{{ result.triage_url }}"
+               class="inline-flex w-full items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+              {{ t("github_import.triage_import") }}
+            </a>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              {{ t("github_import.triage_import_help") }}
+            </p>
+            <p class="break-words text-xs text-gray-500 dark:text-gray-400">
+              {{ t("github_import.batch_tag") }}:
+              <code class="font-mono text-gray-700 dark:text-gray-200">{{ result.batch_tag }}</code>
+            </p>
+          </div>
+        {% endif %}
         <a href="/dashboard/{{ project_key }}/list"
            class="mt-4 inline-flex w-full items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold bg-ledger-surfaceAlt dark:bg-ledger-darkPanelAlt text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
           {{ t("github_import.view_items") }}

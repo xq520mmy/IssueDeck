@@ -17,6 +17,8 @@ versioning once public releases begin.
   branch targets, optional tokens, and duplicate-skipping summaries.
 - Added dashboard and REST bulk triage for selected items, including status,
   kind, tag, branch, delete, and restore operations.
+- Linked dashboard GitHub imports to bulk triage with per-import batch tags and
+  filtered result links.
 
 ## [0.4.0] - 2026-05-01
 

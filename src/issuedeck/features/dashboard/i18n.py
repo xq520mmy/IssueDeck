@@ -112,6 +112,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "language.zh": "中文",
         "github_import.default_status": "Default status",
         "github_import.default_status_auto": "Auto",
+        "github_import.batch_tag": "Batch tag",
         "github_import.description": (
             "Pull repository issues into this project, preview the import, "
             "then write only new items."
@@ -148,6 +149,10 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "github_import.status_maps_help": "One SOURCE=TARGET mapping per line.",
         "github_import.tags_help": "Additional IssueDeck tags added to every imported item.",
         "github_import.title": "Import GitHub Issues",
+        "github_import.triage_import": "Triage this import",
+        "github_import.triage_import_help": (
+            "Open the list filtered to the items written by this import."
+        ),
         "github_import.view_items": "View items",
         "github_import.written": "Written",
         "nav.overview": "Overview",
@@ -368,6 +373,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "language.zh": "中文",
         "github_import.default_status": "默认状态",
         "github_import.default_status_auto": "自动",
+        "github_import.batch_tag": "批次标签",
         "github_import.description": "把仓库 issues 拉入当前项目，先预览数量，再只写入新增事项。",
         "github_import.dry_run": "预览导入",
         "github_import.error.invalid_state": "GitHub issue 状态必须是 open、closed 或 all。",
@@ -399,6 +405,8 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "github_import.status_maps_help": "每行一个 SOURCE=TARGET 映射。",
         "github_import.tags_help": "额外添加到每个导入事项的 IssueDeck 标签。",
         "github_import.title": "导入 GitHub Issues",
+        "github_import.triage_import": "分诊本次导入",
+        "github_import.triage_import_help": "打开列表并只显示本次导入写入的事项。",
         "github_import.view_items": "查看事项",
         "github_import.written": "已写入",
         "nav.overview": "总览",
