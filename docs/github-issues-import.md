@@ -7,6 +7,16 @@ the GitHub REST API. It is intentionally lightweight: it creates local
 IssueDeck items with normalized GitHub external links, skips items that were
 already imported, and does not mirror comments or maintain a two-way sync loop.
 
+## Dashboard Import
+
+Open a project in the dashboard, then choose **Import GitHub** from the sidebar.
+The form supports `owner/repo` or a GitHub repository URL, state and label
+filters, status mapping, branch targets, optional tags, and an optional token.
+
+Use **Preview import** first to see fetched, skipped, planned, and duplicate
+counts without writing anything. Use **Import issues** to create the new
+IssueDeck items.
+
 ## Import Open Issues
 
 ```bash
@@ -87,4 +97,3 @@ uv run issuedeck import-github-issues example/repo \
   --project-key example \
   --dry-run
 ```
-

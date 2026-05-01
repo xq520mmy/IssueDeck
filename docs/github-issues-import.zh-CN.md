@@ -6,6 +6,15 @@
 它是轻量导入，不是双向同步：会创建本地 IssueDeck item，写入规范化的 GitHub
 external link，重复运行时跳过已经导入过的 issue，不会镜像评论或持续同步状态。
 
+## Dashboard 导入
+
+在 Dashboard 打开某个项目后，从侧边栏进入“导入 GitHub”。表单支持
+`owner/repo` 或 GitHub 仓库 URL、state 和 label 过滤、状态映射、目标分支、
+额外 tags，以及可选 GitHub token。
+
+建议先点“预览导入”，确认拉取、跳过、将创建和重复项数量，不会写入数据库。
+确认后再点“导入 issues”创建新的 IssueDeck items。
+
 ## 导入 Open Issues
 
 ```bash
@@ -82,4 +91,3 @@ uv run issuedeck import-github-issues example/repo \
   --project-key example \
   --dry-run
 ```
-

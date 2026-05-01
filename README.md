@@ -66,8 +66,8 @@ GitHub backlog imports are covered in
 - External links for GitHub issues, pull requests, commits, and other review context.
 - GitHub URL helper to create linked IssueDeck items from issue, pull request,
   or commit URLs without a full sync engine.
-- GitHub Issues importer for pulling repository issues into IssueDeck with
-  state/label filters and duplicate skipping.
+- GitHub Issues importer for pulling repository issues into IssueDeck from the
+  dashboard or CLI with state/label filters and duplicate skipping.
 - CSV, JSON, and Markdown task-list import for turning tracker exports,
   `TODO.md`, and GitHub checklist items into IssueDeck work items.
 - Item activity timeline with automatic lifecycle events and manual comments.
@@ -248,7 +248,9 @@ uv run issuedeck import-github-issues example/repo \
 ```
 
 Use `GITHUB_TOKEN` or `--github-token` for private repositories or higher rate
-limits. See [GitHub Issues Import](docs/github-issues-import.md).
+limits. From the dashboard, open a project and choose **Import GitHub** in the
+sidebar to preview the same import before writing. See
+[GitHub Issues Import](docs/github-issues-import.md).
 
 ## Markdown Task List Import
 

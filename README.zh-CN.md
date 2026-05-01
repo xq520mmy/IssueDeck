@@ -57,7 +57,8 @@ GitHub backlog 导入见 [GitHub Issues 导入](docs/github-issues-import.zh-CN.
 - 外部链接：关联 GitHub issue、PR、commit 和其他审查上下文。
 - GitHub URL helper：从 issue、PR、commit URL 创建带 external link 的
   IssueDeck item，不做完整同步。
-- GitHub Issues 导入：按 state/label 拉取仓库 issues，并跳过已导入项。
+- GitHub Issues 导入：可在 Dashboard 或 CLI 按 state/label 拉取仓库 issues，
+  并跳过已导入项。
 - CSV、JSON 和 Markdown task-list 导入：把 tracker 导出、`TODO.md` 和
   GitHub checklist 转成 IssueDeck item。
 - Activity Timeline：自动记录生命周期事件，也支持手动评论。
@@ -202,7 +203,8 @@ uv run issuedeck import-github-issues example/repo \
   --status-map closed=done
 ```
 
-私有仓库或更高限额可以设置 `GITHUB_TOKEN`，也可以传 `--github-token`。详见
+私有仓库或更高限额可以设置 `GITHUB_TOKEN`，也可以传 `--github-token`。在
+Dashboard 中打开项目后，也可以从侧边栏进入“导入 GitHub”，先预览再写入。详见
 [GitHub Issues 导入](docs/github-issues-import.zh-CN.md)。
 
 ## Markdown 任务清单导入

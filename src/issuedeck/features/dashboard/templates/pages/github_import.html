@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t("github_import.title") }} - IssueDeck{% endblock %}
+
+{% block content %}
+{% set values = form | default({}) %}
+<div class="space-y-6 max-w-6xl">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-display font-bold text-gray-900 dark:text-gray-100">
+        {{ t("github_import.title") }}
+      </h1>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        {{ t("github_import.description") }}
+      </p>
+    </div>
+    <a href="/dashboard/{{ project_key }}/list"
+       class="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+      {{ t("common.back_to_list") }}
+    </a>
+  </div>
+
+  {% if error %}
+    <div class="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+      <p class="font-semibold">{{ t("github_import.error_title") }}</p>
+      <p class="mt-1">{{ error }}</p>
+    </div>
+  {% endif %}
+
+  <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <form method="post"
+          action="/dashboard/{{ project_key }}/imports/github"
+          class="rounded-md border border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-ledger-darkPanel p-5 space-y-5">
+      <div>
+        <label for="github-import-repo" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+          {{ t("github_import.repo") }}
+        </label>
+        <input id="github-import-repo"
+               name="repo"
+               required
+               value="{{ values.get('repo', '') }}"
+               placeholder="owner/repo"
+               class="w-full px-3 py-2 rounded-md text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+          {{ t("github_import.repo_help") }}
+        </p>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="github-import-kind" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+            {{ t("common.kind") }}
+          </label>
+          <select id="github-import-kind"
+                  name="kind"
+                  required
+                  class="w-full px-3 py-2 rounded-md text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            {% for kind_key, kind_cfg in project.kinds.items() %}
+              <option value="{{ kind_key }}"
+                      {% if values.get('kind') == kind_key %}selected{% endif %}>
+                {{ kind_cfg.label | default(kind_key) }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="github-import-status" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+            {{ t("github_import.default_status") }}
+          </label>
+          <select id="github-import-status"
+                  name="default_status"
+                  class="w-full px-3 py-2 rounded-md text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            <option value="">{{ t("github_import.default_status_auto") }}</option>
+            {% for status_key, status_cfg in project.statuses.items() %}
+              <option value="{{ status_key }}"
+                      {% if values.get('default_status') == status_key %}selected{% endif %}>
+                {{ status_cfg.label | default(status_key) }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div>
+          <label for="github-import-state" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+            {{ t("github_import.state") }}
+          </label>
+          <select id="github-import-state"
+                  name="state"
+                  class="w-full px-3 py-2 rounded-md text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+            {% for option in ["open", "closed", "all"] %}
+              <option value="{{ option }}"
+                      {% if values.get('state', 'open') == option %}selected{% endif %}>
+                {{ t("github_import.state_" ~ option) }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label for="github-import-limit" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+            {{ t("github_import.limit") }}
+          </label>
+          <input id="github-import-limit"
+                 name="limit"
+                 type="number"
+                 min="1"
+                 max="1000"
+                 value="{{ values.get('limit', 50) }}"
+                 class="w-full px-3 py-2 rounded-md text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+        </div>
+
+        <label class="flex items-center gap-2 mt-6 text-sm text-gray-700 dark:text-gray-300">
+          <input type="checkbox"
+                 name="include_pulls"
+                 value="true"
+                 {% if values.get('include_pulls') %}checked{% endif %}
+                 class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 focus:ring-offset-0">
+          <span>{{ t("github_import.include_pulls") }}</span>
+        </label>
+      </div>
+
+      <div>
+        <label for="github-import-labels" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+          {{ t("github_import.labels") }}
+        </label>
+        <input id="github-import-labels"
+               name="labels"
+               value="{{ values.get('labels', '') }}"
+               placeholder="bug, help wanted"
+               class="w-full px-3 py-2 rounded-md text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+          {{ t("github_import.labels_help") }}
+        </p>
+      </div>
+
+      <div>
+        <label for="github-import-tags" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+          {{ t("common.tags") }}
+        </label>
+        <input id="github-import-tags"
+               name="tags"
+               value="{{ values.get('tags', '') }}"
+               placeholder="imported, backlog"
+               class="w-full px-3 py-2 rounded-md text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+          {{ t("github_import.tags_help") }}
+        </p>
+      </div>
+
+      {% if project.branches %}
+        <div>
+          <p class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            {{ t("common.branches") }}
+          </p>
+          <div class="flex flex-wrap gap-3">
+            {% for branch in project.branches %}
+              <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox"
+                       name="applies_to"
+                       value="{{ branch.key }}"
+                       {% if branch.key in values.get('applies_to', []) %}checked{% endif %}
+                       class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 focus:ring-offset-0">
+                <span>{{ branch.label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div>
+        <label for="github-import-status-maps" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+          {{ t("github_import.status_maps") }}
+        </label>
+        <textarea id="github-import-status-maps"
+                  name="status_maps"
+                  rows="3"
+                  placeholder="closed=done"
+                  class="w-full px-3 py-2 rounded-md text-sm font-mono bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-y">{{ values.get('status_maps', '') }}</textarea>
+        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+          {{ t("github_import.status_maps_help") }}
+        </p>
+      </div>
+
+      <div>
+        <label for="github-import-token" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+          {{ t("github_import.github_token") }}
+        </label>
+        <input id="github-import-token"
+               name="github_token"
+               type="password"
+               autocomplete="off"
+               placeholder="ghp_..."
+               class="w-full px-3 py-2 rounded-md text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+          {{ t("github_import.github_token_help") }}
+        </p>
+      </div>
+
+      <div class="flex flex-col-reverse gap-2 pt-2 border-t border-ledger-line dark:border-ledger-darkLine sm:flex-row sm:justify-end">
+        <button type="submit"
+                name="mode"
+                value="dry_run"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-semibold border border-ledger-line dark:border-ledger-darkLine text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h16.5m-16.5 15h16.5M6.75 8.25h10.5M6.75 15.75h10.5"/>
+          </svg>
+          {{ t("github_import.dry_run") }}
+        </button>
+        <button type="submit"
+                name="mode"
+                value="import"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-semibold bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+          </svg>
+          {{ t("github_import.import") }}
+        </button>
+      </div>
+    </form>
+
+    <aside class="rounded-md border border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-ledger-darkPanel p-5 self-start">
+      <h2 class="text-sm font-display font-semibold text-gray-900 dark:text-gray-100">
+        {{ t("github_import.result_title") }}
+      </h2>
+      {% if result %}
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {{ result.repo }} - {{ t("github_import.result_" ~ result.mode) }}
+        </p>
+        <dl class="mt-4 grid grid-cols-2 gap-3">
+          {% for label, value in [
+            (t("github_import.fetched"), result.issues_fetched),
+            (t("github_import.pulls_skipped"), result.pulls_skipped),
+            (t("github_import.existing_skipped"), result.existing_skipped),
+            (t("github_import.planned"), result.items_planned),
+            (t("github_import.written"), result.items_written),
+            (t("github_import.status_mapped"), result.status_mapped),
+            (t("github_import.external_links"), result.external_links)
+          ] %}
+            <div class="rounded-md border border-ledger-line dark:border-ledger-darkLine px-3 py-2">
+              <dt class="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500">{{ label }}</dt>
+              <dd class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ value }}</dd>
+            </div>
+          {% endfor %}
+        </dl>
+        <a href="/dashboard/{{ project_key }}/list"
+           class="mt-4 inline-flex w-full items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold bg-ledger-surfaceAlt dark:bg-ledger-darkPanelAlt text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          {{ t("github_import.view_items") }}
+        </a>
+      {% else %}
+        <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+          {{ t("github_import.result_empty") }}
+        </p>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}

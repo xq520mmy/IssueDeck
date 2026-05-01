@@ -13,6 +13,8 @@ versioning once public releases begin.
   canceled coding-agent work across REST, MCP tools, the dashboard, and demo data.
 - Added `issuedeck import-github-issues` for repeatable, lightweight GitHub
   repository issue imports with label/state filters and duplicate skipping.
+- Added a dashboard GitHub Issues import page with preview, status mapping,
+  branch targets, optional tokens, and duplicate-skipping summaries.
 
 ## [0.4.0] - 2026-05-01
 

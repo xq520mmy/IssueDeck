@@ -6,6 +6,7 @@ import hmac
 import json
 import re
 
+import httpx
 from fastapi import APIRouter, Form, Query, Request, Response
 from fastapi.responses import RedirectResponse
 
@@ -48,6 +49,12 @@ from issuedeck.features.items.schemas import (
     UpdateItemRequest,
 )
 from issuedeck.features.items.service import ItemService
+from issuedeck.features.migrate.csv_items import parse_status_map_options
+from issuedeck.features.migrate.github_issues import (
+    fetch_github_issue_rows,
+    import_github_issue_rows,
+    parse_github_repo,
+)
 from issuedeck.features.relationships.repo import RelationshipRepo
 from issuedeck.features.relationships.service import RelationshipService
 from issuedeck.features.search.repo import SearchRepo
@@ -192,6 +199,40 @@ def _external_links_from_form(raw: str) -> list[dict[str, str]]:
             payload["label"] = label
         links.append(payload)
     return links
+
+
+def _split_form_tokens(raw: str) -> list[str]:
+    parts = re.split(r"[\n,;]+", raw)
+    values: list[str] = []
+    for part in parts:
+        clean = part.strip()
+        if clean and clean not in values:
+            values.append(clean)
+    return values
+
+
+def _status_map_options_from_text(raw: str) -> list[str]:
+    return [line.strip() for line in raw.splitlines() if line.strip()]
+
+
+def _default_github_import_form(project: ProjectConfig) -> dict[str, object]:
+    default_kind = next(iter(project.kinds.keys()), "")
+    default_status = next(
+        (key for key, cfg in project.statuses.items() if not cfg.terminal),
+        next(iter(project.statuses.keys()), ""),
+    )
+    return {
+        "repo": "",
+        "kind": default_kind,
+        "default_status": default_status,
+        "state": "open",
+        "limit": 50,
+        "labels": "",
+        "tags": "",
+        "status_maps": "closed=done" if "done" in project.statuses else "",
+        "include_pulls": False,
+        "applies_to": [branch.key for branch in project.branches],
+    }
 
 
 def _work_queue_statuses(project: ProjectConfig, view: str) -> list[str] | None:
@@ -587,6 +628,140 @@ async def project_overview(project_key: str, request: Request):
         status_chart_json=json.dumps(status_chart),
         kind_chart_json=json.dumps(kind_chart),
         active_page="overview",
+    )
+
+
+# ---------------------------------------------------------------------------
+# GitHub Issues import
+# ---------------------------------------------------------------------------
+
+@router.get("/{project_key}/imports/github")
+async def github_import_form(project_key: str, request: Request):
+    registry = request.app.state.registry
+    project = registry.project(project_key)
+    return render(
+        "pages/github_import.html", request,
+        **_ctx(request, project_key),
+        active_page="import_github",
+        form=_default_github_import_form(project),
+        result=None,
+        error=None,
+    )
+
+
+@router.post("/{project_key}/imports/github")
+async def github_import_submit(
+    project_key: str,
+    request: Request,
+    repo: str = Form(...),
+    kind: str = Form(...),
+    default_status: str = Form(""),
+    state: str = Form("open"),
+    limit: int = Form(50),
+    labels: str = Form(""),
+    tags: str = Form(""),
+    status_maps: str = Form(""),
+    github_token: str = Form(""),
+    include_pulls: bool = Form(False),
+    mode: str = Form("dry_run"),
+    applies_to: list[str] = APPLIES_TO_FORM,
+):
+    registry = request.app.state.registry
+    project = registry.project(project_key)
+    t = make_translator(language_from_request(request))
+    clean_limit = max(1, min(limit, 1000))
+    dry_run = mode != "import"
+    form = {
+        "repo": repo.strip(),
+        "kind": kind,
+        "default_status": default_status.strip(),
+        "state": state,
+        "limit": clean_limit,
+        "labels": labels,
+        "tags": tags,
+        "status_maps": status_maps,
+        "include_pulls": include_pulls,
+        "applies_to": applies_to or [],
+    }
+
+    try:
+        if state not in {"open", "closed", "all"}:
+            raise ValueError(t("github_import.error.invalid_state"))
+        repo_ref = parse_github_repo(repo)
+        item_kind = kind or next(iter(project.kinds.keys()))
+        registry.validate_kind(project_key, item_kind)
+        clean_default_status = default_status.strip() or None
+        if clean_default_status:
+            registry.validate_status(project_key, clean_default_status)
+        status_map = parse_status_map_options(
+            _status_map_options_from_text(status_maps)
+        )
+        rows, fetch_report = await fetch_github_issue_rows(
+            repo_ref,
+            token=github_token.strip() or None,
+            state=state,
+            labels=_split_form_tokens(labels),
+            limit=clean_limit,
+            include_pulls=include_pulls,
+        )
+        session = request.app.state.session_factory()
+        try:
+            report = await import_github_issue_rows(
+                rows,
+                project_key,
+                registry,
+                session,
+                kind=item_kind,
+                default_status=clean_default_status,
+                tags=_split_form_tokens(tags),
+                applies_to=applies_to if applies_to else None,
+                status_map=status_map,
+                dry_run=dry_run,
+            )
+            report.issues_fetched = fetch_report.issues_fetched
+            report.pulls_skipped = fetch_report.pulls_skipped
+        finally:
+            await session.close()
+    except httpx.HTTPError as exc:
+        error = str(exc) or exc.__class__.__name__
+        return render(
+            "pages/github_import.html", request,
+            **_ctx(request, project_key),
+            active_page="import_github",
+            form=form,
+            result=None,
+            error=error,
+            status_code=422,
+        )
+    except (ConfigError, ValueError) as exc:
+        return render(
+            "pages/github_import.html", request,
+            **_ctx(request, project_key),
+            active_page="import_github",
+            form=form,
+            result=None,
+            error=str(exc),
+            status_code=422,
+        )
+
+    result = {
+        "mode": "dry_run" if dry_run else "import",
+        "repo": f"{repo_ref.owner}/{repo_ref.repo}",
+        "issues_fetched": report.issues_fetched,
+        "pulls_skipped": report.pulls_skipped,
+        "existing_skipped": report.existing_skipped,
+        "items_planned": report.items_planned,
+        "items_written": report.items_written,
+        "status_mapped": report.status_mapped,
+        "external_links": report.external_links,
+    }
+    return render(
+        "pages/github_import.html", request,
+        **_ctx(request, project_key),
+        active_page="import_github",
+        form=form,
+        result=result,
+        error=None,
     )
 
 
