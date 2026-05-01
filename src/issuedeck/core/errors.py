@@ -85,6 +85,7 @@ def install_error_handlers(app) -> None:
     import logging
 
     from fastapi import Request
+    from fastapi.encoders import jsonable_encoder
     from fastapi.exceptions import RequestValidationError
     from fastapi.responses import JSONResponse
 
@@ -106,7 +107,7 @@ def install_error_handlers(app) -> None:
             content={"error": {
                 "code": "validation_error",
                 "message": "Request payload validation failed",
-                "details": {"errors": exc.errors()},
+                "details": {"errors": jsonable_encoder(exc.errors())},
             }},
         )
 

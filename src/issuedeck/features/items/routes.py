@@ -6,6 +6,8 @@ from fastapi import APIRouter, Query, Request, Response, status
 
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
+    BulkUpdateItemsRequest,
+    BulkUpdateItemsResponse,
     CreateItemEventRequest,
     CreateItemRequest,
     ItemDetail,
@@ -77,6 +79,19 @@ async def list_items(
             include_deleted=include_deleted, only_deleted=only_deleted,
             limit=limit, after=after,
         )
+    finally:
+        await session.close()
+
+
+@router.post("/bulk", response_model=BulkUpdateItemsResponse)
+async def bulk_update_items(
+    project_key: str,
+    req: BulkUpdateItemsRequest,
+    request: Request,
+):
+    svc, session = _service(request)
+    try:
+        return await svc.bulk_update(project_key, req)
     finally:
         await session.close()
 

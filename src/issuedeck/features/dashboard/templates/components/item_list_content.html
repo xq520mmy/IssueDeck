@@ -41,6 +41,14 @@
       <tr class="border-b border-ledger-line dark:border-ledger-darkLine
                  bg-ledger-surfaceAlt dark:bg-ledger-darkPanelAlt">
         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">
+          <label class="inline-flex items-center">
+            <input type="checkbox"
+                   @change="toggleAll($event.target.checked)"
+                   class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 focus:ring-offset-0"
+                   aria-label="{{ t('bulk.select_all') }}">
+          </label>
+        </th>
+        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">
           ID
         </th>
         <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-24">

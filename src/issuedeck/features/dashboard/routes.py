@@ -5,10 +5,12 @@ from __future__ import annotations
 import hmac
 import json
 import re
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import httpx
 from fastapi import APIRouter, Form, Query, Request, Response
 from fastapi.responses import RedirectResponse
+from pydantic import ValidationError
 
 from issuedeck.core.auth import (
     DASHBOARD_SESSION_COOKIE,
@@ -16,7 +18,7 @@ from issuedeck.core.auth import (
     make_dashboard_session_cookie,
 )
 from issuedeck.core.config import ProjectConfig
-from issuedeck.core.errors import ConfigError
+from issuedeck.core.errors import ConfigError, IssueDeckError
 from issuedeck.features.dashboard.helpers import (
     all_tags,
     count_by_field,
@@ -43,6 +45,7 @@ from issuedeck.features.dashboard.saved_filters import (
 )
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
+    BulkUpdateItemsRequest,
     CreateItemEventRequest,
     CreateItemRequest,
     ShipItemRequest,
@@ -73,6 +76,8 @@ KIND_FORM = Form([])
 STATUS_FORM = Form([], alias="status")
 TAG_FORM = Form([])
 APPLIES_TO_FORM = Form([])
+BULK_LOCAL_IDS_FORM = Form([])
+BULK_APPLIES_TO_FORM = Form([], alias="bulk_applies_to")
 RELATION_TYPE_FORM = Form([])
 NEXT_QUERY = Query("/dashboard/")
 NEXT_FORM = Form("/dashboard/")
@@ -179,6 +184,36 @@ def _safe_dashboard_next(next_url: str | None) -> str:
     if next_url.startswith("/dashboard/") or next_url.startswith("/dashboard?"):
         return next_url
     return "/dashboard/"
+
+
+def _dashboard_url_with_params(next_url: str, **params: object) -> str:
+    parts = urlsplit(_safe_dashboard_next(next_url))
+    query = [
+        (key, value)
+        for key, value in parse_qsl(parts.query, keep_blank_values=True)
+        if key not in params
+    ]
+    for key, value in params.items():
+        if value is not None:
+            query.append((key, str(value)))
+    return urlunsplit((
+        parts.scheme,
+        parts.netloc,
+        parts.path,
+        urlencode(query),
+        parts.fragment,
+    ))
+
+
+def _current_dashboard_url(request: Request, *, exclude: set[str] | None = None) -> str:
+    exclude = exclude or set()
+    pairs = [
+        (key, value)
+        for key, value in request.query_params.multi_items()
+        if key not in exclude
+    ]
+    query = urlencode(pairs)
+    return request.url.path + (f"?{query}" if query else "")
 
 
 def _external_links_from_form(raw: str) -> list[dict[str, str]]:
@@ -832,6 +867,9 @@ async def list_view(
     include_deleted: bool = False,
     limit: int = 50,
     after: str | None = None,
+    bulk_count: int | None = None,
+    bulk_action: str | None = None,
+    bulk_error: str | None = None,
 ):
     registry = request.app.state.registry
     project = registry.project(project_key)
@@ -916,7 +954,94 @@ async def list_view(
         filter_applies_to=applies_to or [],
         filter_relation_type=relation_type or [],
         filter_include_deleted=effective_include_deleted,
+        current_list_url=_current_dashboard_url(
+            request,
+            exclude={"bulk_count", "bulk_action", "bulk_error"},
+        ),
+        bulk_count=bulk_count,
+        bulk_action=bulk_action,
+        bulk_error=bulk_error,
         active_page="list",
+    )
+
+
+@router.post("/{project_key}/items/bulk")
+async def bulk_update_items_dashboard(
+    project_key: str,
+    request: Request,
+    local_ids: list[str] = BULK_LOCAL_IDS_FORM,
+    bulk_action: str = Form("update"),
+    bulk_kind: str = Form(""),
+    bulk_status: str = Form(""),
+    bulk_tag_mode: str = Form("add"),
+    bulk_tags: str = Form(""),
+    bulk_branch_mode: str = Form("keep"),
+    bulk_applies_to: list[str] = BULK_APPLIES_TO_FORM,
+    next: str = NEXT_FORM,
+):
+    target_url = _safe_dashboard_next(next)
+    if not local_ids:
+        return RedirectResponse(
+            url=_dashboard_url_with_params(
+                target_url,
+                bulk_error=make_translator(language_from_request(request))(
+                    "bulk.error.none_selected"
+                ),
+                bulk_count=None,
+                bulk_action=None,
+            ),
+            status_code=303,
+        )
+
+    try:
+        action = bulk_action if bulk_action in {"update", "delete", "restore"} else "update"
+        applies = bulk_applies_to if bulk_branch_mode == "replace" else None
+        tags = _split_form_tokens(bulk_tags) if bulk_tags.strip() else None
+        payload = BulkUpdateItemsRequest(
+            local_ids=local_ids,
+            action=action,
+            kind=bulk_kind.strip() or None,
+            status=bulk_status.strip() or None,
+            tags=tags,
+            tag_mode=bulk_tag_mode if bulk_tag_mode in {"add", "remove", "replace"} else "add",
+            applies_to=applies,
+            reason="bulk triage",
+        )
+        svc, session = _item_svc(request)
+        try:
+            result = await svc.bulk_update(project_key, payload)
+        finally:
+            await session.close()
+    except ValidationError as exc:
+        error = exc.errors()[0]["msg"] if exc.errors() else str(exc)
+        return RedirectResponse(
+            url=_dashboard_url_with_params(
+                target_url,
+                bulk_error=error,
+                bulk_count=None,
+                bulk_action=None,
+            ),
+            status_code=303,
+        )
+    except IssueDeckError as exc:
+        return RedirectResponse(
+            url=_dashboard_url_with_params(
+                target_url,
+                bulk_error=exc.message,
+                bulk_count=None,
+                bulk_action=None,
+            ),
+            status_code=303,
+        )
+
+    return RedirectResponse(
+        url=_dashboard_url_with_params(
+            target_url,
+            bulk_count=result.updated_count,
+            bulk_action=result.action,
+            bulk_error=None,
+        ),
+        status_code=303,
     )
 
 

@@ -51,6 +51,8 @@ Agent handoffs and progress tracking are covered in
 [Agent Work Sessions](docs/agent-work-sessions.md).
 GitHub backlog imports are covered in
 [GitHub Issues Import](docs/github-issues-import.md).
+Bulk cleanup after imports is covered in
+[Dashboard Bulk Triage](docs/dashboard-bulk-triage.md).
 
 ## Features
 
@@ -75,6 +77,8 @@ GitHub backlog imports are covered in
   delete, and restore events.
 - Built-in dashboard work queues for backlog, active, blocked, ready-to-ship,
   done, deleted, and recently touched items.
+- Dashboard bulk triage for updating status, kind, tags, branches, delete, and
+  restore across many selected items.
 - Project-scoped saved dashboard filters for reusable views such as active
   bugs, blocked work, release queues, and tag-specific searches.
 - Soft delete + restore.

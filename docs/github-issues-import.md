@@ -17,6 +17,9 @@ Use **Preview import** first to see fetched, skipped, planned, and duplicate
 counts without writing anything. Use **Import issues** to create the new
 IssueDeck items.
 
+After importing a large backlog, use [Dashboard Bulk Triage](dashboard-bulk-triage.md)
+to select multiple items and assign status, tags, kinds, or branches in one pass.
+
 ## Import Open Issues
 
 ```bash

@@ -13,6 +13,7 @@ from issuedeck.core.errors import InvalidKind, ItemNotFound
 from issuedeck.features.items.models import Base
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
+    BulkUpdateItemsRequest,
     CreateItemEventRequest,
     CreateItemRequest,
     ShipItemRequest,
@@ -174,6 +175,54 @@ async def test_update_item_replaces_external_links(service):
     assert full.events[0].metadata["fields"] == ["external_links"]
 
 
+async def test_bulk_update_changes_status_kind_tags_and_branches(service):
+    await service.create("test", CreateItemRequest(kind="feature", title="one", tags=["old"]))
+    await service.create("test", CreateItemRequest(kind="feature", title="two", tags=["old"]))
+
+    result = await service.bulk_update(
+        "test",
+        BulkUpdateItemsRequest(
+            local_ids=["FEAT-0001", "FEAT-0002"],
+            kind="bug",
+            status="in_progress",
+            tags=["triaged"],
+            tag_mode="replace",
+            applies_to=["main"],
+        ),
+    )
+
+    assert result.updated_count == 2
+    assert [(item.local_id, item.kind, item.status, item.tags) for item in result.items] == [
+        ("FEAT-0001", "bug", "in_progress", ["triaged"]),
+        ("FEAT-0002", "bug", "in_progress", ["triaged"]),
+    ]
+    detail = await service.get("test", "FEAT-0001")
+    assert detail.events[0].event_type == "updated"
+    assert detail.events[0].metadata["bulk"] is True
+    assert detail.events[0].metadata["fields"] == [
+        "kind",
+        "status",
+        "tags",
+        "applies_to",
+    ]
+
+
+async def test_bulk_update_adds_and_removes_tags(service):
+    await service.create("test", CreateItemRequest(kind="feature", title="one", tags=["old"]))
+
+    added = await service.bulk_update(
+        "test",
+        BulkUpdateItemsRequest(local_ids=["FEAT-0001"], tags=["triaged"], tag_mode="add"),
+    )
+    assert added.items[0].tags == ["old", "triaged"]
+
+    removed = await service.bulk_update(
+        "test",
+        BulkUpdateItemsRequest(local_ids=["FEAT-0001"], tags=["old"], tag_mode="remove"),
+    )
+    assert removed.items[0].tags == ["triaged"]
+
+
 async def test_add_event_appends_comment(service):
     await service.create("test", CreateItemRequest(kind="feature", title="t"))
     event = await service.add_event(
@@ -254,3 +303,33 @@ async def test_lifecycle_actions_emit_webhooks(service_with_webhooks):
     assert all(local_id == "FEAT-0001" for _event, local_id, _deleted_at in dispatcher.events)
     assert dispatcher.events[-2][2] is not None
     assert dispatcher.events[-1][2] is None
+
+
+async def test_bulk_delete_and_restore_emit_webhooks(service_with_webhooks):
+    service, dispatcher = service_with_webhooks
+
+    await service.create("test", CreateItemRequest(kind="feature", title="one"))
+    await service.create("test", CreateItemRequest(kind="feature", title="two"))
+
+    deleted = await service.bulk_update(
+        "test",
+        BulkUpdateItemsRequest(local_ids=["FEAT-0001", "FEAT-0002"], action="delete"),
+    )
+    assert deleted.updated_count == 2
+    assert all(item.deleted_at is not None for item in deleted.items)
+
+    restored = await service.bulk_update(
+        "test",
+        BulkUpdateItemsRequest(local_ids=["FEAT-0001", "FEAT-0002"], action="restore"),
+    )
+    assert restored.updated_count == 2
+    assert all(item.deleted_at is None for item in restored.items)
+
+    assert [event for event, _local_id, _deleted_at in dispatcher.events] == [
+        "item.created",
+        "item.created",
+        "item.deleted",
+        "item.deleted",
+        "item.restored",
+        "item.restored",
+    ]

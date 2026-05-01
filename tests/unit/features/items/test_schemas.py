@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from issuedeck.features.items.schemas import (
+    BulkUpdateItemsRequest,
     CreateItemEventRequest,
     CreateItemRequest,
     ItemDetail,
@@ -32,6 +33,21 @@ def test_update_item_request_body_vs_append_mutex():
 def test_update_item_request_status_done_rejected():
     with pytest.raises(ValidationError):
         UpdateItemRequest(status="done")
+
+
+def test_bulk_update_request_dedupes_ids_and_tags():
+    r = BulkUpdateItemsRequest(
+        local_ids=[" FEAT-0001 ", "FEAT-0001", "BUG-0001"],
+        tags=[" p1 ", "p1", "triage"],
+    )
+
+    assert r.local_ids == ["FEAT-0001", "BUG-0001"]
+    assert r.tags == ["p1", "triage"]
+
+
+def test_bulk_update_request_requires_a_change_for_update():
+    with pytest.raises(ValidationError):
+        BulkUpdateItemsRequest(local_ids=["FEAT-0001"])
 
 
 def test_ship_item_request_requires_version():

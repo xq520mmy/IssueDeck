@@ -73,6 +73,16 @@
 {# ── Table row ── #}
 <tr class="hover:bg-primary-50/40 dark:hover:bg-primary-950/20 transition-colors
            {% if item.deleted_at %}opacity-50{% endif %}">
+  <td class="px-4 py-3">
+    <input type="checkbox"
+           name="local_ids"
+           value="{{ item.local_id }}"
+           x-model="selected"
+           data-bulk-item-checkbox
+           class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 focus:ring-offset-0"
+           aria-label="{{ t('bulk.select_item', id=item.local_id) }}">
+  </td>
+
   {# ID #}
   <td class="px-4 py-3">
     <span class="text-xs font-mono text-gray-500 dark:text-gray-400">
@@ -153,6 +163,14 @@
                 bg-white dark:bg-ledger-darkPanel p-4
                 {% if item.deleted_at %}opacity-50{% endif %}">
   <div class="flex items-start justify-between gap-3">
+    <div class="flex min-w-0 gap-3">
+      <input type="checkbox"
+             name="local_ids"
+             value="{{ item.local_id }}"
+             x-model="selected"
+             data-bulk-item-checkbox
+             class="mt-1 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 focus:ring-offset-0"
+             aria-label="{{ t('bulk.select_item', id=item.local_id) }}">
     <div class="min-w-0 space-y-2">
       <div class="flex flex-wrap items-center gap-2">
         <span class="text-xs font-mono text-gray-500 dark:text-gray-400">
@@ -171,6 +189,7 @@
                 focus:ring-offset-2 dark:focus:ring-offset-ledger-darkPanel rounded">
         {{ item.title }}
       </a>
+    </div>
     </div>
     <span class="inline-flex shrink-0 items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium
                  {{ sc.bg }} {{ sc.text }}">

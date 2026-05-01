@@ -15,6 +15,8 @@ versioning once public releases begin.
   repository issue imports with label/state filters and duplicate skipping.
 - Added a dashboard GitHub Issues import page with preview, status mapping,
   branch targets, optional tokens, and duplicate-skipping summaries.
+- Added dashboard and REST bulk triage for selected items, including status,
+  kind, tag, branch, delete, and restore operations.
 
 ## [0.4.0] - 2026-05-01
 

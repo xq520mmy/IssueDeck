@@ -87,7 +87,7 @@ class ItemRepo:
 
     async def update_item_fields(
         self, item: Item, *, title: str | None = None, body: str | None = None,
-        status: str | None = None, tags: list[str] | None = None,
+        kind: str | None = None, status: str | None = None, tags: list[str] | None = None,
         applies_to: list[str] | None = None,
         external_links: list[dict[str, str | None]] | None = None,
     ) -> None:
@@ -95,6 +95,8 @@ class ItemRepo:
             item.title = title
         if body is not None:
             item.body = body
+        if kind is not None:
+            item.kind = kind
         if status is not None:
             item.status = status
         if tags is not None:
@@ -185,6 +187,26 @@ class ItemRepo:
             .order_by(ItemEvent.created_at.desc(), ItemEvent.id.desc())
             .limit(limit)
         )
+        return list((await self._s.execute(stmt)).scalars().all())
+
+    async def list_by_local_ids(
+        self,
+        project_key: str,
+        local_ids: list[str],
+        *,
+        include_deleted: bool = False,
+    ) -> list[Item]:
+        stmt = (
+            select(Item)
+            .where(Item.project_key == project_key, Item.local_id.in_(local_ids))
+            .options(
+                selectinload(Item.tags),
+                selectinload(Item.applies_to),
+                selectinload(Item.external_links),
+            )
+        )
+        if not include_deleted:
+            stmt = stmt.where(Item.deleted_at.is_(None))
         return list((await self._s.execute(stmt)).scalars().all())
 
     def _add_external_links(

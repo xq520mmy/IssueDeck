@@ -46,6 +46,7 @@ uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 日常分诊快捷键见[键盘快捷键](docs/keyboard-shortcuts.zh-CN.md)。
 Agent 交接和进展跟踪见 [Agent 工作会话](docs/agent-work-sessions.zh-CN.md)。
 GitHub backlog 导入见 [GitHub Issues 导入](docs/github-issues-import.zh-CN.md)。
+导入后的批量整理见 [Dashboard 批量分诊](docs/dashboard-bulk-triage.zh-CN.md)。
 
 ## 功能
 
@@ -63,6 +64,7 @@ GitHub backlog 导入见 [GitHub Issues 导入](docs/github-issues-import.zh-CN.
   GitHub checklist 转成 IssueDeck item。
 - Activity Timeline：自动记录生命周期事件，也支持手动评论。
 - Dashboard 工作队列：最近更新、待办、进行中、被阻塞、待发布、已完成、已删除。
+- Dashboard 批量分诊：多选事项后批量更新状态、类型、标签、分支、删除和恢复。
 - 已保存筛选：每个项目保存常用视图，例如活跃 Bug、阻塞事项和待发布队列。
 - 软删除和恢复。
 - Ship 记录：绑定版本和 commit。

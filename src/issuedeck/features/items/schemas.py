@@ -59,6 +59,39 @@ class UpdateItemRequest(BaseModel):
         return self
 
 
+class BulkUpdateItemsRequest(BaseModel):
+    local_ids: list[str] = Field(min_length=1, max_length=500)
+    action: Literal["update", "delete", "restore"] = "update"
+    kind: str | None = Field(default=None, min_length=1, max_length=64)
+    status: str | None = None
+    applies_to: list[str] | None = None
+    tags: list[str] | None = None
+    tag_mode: Literal["add", "remove", "replace"] = "add"
+    reason: str = Field(default="", max_length=500)
+
+    @model_validator(mode="after")
+    def _checks(self) -> BulkUpdateItemsRequest:
+        self.local_ids = _dedupe_clean(self.local_ids)
+        if not self.local_ids:
+            raise ValueError("local_ids cannot be empty")
+        if self.applies_to is not None:
+            self.applies_to = _dedupe_clean(self.applies_to)
+            if not self.applies_to:
+                raise ValueError("applies_to cannot be empty — must target at least one branch")
+        if self.tags is not None:
+            self.tags = _dedupe_clean(self.tags)
+        if self.status == "done":
+            raise ValueError(
+                "cannot set status=done via update; use ship to bind a version"
+            )
+        if self.action == "update" and not any(
+            value is not None
+            for value in (self.kind, self.status, self.applies_to, self.tags)
+        ):
+            raise ValueError("bulk update requires at least one field to change")
+        return self
+
+
 class ShipItemRequest(BaseModel):
     branch: str = Field(min_length=1)
     version: str = Field(min_length=1, max_length=64)
@@ -146,3 +179,19 @@ class ItemListResponse(BaseModel):
     items: list[ItemSummary]
     next_cursor: str | None = None
     limit: int
+
+
+class BulkUpdateItemsResponse(BaseModel):
+    action: Literal["update", "delete", "restore"]
+    requested_count: int
+    updated_count: int
+    items: list[ItemSummary] = []
+
+
+def _dedupe_clean(values: list[str]) -> list[str]:
+    result: list[str] = []
+    for value in values:
+        clean = value.strip()
+        if clean and clean not in result:
+            result.append(clean)
+    return result

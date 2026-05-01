@@ -23,6 +23,16 @@
     </a>
   </div>
 
+  {% if bulk_error %}
+    <div class="rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+      {{ bulk_error }}
+    </div>
+  {% elif bulk_count %}
+    <div class="rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 px-4 py-3 text-sm text-green-700 dark:text-green-300">
+      {{ t("bulk.success", count=bulk_count, action=t("bulk.action_" ~ bulk_action)) }}
+    </div>
+  {% endif %}
+
   <nav class="flex flex-wrap items-center gap-2" aria-label="{{ t('aria.work_queues') }}">
     {% for queue in work_queues %}
       <a href="{{ queue.href }}"
@@ -300,8 +310,128 @@
     </form>
   </div>
 
-  <div id="items-list-content">
-    {% include "components/item_list_content.html" %}
-  </div>
+  <form method="post"
+        action="/dashboard/{{ project_key }}/items/bulk"
+        x-data="{
+          selected: [],
+          get count() { return this.selected.length },
+          toggleAll(checked) {
+            const boxes = Array.from(this.$el.querySelectorAll('[data-bulk-item-checkbox]'));
+            this.selected = checked ? boxes.map((box) => box.value) : [];
+          }
+        }"
+        class="space-y-3">
+    <input type="hidden" name="next" value="{{ current_list_url }}">
+
+    <section class="rounded-md border border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-ledger-darkPanel p-3">
+      <div class="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:flex xl:flex-wrap xl:items-end">
+          <div class="min-w-[120px]">
+            <label for="bulk-action" class="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+              {{ t("bulk.action") }}
+            </label>
+            <select id="bulk-action"
+                    name="bulk_action"
+                    class="w-full rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-primary-500">
+              <option value="update">{{ t("bulk.action_update") }}</option>
+              <option value="delete">{{ t("bulk.action_delete") }}</option>
+              <option value="restore">{{ t("bulk.action_restore") }}</option>
+            </select>
+          </div>
+
+          <div class="min-w-[140px]">
+            <label for="bulk-kind" class="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+              {{ t("common.kind") }}
+            </label>
+            <select id="bulk-kind"
+                    name="bulk_kind"
+                    class="w-full rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-primary-500">
+              <option value="">{{ t("bulk.keep_kind") }}</option>
+              {% for kind_key, kind_cfg in project.kinds.items() %}
+                <option value="{{ kind_key }}">{{ kind_label(kind_key, project) }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="min-w-[150px]">
+            <label for="bulk-status" class="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+              {{ t("common.status") }}
+            </label>
+            <select id="bulk-status"
+                    name="bulk_status"
+                    class="w-full rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-primary-500">
+              <option value="">{{ t("bulk.keep_status") }}</option>
+              {% for status_key, status_cfg in project.statuses.items() %}
+                {% if not status_cfg.requires_ship %}
+                  <option value="{{ status_key }}">{{ status_label(status_key, project) }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="min-w-[220px]">
+            <label for="bulk-tags" class="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+              {{ t("common.tags") }}
+            </label>
+            <div class="flex gap-2">
+              <select name="bulk_tag_mode"
+                      class="w-24 rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-primary-500">
+                <option value="add">{{ t("bulk.tag_add") }}</option>
+                <option value="remove">{{ t("bulk.tag_remove") }}</option>
+                <option value="replace">{{ t("bulk.tag_replace") }}</option>
+              </select>
+              <input id="bulk-tags"
+                     name="bulk_tags"
+                     placeholder="triage, p1"
+                     class="min-w-0 flex-1 rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:ring-primary-500">
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-end">
+          {% if project.branches %}
+            <div>
+              <label for="bulk-branch-mode" class="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+                {{ t("common.branches") }}
+              </label>
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <select id="bulk-branch-mode"
+                        name="bulk_branch_mode"
+                        class="rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-primary-500">
+                  <option value="keep">{{ t("bulk.keep_branches") }}</option>
+                  <option value="replace">{{ t("bulk.replace_branches") }}</option>
+                </select>
+                <div class="flex flex-wrap gap-2">
+                  {% for branch in project.branches %}
+                    <label class="inline-flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-300">
+                      <input type="checkbox"
+                             name="bulk_applies_to"
+                             value="{{ branch.key }}"
+                             class="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 focus:ring-offset-0">
+                      <span>{{ branch.label }}</span>
+                    </label>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endif %}
+
+          <button type="submit"
+                  :disabled="count === 0"
+                  class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-semibold bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+            </svg>
+            {{ t("bulk.apply") }}
+            <span x-text="count ? '(' + count + ')' : ''"></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <div id="items-list-content">
+      {% include "components/item_list_content.html" %}
+    </div>
+  </form>
 </div>
 {% endblock %}

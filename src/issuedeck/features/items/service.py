@@ -16,6 +16,7 @@ from sqlalchemy.orm import selectinload
 
 from issuedeck.core.config import ConfigRegistry, WebhookEvent
 from issuedeck.core.errors import (
+    InvalidTransition,
     ItemNotFound,
     ShipRequiresBranchConfig,
 )
@@ -29,6 +30,8 @@ from issuedeck.features.items.models import (
 )
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
+    BulkUpdateItemsRequest,
+    BulkUpdateItemsResponse,
     CreateItemEventRequest,
     CreateItemRequest,
     ExternalLinkInput,
@@ -76,6 +79,32 @@ def _changed_fields(req: UpdateItemRequest) -> list[str]:
     if req.external_links is not None:
         fields.append("external_links")
     return fields
+
+
+def _bulk_changed_fields(req: BulkUpdateItemsRequest) -> list[str]:
+    fields: list[str] = []
+    if req.kind is not None:
+        fields.append("kind")
+    if req.status is not None:
+        fields.append("status")
+    if req.tags is not None:
+        fields.append("tags")
+    if req.applies_to is not None:
+        fields.append("applies_to")
+    return fields
+
+
+def _merge_tags(existing: list[str], incoming: list[str], mode: str) -> list[str]:
+    if mode == "replace":
+        return list(incoming)
+    if mode == "remove":
+        remove = set(incoming)
+        return [tag for tag in existing if tag not in remove]
+    result = list(existing)
+    for tag in incoming:
+        if tag not in result:
+            result.append(tag)
+    return result
 
 
 def _link_payloads(links: list[ExternalLinkInput]) -> list[dict[str, str | None]]:
@@ -184,6 +213,126 @@ class ItemService:
         if changed_fields:
             self._emit_webhook("item.updated", summary)
         return summary
+
+    async def bulk_update(
+        self,
+        project_key: str,
+        req: BulkUpdateItemsRequest,
+    ) -> BulkUpdateItemsResponse:
+        self._registry.project(project_key)
+
+        if req.action == "update":
+            if req.kind is not None:
+                self._registry.validate_kind(project_key, req.kind)
+            if req.status is not None:
+                status_cfg = self._registry.validate_status(project_key, req.status)
+                if status_cfg.requires_ship:
+                    raise InvalidTransition(
+                        "cannot set a ship-required status via bulk update; use ship",
+                        details={"project_key": project_key, "status": req.status},
+                    )
+            if req.applies_to is not None:
+                for branch in req.applies_to:
+                    self._registry.validate_branch(project_key, branch)
+
+        include_deleted = req.action == "restore"
+        rows = await self._repo.list_by_local_ids(
+            project_key,
+            req.local_ids,
+            include_deleted=include_deleted,
+        )
+        by_local_id = {item.local_id: item for item in rows}
+        missing = [
+            local_id for local_id in req.local_ids
+            if local_id not in by_local_id
+        ]
+        if missing:
+            raise ItemNotFound(
+                f"{len(missing)} item(s) not found in project '{project_key}'",
+                details={"project_key": project_key, "local_ids": missing},
+            )
+
+        summaries: list[ItemSummary] = []
+        if req.action == "delete":
+            deleted_at = _iso_now()
+            for local_id in req.local_ids:
+                item = by_local_id[local_id]
+                await self._record_event(
+                    item,
+                    event_type="deleted",
+                    body=(
+                        "Deleted item."
+                        if not req.reason
+                        else f"Deleted item: {req.reason}"
+                    ),
+                    metadata={"reason": req.reason, "bulk": True} if req.reason else {"bulk": True},
+                    created_at=deleted_at,
+                )
+                await self._repo.soft_delete(item.pk, deleted_at=deleted_at)
+            await self._s.commit()
+            summaries = await self._load_many_summaries(
+                project_key,
+                req.local_ids,
+                include_deleted=True,
+            )
+            for summary in summaries:
+                self._emit_webhook("item.deleted", summary)
+        elif req.action == "restore":
+            restored_at = _iso_now()
+            for local_id in req.local_ids:
+                item = by_local_id[local_id]
+                await self._repo.restore(item.pk)
+                item.updated_at = restored_at
+                await self._record_event(
+                    item,
+                    event_type="restored",
+                    body="Restored item.",
+                    metadata={"bulk": True},
+                    created_at=restored_at,
+                )
+            await self._s.commit()
+            summaries = await self._load_many_summaries(project_key, req.local_ids)
+            for summary in summaries:
+                self._emit_webhook("item.restored", summary)
+        else:
+            changed_fields = _bulk_changed_fields(req)
+            for local_id in req.local_ids:
+                item = by_local_id[local_id]
+                tags = None
+                if req.tags is not None:
+                    tags = _merge_tags(
+                        [tag.tag for tag in item.tags],
+                        req.tags,
+                        req.tag_mode,
+                    )
+                await self._repo.update_item_fields(
+                    item,
+                    kind=req.kind,
+                    status=req.status,
+                    tags=tags,
+                    applies_to=req.applies_to,
+                )
+                await self._record_event(
+                    item,
+                    event_type="updated",
+                    body=f"Bulk updated {', '.join(changed_fields)}.",
+                    metadata={
+                        "fields": changed_fields,
+                        "bulk": True,
+                        "tag_mode": req.tag_mode if req.tags is not None else None,
+                    },
+                )
+            await self._s.commit()
+            summaries = await self._load_many_summaries(project_key, req.local_ids)
+            for summary in summaries:
+                self._emit_webhook("item.updated", summary)
+
+        return BulkUpdateItemsResponse(
+            action=req.action,
+            requested_count=len(req.local_ids),
+            updated_count=len(summaries),
+            items=summaries,
+        )
 
     async def ship(
         self, project_key: str, local_id: str, req: ShipItemRequest,
@@ -365,6 +514,25 @@ class ItemService:
                 details={"project_key": project_key, "local_id": local_id},
             )
         return item
+
+    async def _load_many_summaries(
+        self,
+        project_key: str,
+        local_ids: list[str],
+        *,
+        include_deleted: bool = False,
+    ) -> list[ItemSummary]:
+        rows = await self._repo.list_by_local_ids(
+            project_key,
+            local_ids,
+            include_deleted=include_deleted,
+        )
+        by_local_id = {item.local_id: item for item in rows}
+        return [
+            self._to_summary(by_local_id[local_id])
+            for local_id in local_ids
+            if local_id in by_local_id
+        ]
 
     async def _record_event(
         self,

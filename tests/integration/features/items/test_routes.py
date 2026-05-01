@@ -136,6 +136,38 @@ async def test_delete_then_restore(client):
     assert r.status_code == 200
 
 
+async def test_bulk_update_route(client):
+    await client.post("/api/v1/projects/test/items",
+                      json={"kind": "feature", "title": "one", "tags": ["old"]})
+    await client.post("/api/v1/projects/test/items",
+                      json={"kind": "feature", "title": "two", "tags": ["old"]})
+
+    r = await client.post(
+        "/api/v1/projects/test/items/bulk",
+        json={
+            "local_ids": ["FEAT-0001", "FEAT-0002"],
+            "status": "done",
+        },
+    )
+    assert r.status_code == 422
+
+    r = await client.post(
+        "/api/v1/projects/test/items/bulk",
+        json={
+            "local_ids": ["FEAT-0001", "FEAT-0002"],
+            "status": "proposed",
+            "tags": ["triaged"],
+            "tag_mode": "replace",
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["updated_count"] == 2
+    assert [item["tags"] for item in r.json()["items"]] == [
+        ["triaged"],
+        ["triaged"],
+    ]
+
+
 async def test_list_only_deleted_route(client):
     await client.post("/api/v1/projects/test/items",
                       json={"kind": "feature", "title": "x"})
