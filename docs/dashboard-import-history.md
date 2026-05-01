@@ -17,5 +17,9 @@ Use **Soft-delete batch** when an import was wrong or duplicated. IssueDeck
 finds the active items with that batch tag, soft-deletes them in bulk, and
 leaves the import history record visible for audit context.
 
+Use **Restore batch** to bring back deleted items from that same batch. Restore
+only targets items that are already soft-deleted, so it can safely recover a
+mistaken batch delete without duplicating active work.
+
 Preview-only imports are not recorded because they do not write items. Formal
 imports that write zero items are also omitted from the history.

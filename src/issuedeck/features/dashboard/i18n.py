@@ -205,6 +205,9 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "import_history.confirm_delete_batch": (
             "Soft-delete all active items in this import batch?"
         ),
+        "import_history.confirm_restore_batch": (
+            "Restore all deleted items in this import batch?"
+        ),
         "import_history.delete_batch": "Soft-delete batch",
         "import_history.delete_empty": (
             "No active items were found for that import batch."
@@ -220,6 +223,14 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "import_history.empty_title": "No imports recorded",
         "import_history.external_links": "Links",
         "import_history.planned": "Planned",
+        "import_history.restore_batch": "Restore batch",
+        "import_history.restore_empty": (
+            "No deleted items were found for that import batch."
+        ),
+        "import_history.restore_missing": "That import batch was not found.",
+        "import_history.restore_success": (
+            "Restored {count} item(s) from the import batch."
+        ),
         "import_history.skipped": "Skipped",
         "import_history.source_csv": "CSV",
         "import_history.source_github": "GitHub",
@@ -529,6 +540,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "github_import.written": "已写入",
         "import_history.batch_tag": "批次标签",
         "import_history.confirm_delete_batch": "软删除这个导入批次里的所有活跃事项？",
+        "import_history.confirm_restore_batch": "恢复这个导入批次里的所有已删除事项？",
         "import_history.delete_batch": "软删除批次",
         "import_history.delete_empty": "这个导入批次里没有可软删除的活跃事项。",
         "import_history.delete_missing": "未找到这个导入批次。",
@@ -538,6 +550,10 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "import_history.empty_title": "暂无导入记录",
         "import_history.external_links": "链接",
         "import_history.planned": "将创建",
+        "import_history.restore_batch": "恢复批次",
+        "import_history.restore_empty": "这个导入批次里没有可恢复的已删除事项。",
+        "import_history.restore_missing": "未找到这个导入批次。",
+        "import_history.restore_success": "已从该导入批次恢复 {count} 条事项。",
         "import_history.skipped": "已跳过",
         "import_history.source_csv": "CSV",
         "import_history.source_github": "GitHub",

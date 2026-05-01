@@ -228,3 +228,49 @@ async def test_import_history_can_soft_delete_batch(dashboard_client):
 
     assert history_response.status_code == 200
     assert "Soft-deleted 1 item(s)" in history_response.text
+
+
+async def test_import_history_can_restore_soft_deleted_batch(dashboard_client):
+    client, Session = dashboard_client
+
+    import_response = await client.post(
+        "/dashboard/test/imports/files",
+        data={
+            "source_type": "csv",
+            "kind": "feature",
+            "default_status": "proposed",
+            "tags": "uploaded",
+            "mode": "import",
+            "applies_to": "main",
+        },
+        files={"source_file": ("items.csv", "title\nRestore me\n", "text/csv")},
+    )
+
+    assert import_response.status_code == 200, import_response.text
+    async with Session() as session:
+        batch_tag = await session.scalar(select(ImportBatch.batch_tag))
+
+    assert batch_tag is not None
+    delete_response = await client.post(
+        f"/dashboard/test/imports/{batch_tag}/delete",
+        follow_redirects=False,
+    )
+
+    assert delete_response.status_code == 303
+    restore_response = await client.post(
+        f"/dashboard/test/imports/{batch_tag}/restore",
+        follow_redirects=False,
+    )
+
+    assert restore_response.status_code == 303
+    assert "restored_count=1" in restore_response.headers["location"]
+    async with Session() as session:
+        item = await session.scalar(select(Item).where(Item.local_id == "FEAT-0001"))
+
+    assert item is not None
+    assert item.deleted_at is None
+
+    history_response = await client.get(restore_response.headers["location"])
+
+    assert history_response.status_code == 200
+    assert "Restored 1 item(s)" in history_response.text

@@ -444,10 +444,13 @@ def _import_batch_view(project_key: str, batch: ImportBatch) -> dict[str, object
     }
 
 
-async def _active_local_ids_for_import_batch(
+async def _local_ids_for_import_batch(
     svc: ItemService,
     project_key: str,
     batch_tag: str,
+    *,
+    include_deleted: bool = False,
+    only_deleted: bool = False,
 ) -> list[str]:
     local_ids: list[str] = []
     after = None
@@ -455,7 +458,8 @@ async def _active_local_ids_for_import_batch(
         result = await svc.list_items(
             project_key,
             tags=[batch_tag],
-            include_deleted=False,
+            include_deleted=include_deleted,
+            only_deleted=only_deleted,
             limit=500,
             after=after,
         )
@@ -463,6 +467,26 @@ async def _active_local_ids_for_import_batch(
         if not result.next_cursor:
             return local_ids
         after = result.next_cursor
+
+
+async def _active_local_ids_for_import_batch(
+    svc: ItemService,
+    project_key: str,
+    batch_tag: str,
+) -> list[str]:
+    return await _local_ids_for_import_batch(
+        svc, project_key, batch_tag, include_deleted=False,
+    )
+
+
+async def _deleted_local_ids_for_import_batch(
+    svc: ItemService,
+    project_key: str,
+    batch_tag: str,
+) -> list[str]:
+    return await _local_ids_for_import_batch(
+        svc, project_key, batch_tag, include_deleted=True, only_deleted=True,
+    )
 
 
 def _chunked(values: list[str], size: int) -> list[list[str]]:
@@ -876,8 +900,11 @@ async def import_history_page(
     project_key: str,
     request: Request,
     deleted_count: int | None = Query(None),
+    restored_count: int | None = Query(None),
     delete_empty: bool = Query(False),
+    restore_empty: bool = Query(False),
     delete_missing: bool = Query(False),
+    restore_missing: bool = Query(False),
 ):
     request.app.state.registry.project(project_key)
     session = request.app.state.session_factory()
@@ -901,8 +928,11 @@ async def import_history_page(
         active_page="import_history",
         batches=batches,
         deleted_count=deleted_count,
+        restored_count=restored_count,
         delete_empty=delete_empty,
+        restore_empty=restore_empty,
         delete_missing=delete_missing,
+        restore_missing=restore_missing,
     )
 
 
@@ -955,6 +985,56 @@ async def import_batch_delete(
         url=_dashboard_url_with_params(
             f"/dashboard/{project_key}/imports",
             deleted_count=deleted_count,
+        ),
+        status_code=303,
+    )
+
+
+@router.post("/{project_key}/imports/{batch_tag}/restore")
+async def import_batch_restore(
+    project_key: str,
+    batch_tag: str,
+    request: Request,
+):
+    request.app.state.registry.project(project_key)
+    svc, session = _item_svc(request)
+    try:
+        batch = await session.scalar(
+            select(ImportBatch).where(
+                ImportBatch.project_key == project_key,
+                ImportBatch.batch_tag == batch_tag,
+            )
+        )
+        redirect_base = f"/dashboard/{project_key}/imports"
+        if batch is None:
+            return RedirectResponse(
+                url=_dashboard_url_with_params(redirect_base, restore_missing=1),
+                status_code=303,
+            )
+
+        local_ids = await _deleted_local_ids_for_import_batch(
+            svc, project_key, batch_tag,
+        )
+        if not local_ids:
+            return RedirectResponse(
+                url=_dashboard_url_with_params(redirect_base, restore_empty=1),
+                status_code=303,
+            )
+
+        restored_count = 0
+        for chunk in _chunked(local_ids, 500):
+            result = await svc.bulk_update(
+                project_key,
+                BulkUpdateItemsRequest(local_ids=chunk, action="restore"),
+            )
+            restored_count += result.updated_count
+    finally:
+        await session.close()
+
+    return RedirectResponse(
+        url=_dashboard_url_with_params(
+            f"/dashboard/{project_key}/imports",
+            restored_count=restored_count,
         ),
         status_code=303,
     )

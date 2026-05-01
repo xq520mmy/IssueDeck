@@ -25,6 +25,8 @@ versioning once public releases begin.
   and Markdown import batches.
 - Added a dashboard import-history action for soft-deleting all active items
   from a recorded import batch.
+- Added a dashboard import-history restore action for recovering soft-deleted
+  items from an import batch.
 - Added maintainer workflow docs and repo-level AI agent guidance for
   requirements, validation, git commits, pushes, and CI checks.
 - Documented local browser recovery steps and disabled caching for root
