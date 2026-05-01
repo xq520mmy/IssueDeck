@@ -72,10 +72,14 @@ async def test_list_page_renders_bulk_triage_controls(dashboard_client):
     response = await client.get("/dashboard/test/list")
 
     assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
     assert "Bulk" not in response.text
     assert "Select all visible items" in response.text
     assert "Keep status" in response.text
     assert "FEAT-0001" in response.text
+    assert "bulk.action" not in response.text
+    assert "nav.import_history" not in response.text
+    assert "nav.import_files" not in response.text
 
 
 async def test_dashboard_bulk_update_preserves_current_list_url(dashboard_client):

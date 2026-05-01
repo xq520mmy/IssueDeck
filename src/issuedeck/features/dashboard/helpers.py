@@ -55,7 +55,9 @@ def render(
         tpl = env.get_template(template_name)
 
     html = tpl.render(request=request, **ctx)
-    return HTMLResponse(html, status_code=status_code)
+    response = HTMLResponse(html, status_code=status_code)
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 # ---------------------------------------------------------------------------

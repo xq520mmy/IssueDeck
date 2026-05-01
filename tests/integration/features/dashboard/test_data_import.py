@@ -64,6 +64,26 @@ async def test_data_import_form_renders(dashboard_client):
     assert "Markdown" in response.text
 
 
+async def test_import_pages_do_not_render_raw_i18n_keys(dashboard_client):
+    client, _Session = dashboard_client
+    raw_keys = ("nav.import_history", "nav.import_files", "bulk.action")
+
+    for lang in ("en", "zh-CN"):
+        client.cookies.set("issuedeck_lang", lang)
+        for path in (
+            "/dashboard/test/list",
+            "/dashboard/test/imports/github",
+            "/dashboard/test/imports/files",
+            "/dashboard/test/imports",
+        ):
+            response = await client.get(path)
+
+            assert response.status_code == 200
+            assert response.headers["cache-control"] == "no-store"
+            for key in raw_keys:
+                assert key not in response.text
+
+
 async def test_data_import_csv_preview_does_not_write_items(dashboard_client):
     client, Session = dashboard_client
 
