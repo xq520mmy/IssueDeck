@@ -19,6 +19,8 @@ versioning once public releases begin.
   kind, tag, branch, delete, and restore operations.
 - Linked dashboard GitHub imports to bulk triage with per-import batch tags and
   filtered result links.
+- Added dashboard file imports for CSV, JSON, and Markdown task lists with
+  preview, field aliases, status maps, batch tags, and bulk-triage links.
 
 ## [0.4.0] - 2026-05-01
 

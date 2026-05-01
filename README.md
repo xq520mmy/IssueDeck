@@ -51,6 +51,8 @@ Agent handoffs and progress tracking are covered in
 [Agent Work Sessions](docs/agent-work-sessions.md).
 GitHub backlog imports are covered in
 [GitHub Issues Import](docs/github-issues-import.md).
+Dashboard CSV, JSON, and Markdown uploads are covered in
+[Dashboard File Imports](docs/dashboard-file-imports.md).
 Bulk cleanup after imports is covered in
 [Dashboard Bulk Triage](docs/dashboard-bulk-triage.md).
 
@@ -70,8 +72,9 @@ Bulk cleanup after imports is covered in
   or commit URLs without a full sync engine.
 - GitHub Issues importer for pulling repository issues into IssueDeck from the
   dashboard or CLI with state/label filters and duplicate skipping.
-- CSV, JSON, and Markdown task-list import for turning tracker exports,
-  `TODO.md`, and GitHub checklist items into IssueDeck work items.
+- CSV, JSON, and Markdown task-list import from the dashboard or CLI for turning
+  tracker exports, `TODO.md`, and GitHub checklist items into IssueDeck work
+  items.
 - Item activity timeline with automatic lifecycle events and manual comments.
 - Signed lifecycle webhooks for downstream automation on create, update, ship,
   delete, and restore events.

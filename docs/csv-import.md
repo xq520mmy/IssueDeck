@@ -6,6 +6,9 @@
 IssueDeck items. It is designed for lightweight migrations from GitHub Issues,
 Linear, Jira, Airtable, Notion tables, and hand-maintained CSV files.
 
+The same CSV mapping flow is available in the dashboard through
+[Dashboard File Imports](dashboard-file-imports.md).
+
 ## Import A File
 
 ```bash

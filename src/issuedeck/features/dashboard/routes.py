@@ -7,10 +7,12 @@ import json
 import re
 import secrets
 from datetime import UTC, datetime
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import httpx
-from fastapi import APIRouter, Form, Query, Request, Response
+from fastapi import APIRouter, File, Form, Query, Request, Response, UploadFile
 from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 
@@ -54,11 +56,25 @@ from issuedeck.features.items.schemas import (
     UpdateItemRequest,
 )
 from issuedeck.features.items.service import ItemService
-from issuedeck.features.migrate.csv_items import parse_status_map_options
+from issuedeck.features.migrate.csv_items import (
+    CsvImportReport,
+    CsvItemMapping,
+    import_csv_items,
+    parse_status_map_options,
+)
 from issuedeck.features.migrate.github_issues import (
     fetch_github_issue_rows,
     import_github_issue_rows,
     parse_github_repo,
+)
+from issuedeck.features.migrate.json_items import (
+    JsonImportReport,
+    JsonItemMapping,
+    import_json_items,
+)
+from issuedeck.features.migrate.markdown_tasks import (
+    MarkdownTaskImportReport,
+    import_markdown_task_list,
 )
 from issuedeck.features.relationships.repo import RelationshipRepo
 from issuedeck.features.relationships.service import RelationshipService
@@ -83,6 +99,7 @@ BULK_APPLIES_TO_FORM = Form([], alias="bulk_applies_to")
 RELATION_TYPE_FORM = Form([])
 NEXT_QUERY = Query("/dashboard/")
 NEXT_FORM = Form("/dashboard/")
+SOURCE_FILE_FORM = File(...)
 
 WORK_QUEUE_KEYS = {
     "recent",
@@ -248,9 +265,10 @@ def _split_form_tokens(raw: str) -> list[str]:
     return values
 
 
-def _github_import_batch_tag() -> str:
+def _dashboard_import_batch_tag(source_type: str) -> str:
+    prefix = re.sub(r"[^a-z0-9]+", "-", source_type.lower()).strip("-") or "data"
     timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
-    return f"github-import-{timestamp}-{secrets.token_hex(2)}"
+    return f"{prefix}-import-{timestamp}-{secrets.token_hex(2)}"
 
 
 def _status_map_options_from_text(raw: str) -> list[str]:
@@ -274,6 +292,88 @@ def _default_github_import_form(project: ProjectConfig) -> dict[str, object]:
         "status_maps": "closed=done" if "done" in project.statuses else "",
         "include_pulls": False,
         "applies_to": [branch.key for branch in project.branches],
+    }
+
+
+def _default_data_import_form(project: ProjectConfig) -> dict[str, object]:
+    default_kind = next(iter(project.kinds.keys()), "")
+    default_status = next(
+        (key for key, cfg in project.statuses.items() if not cfg.terminal),
+        next(iter(project.statuses.keys()), ""),
+    )
+    return {
+        "source_type": "csv",
+        "kind": default_kind,
+        "default_status": default_status,
+        "tags": "",
+        "status_maps": "closed=done" if "done" in project.statuses else "",
+        "presets": "",
+        "field_aliases": "",
+        "include_checked": False,
+        "applies_to": [branch.key for branch in project.branches],
+    }
+
+
+def _data_import_extension(source_type: str) -> str:
+    return {
+        "csv": ".csv",
+        "json": ".json",
+        "markdown": ".md",
+    }[source_type]
+
+
+def _data_import_result(
+    *,
+    project_key: str,
+    source_type: str,
+    filename: str,
+    dry_run: bool,
+    batch_tag: str | None,
+    report: CsvImportReport | JsonImportReport | MarkdownTaskImportReport,
+) -> dict[str, object]:
+    items_written = report.items_written
+    triage_url = (
+        _dashboard_url_with_params(
+            f"/dashboard/{project_key}/list",
+            tag=batch_tag,
+        )
+        if batch_tag and items_written
+        else None
+    )
+    if source_type == "markdown":
+        stats = [
+            ("data_import.tasks_found", report.tasks_found),
+            ("data_import.checked_tasks", report.checked_tasks),
+            ("data_import.skipped_checked", report.skipped_checked),
+            ("data_import.planned", report.items_planned),
+            ("data_import.written", report.items_written),
+            ("data_import.external_links", report.external_links),
+        ]
+    elif source_type == "json":
+        stats = [
+            ("data_import.objects_found", report.objects_found),
+            ("data_import.objects_skipped", report.objects_skipped),
+            ("data_import.planned", report.items_planned),
+            ("data_import.written", report.items_written),
+            ("data_import.status_mapped", report.status_mapped),
+            ("data_import.external_links", report.external_links),
+        ]
+    else:
+        stats = [
+            ("data_import.rows_found", report.rows_found),
+            ("data_import.rows_skipped", report.rows_skipped),
+            ("data_import.planned", report.items_planned),
+            ("data_import.written", report.items_written),
+            ("data_import.status_mapped", report.status_mapped),
+            ("data_import.external_links", report.external_links),
+        ]
+    return {
+        "mode": "dry_run" if dry_run else "import",
+        "source_type": source_type,
+        "filename": filename or f"upload{_data_import_extension(source_type)}",
+        "stats": stats,
+        "batch_tag": batch_tag if items_written else None,
+        "triage_url": triage_url,
     }
 
 
@@ -747,7 +847,7 @@ async def github_import_submit(
             include_pulls=include_pulls,
         )
         user_tags = _split_form_tokens(tags)
-        batch_tag = None if dry_run else _github_import_batch_tag()
+        batch_tag = None if dry_run else _dashboard_import_batch_tag("github")
         import_tags = [*user_tags, batch_tag] if batch_tag else user_tags
         session = request.app.state.session_factory()
         try:
@@ -814,6 +914,165 @@ async def github_import_submit(
         "pages/github_import.html", request,
         **_ctx(request, project_key),
         active_page="import_github",
+        form=form,
+        result=result,
+        error=None,
+    )
+
+
+# ---------------------------------------------------------------------------
+# CSV / JSON / Markdown imports
+# ---------------------------------------------------------------------------
+
+@router.get("/{project_key}/imports/files")
+async def data_import_form(project_key: str, request: Request):
+    registry = request.app.state.registry
+    project = registry.project(project_key)
+    return render(
+        "pages/data_import.html", request,
+        **_ctx(request, project_key),
+        active_page="import_files",
+        form=_default_data_import_form(project),
+        result=None,
+        error=None,
+    )
+
+
+@router.post("/{project_key}/imports/files")
+async def data_import_submit(
+    project_key: str,
+    request: Request,
+    source_type: str = Form("csv"),
+    source_file: UploadFile = SOURCE_FILE_FORM,
+    kind: str = Form(...),
+    default_status: str = Form(""),
+    tags: str = Form(""),
+    status_maps: str = Form(""),
+    presets: str = Form(""),
+    field_aliases: str = Form(""),
+    include_checked: bool = Form(False),
+    mode: str = Form("dry_run"),
+    applies_to: list[str] = APPLIES_TO_FORM,
+):
+    registry = request.app.state.registry
+    project = registry.project(project_key)
+    t = make_translator(language_from_request(request))
+    dry_run = mode != "import"
+    clean_source_type = source_type.strip().lower()
+    form = {
+        "source_type": clean_source_type,
+        "kind": kind,
+        "default_status": default_status.strip(),
+        "tags": tags,
+        "status_maps": status_maps,
+        "presets": presets,
+        "field_aliases": field_aliases,
+        "include_checked": include_checked,
+        "applies_to": applies_to or [],
+    }
+
+    try:
+        if clean_source_type not in {"csv", "json", "markdown"}:
+            raise ValueError(t("data_import.error.invalid_type"))
+        item_kind = kind or next(iter(project.kinds.keys()))
+        registry.validate_kind(project_key, item_kind)
+        clean_default_status = default_status.strip() or None
+        if clean_default_status:
+            registry.validate_status(project_key, clean_default_status)
+
+        content = await source_file.read()
+        if not content.strip():
+            raise ValueError(t("data_import.error.empty_file"))
+
+        user_tags = _split_form_tokens(tags)
+        batch_tag = None if dry_run else _dashboard_import_batch_tag(clean_source_type)
+        import_tags = [*user_tags, batch_tag] if batch_tag else user_tags
+        status_map = (
+            parse_status_map_options(_status_map_options_from_text(status_maps))
+            if clean_source_type in {"csv", "json"}
+            else {}
+        )
+        filename = Path(source_file.filename or "").name
+        suffix = _data_import_extension(clean_source_type)
+
+        with TemporaryDirectory(prefix="issuedeck-import-") as tmpdir:
+            source_path = Path(tmpdir) / f"upload{suffix}"
+            source_path.write_bytes(content)
+            session = request.app.state.session_factory()
+            try:
+                if clean_source_type == "csv":
+                    mapping = CsvItemMapping.from_alias_options(
+                        _status_map_options_from_text(field_aliases),
+                        presets=_split_form_tokens(presets),
+                    )
+                    report = await import_csv_items(
+                        source_path,
+                        project_key,
+                        registry,
+                        session,
+                        kind=item_kind,
+                        default_status=clean_default_status,
+                        tags=import_tags,
+                        applies_to=applies_to if applies_to else None,
+                        status_map=status_map,
+                        mapping=mapping,
+                        dry_run=dry_run,
+                    )
+                elif clean_source_type == "json":
+                    mapping = JsonItemMapping.from_alias_options(
+                        _status_map_options_from_text(field_aliases),
+                        presets=_split_form_tokens(presets),
+                    )
+                    report = await import_json_items(
+                        source_path,
+                        project_key,
+                        registry,
+                        session,
+                        kind=item_kind,
+                        default_status=clean_default_status,
+                        tags=import_tags,
+                        applies_to=applies_to if applies_to else None,
+                        status_map=status_map,
+                        mapping=mapping,
+                        dry_run=dry_run,
+                    )
+                else:
+                    report = await import_markdown_task_list(
+                        source_path,
+                        project_key,
+                        registry,
+                        session,
+                        kind=item_kind,
+                        tags=import_tags,
+                        applies_to=applies_to if applies_to else None,
+                        include_checked=include_checked,
+                        dry_run=dry_run,
+                    )
+            finally:
+                await session.close()
+    except (ConfigError, ValueError) as exc:
+        return render(
+            "pages/data_import.html", request,
+            **_ctx(request, project_key),
+            active_page="import_files",
+            form=form,
+            result=None,
+            error=str(exc),
+            status_code=422,
+        )
+
+    result = _data_import_result(
+        project_key=project_key,
+        source_type=clean_source_type,
+        filename=filename,
+        dry_run=dry_run,
+        batch_tag=batch_tag,
+        report=report,
+    )
+    return render(
+        "pages/data_import.html", request,
+        **_ctx(request, project_key),
+        active_page="import_files",
         form=form,
         result=result,
         error=None,

@@ -6,6 +6,9 @@
 item。它适合轻量的 `TODO.md`、GitHub issue 描述、发布计划和项目规划文件，这类
 文件通常只有 checkbox 任务，没有 YAML frontmatter。
 
+同一套任务清单导入流程也可以在 Dashboard 里通过
+[Dashboard 文件导入](dashboard-file-imports.zh-CN.md) 使用。
+
 ## 支持的语法
 
 导入器会识别这些 task list 形式：

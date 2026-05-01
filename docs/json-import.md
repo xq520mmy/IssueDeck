@@ -7,6 +7,9 @@ accepts top-level arrays, a single JSON object, or wrapped exports such as
 `{"items": [...]}`, `{"issues": [...]}`, `{"data": [...]}`, `{"records": [...]}`,
 and `{"tasks": [...]}`.
 
+The same JSON mapping flow is available in the dashboard through
+[Dashboard File Imports](dashboard-file-imports.md).
+
 ## Import A File
 
 ```bash

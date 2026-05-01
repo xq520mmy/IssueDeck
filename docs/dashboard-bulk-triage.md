@@ -5,9 +5,10 @@
 Bulk triage helps clean up imported or newly captured work without opening each
 item one by one.
 
-Dashboard GitHub imports add a per-run `github-import-YYYYMMDD-HHMMSS-xxxx`
-batch tag and show a result link to the list filtered by that tag. Use that
-entry point to review only the items written by the latest import.
+Dashboard GitHub and file imports add a per-run batch tag such as
+`github-import-YYYYMMDD-HHMMSS-xxxx` or `csv-import-...` and show a result link
+to the list filtered by that tag. Use that entry point to review only the items
+written by the latest import.
 
 Open a project, go to **List**, select one or more visible items, then use the
 bulk triage bar above the list.

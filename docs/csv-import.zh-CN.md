@@ -6,6 +6,9 @@
 IssueDeck item。它适合从 GitHub Issues、Linear、Jira、Airtable、Notion 表格，
 以及手工维护的 CSV 做轻量迁移。
 
+同一套 CSV 映射流程也可以在 Dashboard 里通过
+[Dashboard 文件导入](dashboard-file-imports.zh-CN.md) 使用。
+
 ## 导入文件
 
 ```bash

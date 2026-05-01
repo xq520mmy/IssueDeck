@@ -7,6 +7,9 @@
 `{"issues": [...]}`、`{"data": [...]}`、`{"records": [...]}` 和
 `{"tasks": [...]}`。
 
+同一套 JSON 映射流程也可以在 Dashboard 里通过
+[Dashboard 文件导入](dashboard-file-imports.zh-CN.md) 使用。
+
 ## 导入文件
 
 ```bash

@@ -7,6 +7,9 @@ IssueDeck items. It is meant for lightweight `TODO.md`, GitHub issue
 descriptions, release notes, and project planning files that use task list
 syntax instead of YAML frontmatter.
 
+The same task-list import flow is available in the dashboard through
+[Dashboard File Imports](dashboard-file-imports.md).
+
 ## Accepted Syntax
 
 The importer reads Markdown files and recognizes these task forms:
