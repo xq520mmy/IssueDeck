@@ -13,5 +13,9 @@ Every recorded import includes a **Triage batch** link. It opens the list view
 filtered by that import's batch tag, so you can return to the same batch later
 without remembering the tag name.
 
+Use **Soft-delete batch** when an import was wrong or duplicated. IssueDeck
+finds the active items with that batch tag, soft-deletes them in bulk, and
+leaves the import history record visible for audit context.
+
 Preview-only imports are not recorded because they do not write items. Formal
 imports that write zero items are also omitted from the history.

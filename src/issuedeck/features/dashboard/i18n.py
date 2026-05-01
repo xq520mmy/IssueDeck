@@ -202,6 +202,17 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "github_import.view_items": "View items",
         "github_import.written": "Written",
         "import_history.batch_tag": "Batch tag",
+        "import_history.confirm_delete_batch": (
+            "Soft-delete all active items in this import batch?"
+        ),
+        "import_history.delete_batch": "Soft-delete batch",
+        "import_history.delete_empty": (
+            "No active items were found for that import batch."
+        ),
+        "import_history.delete_missing": "That import batch was not found.",
+        "import_history.delete_success": (
+            "Soft-deleted {count} item(s) from the import batch."
+        ),
         "import_history.description": (
             "Review recent imports and reopen their filtered triage views."
         ),
@@ -517,6 +528,11 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "github_import.view_items": "查看事项",
         "github_import.written": "已写入",
         "import_history.batch_tag": "批次标签",
+        "import_history.confirm_delete_batch": "软删除这个导入批次里的所有活跃事项？",
+        "import_history.delete_batch": "软删除批次",
+        "import_history.delete_empty": "这个导入批次里没有可软删除的活跃事项。",
+        "import_history.delete_missing": "未找到这个导入批次。",
+        "import_history.delete_success": "已从该导入批次软删除 {count} 条事项。",
         "import_history.description": "回看最近导入记录，并重新打开对应的批次分诊视图。",
         "import_history.empty_body": "运行一次 GitHub 或文件导入后，这里会显示第一个批次。",
         "import_history.empty_title": "暂无导入记录",

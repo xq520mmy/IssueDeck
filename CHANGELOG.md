@@ -23,6 +23,8 @@ versioning once public releases begin.
   preview, field aliases, status maps, batch tags, and bulk-triage links.
 - Added dashboard import history for reopening successful GitHub, CSV, JSON,
   and Markdown import batches.
+- Added a dashboard import-history action for soft-deleting all active items
+  from a recorded import batch.
 
 ## [0.4.0] - 2026-05-01
 

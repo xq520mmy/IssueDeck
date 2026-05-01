@@ -444,6 +444,31 @@ def _import_batch_view(project_key: str, batch: ImportBatch) -> dict[str, object
     }
 
 
+async def _active_local_ids_for_import_batch(
+    svc: ItemService,
+    project_key: str,
+    batch_tag: str,
+) -> list[str]:
+    local_ids: list[str] = []
+    after = None
+    while True:
+        result = await svc.list_items(
+            project_key,
+            tags=[batch_tag],
+            include_deleted=False,
+            limit=500,
+            after=after,
+        )
+        local_ids.extend(item.local_id for item in result.items)
+        if not result.next_cursor:
+            return local_ids
+        after = result.next_cursor
+
+
+def _chunked(values: list[str], size: int) -> list[list[str]]:
+    return [values[idx:idx + size] for idx in range(0, len(values), size)]
+
+
 def _work_queue_statuses(project: ProjectConfig, view: str) -> list[str] | None:
     status_keys = list(project.statuses.keys())
     if not status_keys:
@@ -845,7 +870,13 @@ async def project_overview(project_key: str, request: Request):
 # ---------------------------------------------------------------------------
 
 @router.get("/{project_key}/imports")
-async def import_history_page(project_key: str, request: Request):
+async def import_history_page(
+    project_key: str,
+    request: Request,
+    deleted_count: int | None = Query(None),
+    delete_empty: bool = Query(False),
+    delete_missing: bool = Query(False),
+):
     request.app.state.registry.project(project_key)
     session = request.app.state.session_factory()
     try:
@@ -867,6 +898,63 @@ async def import_history_page(project_key: str, request: Request):
         **_ctx(request, project_key),
         active_page="import_history",
         batches=batches,
+        deleted_count=deleted_count,
+        delete_empty=delete_empty,
+        delete_missing=delete_missing,
+    )
+
+
+@router.post("/{project_key}/imports/{batch_tag}/delete")
+async def import_batch_delete(
+    project_key: str,
+    batch_tag: str,
+    request: Request,
+):
+    request.app.state.registry.project(project_key)
+    svc, session = _item_svc(request)
+    try:
+        batch = await session.scalar(
+            select(ImportBatch).where(
+                ImportBatch.project_key == project_key,
+                ImportBatch.batch_tag == batch_tag,
+            )
+        )
+        redirect_base = f"/dashboard/{project_key}/imports"
+        if batch is None:
+            return RedirectResponse(
+                url=_dashboard_url_with_params(redirect_base, delete_missing=1),
+                status_code=303,
+            )
+
+        local_ids = await _active_local_ids_for_import_batch(
+            svc, project_key, batch_tag,
+        )
+        if not local_ids:
+            return RedirectResponse(
+                url=_dashboard_url_with_params(redirect_base, delete_empty=1),
+                status_code=303,
+            )
+
+        deleted_count = 0
+        for chunk in _chunked(local_ids, 500):
+            result = await svc.bulk_update(
+                project_key,
+                BulkUpdateItemsRequest(
+                    local_ids=chunk,
+                    action="delete",
+                    reason=f"Deleted import batch {batch_tag}.",
+                ),
+            )
+            deleted_count += result.updated_count
+    finally:
+        await session.close()
+
+    return RedirectResponse(
+        url=_dashboard_url_with_params(
+            f"/dashboard/{project_key}/imports",
+            deleted_count=deleted_count,
+        ),
+        status_code=303,
     )
 
 
