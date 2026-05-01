@@ -11,6 +11,9 @@ Dashboard 可以直接导入 CSV、JSON 和 Markdown 任务列表文件，不需
 `csv-import-*`、`json-import-*` 或 `markdown-import-*` 批次标签。结果面板会直接
 链接到按批次标签筛选后的列表，方便立刻批量分诊新事项。
 
+成功写入至少一个事项的导入也会进入
+[Dashboard 导入历史](dashboard-import-history.zh-CN.md)，之后可以重新打开同一批次。
+
 ## 支持格式
 
 - CSV tracker export 和表格文件，使用与 [`import-csv`](csv-import.zh-CN.md) 相同的

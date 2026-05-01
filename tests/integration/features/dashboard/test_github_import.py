@@ -15,7 +15,7 @@ from issuedeck.core.config import (
 from issuedeck.core.errors import install_error_handlers
 from issuedeck.features.dashboard import routes as dashboard_routes
 from issuedeck.features.dashboard.routes import router as dashboard_router
-from issuedeck.features.items.models import Base, Item, ItemTag
+from issuedeck.features.items.models import Base, ImportBatch, Item, ItemTag
 from issuedeck.features.migrate.github_issues import (
     GitHubIssueImportReport,
     GitHubIssueRow,
@@ -167,7 +167,12 @@ async def test_github_import_submit_writes_items(dashboard_client, monkeypatch):
     async with Session() as session:
         items = (await session.execute(select(Item))).scalars().all()
         tags = (await session.execute(select(ItemTag.tag))).scalars().all()
+        batches = (await session.execute(select(ImportBatch))).scalars().all()
     assert [(item.local_id, item.title, item.status) for item in items] == [
         ("FEAT-0001", "Import me", "done")
     ]
     assert any(tag.startswith("github-import-") for tag in tags)
+    assert [(batch.source_type, batch.source_name, batch.items_written) for batch in batches] == [
+        ("github", "example/repo", 1)
+    ]
+    assert batches[0].batch_tag.startswith("github-import-")

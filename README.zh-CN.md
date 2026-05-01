@@ -48,6 +48,8 @@ Agent 交接和进展跟踪见 [Agent 工作会话](docs/agent-work-sessions.zh-
 GitHub backlog 导入见 [GitHub Issues 导入](docs/github-issues-import.zh-CN.md)。
 Dashboard CSV、JSON 和 Markdown 上传见
 [Dashboard 文件导入](docs/dashboard-file-imports.zh-CN.md)。
+重新打开历史导入批次见
+[Dashboard 导入历史](docs/dashboard-import-history.zh-CN.md)。
 导入后的批量整理见 [Dashboard 批量分诊](docs/dashboard-bulk-triage.zh-CN.md)。
 
 ## 功能
@@ -67,6 +69,7 @@ Dashboard CSV、JSON 和 Markdown 上传见
 - Activity Timeline：自动记录生命周期事件，也支持手动评论。
 - Dashboard 工作队列：最近更新、待办、进行中、被阻塞、待发布、已完成、已删除。
 - Dashboard 批量分诊：多选事项后批量更新状态、类型、标签、分支、删除和恢复。
+- Dashboard 导入历史：重新打开最近的 GitHub、CSV、JSON 和 Markdown 导入批次。
 - 已保存筛选：每个项目保存常用视图，例如活跃 Bug、阻塞事项和待发布队列。
 - 软删除和恢复。
 - Ship 记录：绑定版本和 commit。

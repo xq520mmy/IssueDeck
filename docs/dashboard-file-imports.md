@@ -14,6 +14,10 @@ unique `csv-import-*`, `json-import-*`, or `markdown-import-*` batch tag to the
 items written by that run. The result panel links directly to the filtered list,
 so the new items can be bulk-triaged immediately.
 
+Successful imports that write at least one item are also recorded in
+[Dashboard Import History](dashboard-import-history.md), so the same batch can
+be reopened later.
+
 ## Supported Formats
 
 - CSV tracker exports and spreadsheets, using the same mapping rules as

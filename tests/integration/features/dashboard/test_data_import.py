@@ -14,7 +14,7 @@ from issuedeck.core.config import (
 )
 from issuedeck.core.errors import install_error_handlers
 from issuedeck.features.dashboard.routes import router as dashboard_router
-from issuedeck.features.items.models import Base, Item, ItemTag
+from issuedeck.features.items.models import Base, ImportBatch, Item, ItemTag
 
 
 def _registry():
@@ -150,9 +150,21 @@ async def test_data_import_submit_writes_items(
     async with Session() as session:
         items = (await session.execute(select(Item))).scalars().all()
         tags = (await session.execute(select(ItemTag.tag))).scalars().all()
+        batches = (await session.execute(select(ImportBatch))).scalars().all()
 
     assert [(item.local_id, item.title, item.status) for item in items] == [
         ("FEAT-0001", expected_title, expected_status)
     ]
     assert "uploaded" in tags
     assert any(tag.startswith(tag_prefix) for tag in tags)
+    assert [(batch.source_type, batch.source_name, batch.items_written) for batch in batches] == [
+        (source_type, filename, 1)
+    ]
+    assert batches[0].batch_tag.startswith(tag_prefix)
+
+    history_response = await client.get("/dashboard/test/imports")
+
+    assert history_response.status_code == 200
+    assert "Import History" in history_response.text
+    assert filename in history_response.text
+    assert f"/dashboard/test/list?tag={tag_prefix}" in history_response.text

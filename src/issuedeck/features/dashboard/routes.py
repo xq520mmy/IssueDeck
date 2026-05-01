@@ -15,6 +15,7 @@ import httpx
 from fastapi import APIRouter, File, Form, Query, Request, Response, UploadFile
 from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
+from sqlalchemy import select
 
 from issuedeck.core.auth import (
     DASHBOARD_SESSION_COOKIE,
@@ -47,6 +48,7 @@ from issuedeck.features.dashboard.saved_filters import (
     save_dashboard_filter,
     saved_filter_href,
 )
+from issuedeck.features.items.models import ImportBatch
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
     BulkUpdateItemsRequest,
@@ -271,6 +273,10 @@ def _dashboard_import_batch_tag(source_type: str) -> str:
     return f"{prefix}-import-{timestamp}-{secrets.token_hex(2)}"
 
 
+def _iso_now() -> str:
+    return datetime.now(UTC).isoformat()
+
+
 def _status_map_options_from_text(raw: str) -> list[str]:
     return [line.strip() for line in raw.splitlines() if line.strip()]
 
@@ -374,6 +380,67 @@ def _data_import_result(
         "stats": stats,
         "batch_tag": batch_tag if items_written else None,
         "triage_url": triage_url,
+    }
+
+
+def _data_import_skipped_count(
+    source_type: str,
+    report: CsvImportReport | JsonImportReport | MarkdownTaskImportReport,
+) -> int:
+    if source_type == "markdown":
+        return report.skipped_checked
+    if source_type == "json":
+        return report.objects_skipped
+    return report.rows_skipped
+
+
+async def _record_import_batch(
+    session,
+    *,
+    project_key: str,
+    batch_tag: str | None,
+    source_type: str,
+    source_name: str,
+    items_planned: int,
+    items_written: int,
+    skipped_count: int = 0,
+    status_mapped: int = 0,
+    external_links: int = 0,
+    metadata: dict[str, object] | None = None,
+) -> None:
+    if not batch_tag or items_written <= 0:
+        return
+    session.add(ImportBatch(
+        project_key=project_key,
+        batch_tag=batch_tag,
+        source_type=source_type,
+        source_name=source_name,
+        items_planned=items_planned,
+        items_written=items_written,
+        skipped_count=skipped_count,
+        status_mapped=status_mapped,
+        external_links=external_links,
+        created_at=_iso_now(),
+        metadata_json=json.dumps(metadata or {}, sort_keys=True),
+    ))
+    await session.commit()
+
+
+def _import_batch_view(project_key: str, batch: ImportBatch) -> dict[str, object]:
+    return {
+        "batch_tag": batch.batch_tag,
+        "source_type": batch.source_type,
+        "source_name": batch.source_name,
+        "items_planned": batch.items_planned,
+        "items_written": batch.items_written,
+        "skipped_count": batch.skipped_count,
+        "status_mapped": batch.status_mapped,
+        "external_links": batch.external_links,
+        "created_at": batch.created_at,
+        "triage_url": _dashboard_url_with_params(
+            f"/dashboard/{project_key}/list",
+            tag=batch.batch_tag,
+        ),
     }
 
 
@@ -774,6 +841,36 @@ async def project_overview(project_key: str, request: Request):
 
 
 # ---------------------------------------------------------------------------
+# Import history
+# ---------------------------------------------------------------------------
+
+@router.get("/{project_key}/imports")
+async def import_history_page(project_key: str, request: Request):
+    request.app.state.registry.project(project_key)
+    session = request.app.state.session_factory()
+    try:
+        result = await session.execute(
+            select(ImportBatch)
+            .where(ImportBatch.project_key == project_key)
+            .order_by(ImportBatch.created_at.desc(), ImportBatch.id.desc())
+            .limit(50)
+        )
+        batches = [
+            _import_batch_view(project_key, batch)
+            for batch in result.scalars().all()
+        ]
+    finally:
+        await session.close()
+
+    return render(
+        "pages/import_history.html", request,
+        **_ctx(request, project_key),
+        active_page="import_history",
+        batches=batches,
+    )
+
+
+# ---------------------------------------------------------------------------
 # GitHub Issues import
 # ---------------------------------------------------------------------------
 
@@ -865,6 +962,22 @@ async def github_import_submit(
             )
             report.issues_fetched = fetch_report.issues_fetched
             report.pulls_skipped = fetch_report.pulls_skipped
+            await _record_import_batch(
+                session,
+                project_key=project_key,
+                batch_tag=batch_tag,
+                source_type="github",
+                source_name=f"{repo_ref.owner}/{repo_ref.repo}",
+                items_planned=report.items_planned,
+                items_written=report.items_written,
+                skipped_count=report.existing_skipped + report.pulls_skipped,
+                status_mapped=report.status_mapped,
+                external_links=report.external_links,
+                metadata={
+                    "issues_fetched": report.issues_fetched,
+                    "pulls_skipped": report.pulls_skipped,
+                },
+            )
         finally:
             await session.close()
     except httpx.HTTPError as exc:
@@ -1048,6 +1161,19 @@ async def data_import_submit(
                         include_checked=include_checked,
                         dry_run=dry_run,
                     )
+                await _record_import_batch(
+                    session,
+                    project_key=project_key,
+                    batch_tag=batch_tag,
+                    source_type=clean_source_type,
+                    source_name=filename or f"upload{suffix}",
+                    items_planned=report.items_planned,
+                    items_written=report.items_written,
+                    skipped_count=_data_import_skipped_count(clean_source_type, report),
+                    status_mapped=getattr(report, "status_mapped", 0),
+                    external_links=report.external_links,
+                    metadata={"filename": filename},
+                )
             finally:
                 await session.close()
     except (ConfigError, ValueError) as exc:

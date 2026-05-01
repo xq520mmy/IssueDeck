@@ -253,3 +253,26 @@ class ItemRelationship(Base):
                          name="uq_rel_from_to_type"),
         Index("ix_rel_to_type", "to_item_pk", "relation_type"),
     )
+
+
+class ImportBatch(Base):
+    __tablename__ = "import_batches"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    project_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    batch_tag: Mapped[str] = mapped_column(String(128), nullable=False)
+    source_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_name: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    items_planned: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    items_written: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    skipped_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    status_mapped: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    external_links: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[str] = mapped_column(String(40), nullable=False)
+    metadata_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+
+    __table_args__ = (
+        UniqueConstraint("project_key", "batch_tag", name="uq_import_batches_project_batch"),
+        Index("ix_import_batches_project_created", "project_key", "created_at"),
+        Index("ix_import_batches_project_source", "project_key", "source_type"),
+    )

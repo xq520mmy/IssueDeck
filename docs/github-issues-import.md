@@ -20,6 +20,8 @@ IssueDeck items.
 Successful dashboard imports add a unique `github-import-YYYYMMDD-HHMMSS-xxxx`
 batch tag to the items written by that run. The result panel links directly to
 the list filtered by that tag, so you can bulk-triage only the new items.
+Successful imports that write at least one item are also recorded in
+[Dashboard Import History](dashboard-import-history.md).
 
 After importing a large backlog, use [Dashboard Bulk Triage](dashboard-bulk-triage.md)
 to select multiple items and assign status, tags, kinds, or branches in one pass.

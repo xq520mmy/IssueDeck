@@ -53,6 +53,8 @@ GitHub backlog imports are covered in
 [GitHub Issues Import](docs/github-issues-import.md).
 Dashboard CSV, JSON, and Markdown uploads are covered in
 [Dashboard File Imports](docs/dashboard-file-imports.md).
+Reopening earlier import batches is covered in
+[Dashboard Import History](docs/dashboard-import-history.md).
 Bulk cleanup after imports is covered in
 [Dashboard Bulk Triage](docs/dashboard-bulk-triage.md).
 
@@ -82,6 +84,8 @@ Bulk cleanup after imports is covered in
   done, deleted, and recently touched items.
 - Dashboard bulk triage for updating status, kind, tags, branches, delete, and
   restore across many selected items.
+- Dashboard import history for reopening recent GitHub, CSV, JSON, and Markdown
+  import batches.
 - Project-scoped saved dashboard filters for reusable views such as active
   bugs, blocked work, release queues, and tag-specific searches.
 - Soft delete + restore.

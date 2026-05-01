@@ -21,6 +21,8 @@ versioning once public releases begin.
   filtered result links.
 - Added dashboard file imports for CSV, JSON, and Markdown task lists with
   preview, field aliases, status maps, batch tags, and bulk-triage links.
+- Added dashboard import history for reopening successful GitHub, CSV, JSON,
+  and Markdown import batches.
 
 ## [0.4.0] - 2026-05-01
 
