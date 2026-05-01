@@ -49,6 +49,25 @@ class _FakeClient:
     async def remove_relationship(self, key, rel_id):
         return await self._record("remove_relationship", key, rel_id)
 
+    async def start_work_session(self, key, body):
+        return await self._record("start_work_session", key, body=body)
+
+    async def list_work_sessions(self, key, params):
+        return await self._record("list_work_sessions", key, params=params)
+
+    async def get_work_session(self, key, session_id):
+        return await self._record("get_work_session", key, session_id)
+
+    async def update_work_session(self, key, session_id, body):
+        return await self._record(
+            "update_work_session", key, session_id, body=body,
+        )
+
+    async def finish_work_session(self, key, session_id, body):
+        return await self._record(
+            "finish_work_session", key, session_id, body=body,
+        )
+
 
 @pytest.fixture
 def fake_client(monkeypatch):
@@ -195,3 +214,75 @@ async def test_relationship_tools(fake_client):
         "relation_type": "blocks",
     }
     assert fake_client.calls[1][1] == ("demo", 42)
+
+
+async def test_work_session_tools(fake_client):
+    await tools.start_work_session(
+        project_key="demo",
+        local_id="FEAT-1",
+        agent_name="codex",
+        goal="Wire dashboard visibility.",
+        branch="main",
+        metadata={"source": "test"},
+    )
+    await tools.list_work_sessions(
+        project_key="demo",
+        status="active",
+        agent_name="codex",
+        local_id="FEAT-1",
+        limit=10,
+    )
+    await tools.get_work_session(project_key="demo", session_id=7)
+    await tools.update_work_session(
+        project_key="demo",
+        session_id=7,
+        message="Progress.",
+        update_type="progress",
+        status="paused",
+        metadata={"step": 1},
+    )
+    await tools.finish_work_session(
+        project_key="demo",
+        session_id=7,
+        status="completed",
+        summary="Done.",
+        metadata={"step": 2},
+    )
+
+    assert fake_client.calls[0] == (
+        "start_work_session",
+        ("demo",),
+        {
+            "body": {
+                "local_id": "FEAT-1",
+                "agent_name": "codex",
+                "goal": "Wire dashboard visibility.",
+                "branch": "main",
+                "metadata": {"source": "test"},
+            }
+        },
+    )
+    assert fake_client.calls[1] == (
+        "list_work_sessions",
+        ("demo",),
+        {
+            "params": {
+                "status": "active",
+                "agent_name": "codex",
+                "local_id": "FEAT-1",
+                "limit": 10,
+            }
+        },
+    )
+    assert fake_client.calls[2][0] == "get_work_session"
+    assert fake_client.calls[3][2]["body"] == {
+        "message": "Progress.",
+        "update_type": "progress",
+        "status": "paused",
+        "metadata": {"step": 1},
+    }
+    assert fake_client.calls[4][2]["body"] == {
+        "status": "completed",
+        "summary": "Done.",
+        "metadata": {"step": 2},
+    }

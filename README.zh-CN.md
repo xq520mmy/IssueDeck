@@ -44,10 +44,12 @@ uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 
 更多界面见[截图画廊](docs/gallery.zh-CN.md)，包括列表、看板、详情、搜索和新建项目。
 日常分诊快捷键见[键盘快捷键](docs/keyboard-shortcuts.zh-CN.md)。
+Agent 交接和进展跟踪见 [Agent 工作会话](docs/agent-work-sessions.zh-CN.md)。
 
 ## 功能
 
 - 面向 Agent：MCP tools 可创建、更新、搜索、关联和发布事项。
+- Agent 工作会话：记录哪个 agent 正在处理哪个事项、目标、进展和最终结果。
 - 多项目：每个项目独立配置事项类型、状态、分支和 ID 前缀。
 - SQLite FTS5 全文搜索。
 - 双向关系：`blocks`、`blocked_by`、`related_to`。

@@ -179,3 +179,81 @@ async def remove_relationship(
 ) -> dict[str, Any]:
     """Delete a relationship and its bidirectional inverse."""
     return await get_client().remove_relationship(project_key, rel_id)
+
+
+async def start_work_session(
+    project_key: str,
+    local_id: str,
+    agent_name: str,
+    goal: str,
+    branch: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Start an agent work session on a tracked item."""
+    payload = _drop_none({
+        "local_id": local_id,
+        "agent_name": agent_name,
+        "goal": goal,
+        "branch": branch,
+        "metadata": metadata,
+    })
+    return await get_client().start_work_session(project_key, payload)
+
+
+async def list_work_sessions(
+    project_key: str,
+    status: str | None = None,
+    agent_name: str | None = None,
+    local_id: str | None = None,
+    limit: int = 50,
+) -> dict[str, Any]:
+    """List agent work sessions, optionally filtered by status, agent, or item."""
+    params = _drop_none({
+        "status": status,
+        "agent_name": agent_name,
+        "local_id": local_id,
+    })
+    params["limit"] = limit
+    return await get_client().list_work_sessions(project_key, params)
+
+
+async def get_work_session(
+    project_key: str,
+    session_id: int,
+) -> dict[str, Any]:
+    """Fetch a single agent work session with progress updates."""
+    return await get_client().get_work_session(project_key, session_id)
+
+
+async def update_work_session(
+    project_key: str,
+    session_id: int,
+    message: str,
+    update_type: str = "progress",
+    status: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Append progress to an active agent work session."""
+    payload = _drop_none({
+        "message": message,
+        "update_type": update_type,
+        "status": status,
+        "metadata": metadata,
+    })
+    return await get_client().update_work_session(project_key, session_id, payload)
+
+
+async def finish_work_session(
+    project_key: str,
+    session_id: int,
+    status: str = "completed",
+    summary: str = "",
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Mark an agent work session as completed or canceled."""
+    payload = _drop_none({
+        "status": status,
+        "summary": summary,
+        "metadata": metadata,
+    })
+    return await get_client().finish_work_session(project_key, session_id, payload)

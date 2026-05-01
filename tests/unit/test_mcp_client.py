@@ -6,6 +6,7 @@ from issuedeck.core.errors import (
     IssueDeckError,
     ItemNotFound,
     RelationshipDuplicate,
+    WorkSessionNotFound,
 )
 from issuedeck.mcp.client import IssueDeckClient, _raise_for_error
 
@@ -32,6 +33,11 @@ def test_raise_for_error_maps_invalid_kind():
 def test_raise_for_error_maps_relationship_duplicate():
     with pytest.raises(RelationshipDuplicate):
         _raise_for_error(_resp(409, "relationship_duplicate"))
+
+
+def test_raise_for_error_maps_work_session_not_found():
+    with pytest.raises(WorkSessionNotFound):
+        _raise_for_error(_resp(404, "work_session_not_found"))
 
 
 def test_raise_for_error_unknown_code_falls_back_to_issuedeck_error():
@@ -150,3 +156,41 @@ async def test_client_create_item_event_uses_item_events_route():
     assert captured["path"] == "/api/v1/projects/demo/items/FEAT-1/events"
     assert '"body":"Verified."' in captured["json"]
     assert data["id"] == 1
+
+
+async def test_client_work_session_methods_use_work_session_routes():
+    calls = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        calls.append((request.method, request.url.path, request.content.decode()))
+        return httpx.Response(200, json={"id": 3, "sessions": []})
+
+    client = IssueDeckClient(
+        base_url="http://issuedeck.local",
+        token="t",
+        transport=httpx.MockTransport(handler),
+    )
+    await client.start_work_session("demo", {"local_id": "FEAT-1"})
+    await client.list_work_sessions("demo", {"status": "active"})
+    await client.get_work_session("demo", 3)
+    await client.update_work_session("demo", 3, {"message": "Working."})
+    await client.finish_work_session("demo", 3, {"summary": "Done."})
+    await client.aclose()
+
+    assert calls[0] == (
+        "POST",
+        "/api/v1/projects/demo/work-sessions",
+        '{"local_id":"FEAT-1"}',
+    )
+    assert calls[1][0:2] == ("GET", "/api/v1/projects/demo/work-sessions")
+    assert calls[2][0:2] == ("GET", "/api/v1/projects/demo/work-sessions/3")
+    assert calls[3] == (
+        "POST",
+        "/api/v1/projects/demo/work-sessions/3/updates",
+        '{"message":"Working."}',
+    )
+    assert calls[4] == (
+        "POST",
+        "/api/v1/projects/demo/work-sessions/3/finish",
+        '{"summary":"Done."}',
+    )

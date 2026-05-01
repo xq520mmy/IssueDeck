@@ -52,6 +52,8 @@ from issuedeck.features.relationships.repo import RelationshipRepo
 from issuedeck.features.relationships.service import RelationshipService
 from issuedeck.features.search.repo import SearchRepo
 from issuedeck.features.search.service import SearchService
+from issuedeck.features.work_sessions.repo import WorkSessionRepo
+from issuedeck.features.work_sessions.service import WorkSessionService
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -109,6 +111,20 @@ def _rel_svc(request: Request):
     ), session
 
 
+def _work_session_svc(request: Request):
+    session = request.app.state.session_factory()
+    registry = request.app.state.registry
+    return (
+        WorkSessionService(
+            WorkSessionRepo(session),
+            ItemRepo(session),
+            registry,
+            session,
+        ),
+        session,
+    )
+
+
 def _ctx(request: Request, project_key: str | None = None, **extra):
     """Build common template context."""
     registry = request.app.state.registry
@@ -137,6 +153,12 @@ def _ctx(request: Request, project_key: str | None = None, **extra):
             "github_pr": t("external_links.github_pr"),
             "github_commit": t("external_links.github_commit"),
             "other": t("external_links.other"),
+        },
+        "work_session_status_labels": {
+            "active": t("work_session.status.active"),
+            "paused": t("work_session.status.paused"),
+            "completed": t("work_session.status.completed"),
+            "canceled": t("work_session.status.canceled"),
         },
         **extra,
     }
@@ -526,6 +548,16 @@ async def project_overview(project_key: str, request: Request):
     finally:
         await session.close()
 
+    work_svc, session = _work_session_svc(request)
+    try:
+        active_work_sessions = await work_svc.list_sessions(
+            project_key,
+            statuses=["active", "paused"],
+            limit=8,
+        )
+    finally:
+        await session.close()
+
     project = registry.project(project_key)
 
     # Build chart data
@@ -547,6 +579,7 @@ async def project_overview(project_key: str, request: Request):
         status_counts=status_counts,
         kind_counts=kind_counts,
         recent_items=recent.items,
+        active_work_sessions=active_work_sessions.sessions,
         show_setup_checklist=total <= 8,
         setup_checklist_steps=_overview_onboarding_steps(
             project_key, project, total, status_counts,
@@ -776,10 +809,21 @@ async def item_detail(project_key: str, local_id: str, request: Request):
     finally:
         await session.close()
 
+    work_svc, session = _work_session_svc(request)
+    try:
+        work_sessions = await work_svc.list_sessions(
+            project_key,
+            local_id=local_id,
+            limit=20,
+        )
+    finally:
+        await session.close()
+
     return render(
         "pages/item_detail.html", request,
         **_ctx(request, project_key),
         item=item,
+        work_sessions=work_sessions.sessions,
         active_page="detail",
     )
 

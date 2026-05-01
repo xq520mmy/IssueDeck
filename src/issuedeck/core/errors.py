@@ -35,6 +35,11 @@ class ItemNotFound(IssueDeckError):
     http_status = 404
 
 
+class WorkSessionNotFound(IssueDeckError):
+    code = "work_session_not_found"
+    http_status = 404
+
+
 class InvalidKind(IssueDeckError):
     code = "invalid_kind"
     http_status = 422

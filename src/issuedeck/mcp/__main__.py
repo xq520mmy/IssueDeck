@@ -20,6 +20,11 @@ for fn in (
     tools.search_items,
     tools.add_relationship,
     tools.remove_relationship,
+    tools.start_work_session,
+    tools.list_work_sessions,
+    tools.get_work_session,
+    tools.update_work_session,
+    tools.finish_work_session,
 ):
     mcp_server.tool()(fn)
 

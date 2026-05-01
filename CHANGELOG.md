@@ -7,6 +7,11 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+### Added
+
+- Added Agent Work Sessions for tracking active, paused, completed, and
+  canceled coding-agent work across REST, MCP tools, the dashboard, and demo data.
+
 ## [0.4.0] - 2026-05-01
 
 ### Added

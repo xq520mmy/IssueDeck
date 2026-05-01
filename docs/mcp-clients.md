@@ -137,6 +137,13 @@ cursor-agent mcp list-tools issuedeck
 In the Cursor editor, open the Tools & MCP settings and confirm that IssueDeck
 appears as an available stdio server.
 
+## Agent Work Sessions
+
+When an agent starts substantial work on an item, ask it to call
+`start_work_session`, append progress with `update_work_session`, then close
+the loop with `finish_work_session`. The dashboard will show active sessions on
+the project overview and session history on each item detail page.
+
 ## Smoke Test Prompt
 
 After the client sees the tools, ask:

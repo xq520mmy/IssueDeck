@@ -17,6 +17,8 @@ from issuedeck.features.items.models import (
     ItemTag,
     ShipCommit,
     ShipRecord,
+    WorkSession,
+    WorkSessionUpdate,
 )
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
@@ -28,6 +30,13 @@ from issuedeck.features.items.schemas import (
 from issuedeck.features.items.service import ItemService
 from issuedeck.features.relationships.repo import RelationshipRepo
 from issuedeck.features.relationships.service import RelationshipService
+from issuedeck.features.work_sessions.repo import WorkSessionRepo
+from issuedeck.features.work_sessions.schemas import (
+    CreateWorkSessionRequest,
+    FinishWorkSessionRequest,
+    UpdateWorkSessionRequest,
+)
+from issuedeck.features.work_sessions.service import WorkSessionService
 
 
 @dataclass(frozen=True)
@@ -37,6 +46,7 @@ class DemoSeedReport:
     relationships_written: int
     events_written: int
     ship_records_written: int
+    work_sessions_written: int
     reset: bool
 
 
@@ -62,6 +72,9 @@ async def seed_demo_project(
     items = ItemService(ItemRepo(session), registry, session)
     rels = RelationshipService(
         RelationshipRepo(session), ItemRepo(session), registry, session,
+    )
+    work_sessions = WorkSessionService(
+        WorkSessionRepo(session), ItemRepo(session), registry, session,
     )
 
     created: dict[str, str] = {}
@@ -132,12 +145,50 @@ async def seed_demo_project(
         )
         event_count += 1
 
+    active_session = await work_sessions.start(
+        project_key,
+        CreateWorkSessionRequest(
+            local_id=created["agent-timeline"],
+            agent_name="codex",
+            goal="Wire agent work sessions into REST, MCP, and the dashboard.",
+            branch="main",
+            metadata={"demo": True},
+        ),
+    )
+    await work_sessions.update(
+        project_key,
+        active_session.id,
+        UpdateWorkSessionRequest(
+            message="Dashboard overview now shows the active agent session.",
+            metadata={"demo": True},
+        ),
+    )
+    research_session = await work_sessions.start(
+        project_key,
+        CreateWorkSessionRequest(
+            local_id=created["github-import"],
+            agent_name="openclaw",
+            goal="Compare GitHub issue import edge cases before implementation.",
+            branch="main",
+            metadata={"demo": True},
+        ),
+    )
+    await work_sessions.finish(
+        project_key,
+        research_session.id,
+        FinishWorkSessionRequest(
+            summary="Documented one-way import as the first safe scope.",
+            metadata={"demo": True},
+        ),
+    )
+
     return DemoSeedReport(
         project_key=project_key,
         items_written=len(created),
         relationships_written=len(relationships),
         events_written=event_count,
         ship_records_written=2,
+        work_sessions_written=2,
         reset=bool(existing),
     )
 
@@ -155,6 +206,11 @@ async def _reset_project(session: AsyncSession, project_key: str) -> None:
         return
 
     ship_record_ids = select(ShipRecord.id).where(ShipRecord.item_pk.in_(pks))
+    work_session_ids = select(WorkSession.id).where(WorkSession.project_key == project_key)
+    await session.execute(delete(WorkSessionUpdate).where(
+        WorkSessionUpdate.session_id.in_(work_session_ids)
+    ))
+    await session.execute(delete(WorkSession).where(WorkSession.project_key == project_key))
     await session.execute(delete(ShipCommit).where(
         ShipCommit.ship_record_id.in_(ship_record_ids)
     ))

@@ -27,6 +27,7 @@ from issuedeck.features.items.routes import router as items_router
 from issuedeck.features.projects.routes import router as projects_router
 from issuedeck.features.relationships.routes import router as relationships_router
 from issuedeck.features.search.routes import router as search_router
+from issuedeck.features.work_sessions.routes import router as work_sessions_router
 
 
 def _build_registry(server_toml: Path) -> ConfigRegistry:
@@ -126,6 +127,7 @@ def create_app(server_toml: Path | str) -> FastAPI:
     # Projects router first so GET /api/v1/projects matches projects, not items
     app.include_router(projects_router)
     app.include_router(items_router)
+    app.include_router(work_sessions_router)
     app.include_router(relationships_router)
     app.include_router(search_router)
     app.include_router(dashboard_router)

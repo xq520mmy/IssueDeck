@@ -19,6 +19,7 @@ from issuedeck.core.errors import (
     RelationshipSelfLoop,
     ShipRequiresBranchConfig,
     Unauthorized,
+    WorkSessionNotFound,
 )
 
 _ERROR_MAP: dict[str, type[IssueDeckError]] = {
@@ -33,6 +34,7 @@ _ERROR_MAP: dict[str, type[IssueDeckError]] = {
     RelationshipSelfLoop.code: RelationshipSelfLoop,
     RelationshipDuplicate.code: RelationshipDuplicate,
     Unauthorized.code: Unauthorized,
+    WorkSessionNotFound.code: WorkSessionNotFound,
 }
 
 
@@ -146,6 +148,45 @@ class IssueDeckClient:
     ) -> dict[str, Any]:
         return await self._request(
             "DELETE", f"/api/v1/projects/{key}/relationships/{rel_id}",
+        )
+
+    async def start_work_session(
+        self, key: str, body: dict[str, Any],
+    ) -> dict[str, Any]:
+        return await self._request(
+            "POST", f"/api/v1/projects/{key}/work-sessions", json=body,
+        )
+
+    async def list_work_sessions(
+        self, key: str, params: dict[str, Any],
+    ) -> dict[str, Any]:
+        return await self._request(
+            "GET", f"/api/v1/projects/{key}/work-sessions", params=params,
+        )
+
+    async def get_work_session(
+        self, key: str, session_id: int,
+    ) -> dict[str, Any]:
+        return await self._request(
+            "GET", f"/api/v1/projects/{key}/work-sessions/{session_id}",
+        )
+
+    async def update_work_session(
+        self, key: str, session_id: int, body: dict[str, Any],
+    ) -> dict[str, Any]:
+        return await self._request(
+            "POST",
+            f"/api/v1/projects/{key}/work-sessions/{session_id}/updates",
+            json=body,
+        )
+
+    async def finish_work_session(
+        self, key: str, session_id: int, body: dict[str, Any],
+    ) -> dict[str, Any]:
+        return await self._request(
+            "POST",
+            f"/api/v1/projects/{key}/work-sessions/{session_id}/finish",
+            json=body,
         )
 
 

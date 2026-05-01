@@ -268,6 +268,61 @@
     </div>
   </div>
 
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800
+              bg-white dark:bg-gray-900 shadow-sm">
+    <div class="flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t("work_session.title") }}</h2>
+      <span class="text-xs text-gray-400 dark:text-gray-500">{{ work_sessions | length }}</span>
+    </div>
+    <div class="px-5 py-4">
+      {% if work_sessions %}
+        <ol class="space-y-4">
+          {% for session in work_sessions %}
+            <li class="rounded-md border border-gray-100 dark:border-gray-800 px-4 py-3">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0 space-y-2">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium
+                                 {% if session.status == 'completed' %}
+                                   bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300
+                                 {% elif session.status == 'canceled' %}
+                                   bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300
+                                 {% elif session.status == 'paused' %}
+                                   bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300
+                                 {% else %}
+                                   bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-300
+                                 {% endif %}">
+                      {{ work_session_status_labels.get(session.status, session.status) }}
+                    </span>
+                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ session.agent_name }}</span>
+                    {% if session.branch %}
+                      <span class="text-xs text-gray-400 dark:text-gray-500">{{ session.branch }}</span>
+                    {% endif %}
+                  </div>
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      {{ t("work_session.goal") }}
+                    </p>
+                    <p class="mt-1 text-sm leading-6 text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{{ session.goal }}</p>
+                  </div>
+                  {% if session.summary %}
+                    <p class="text-sm leading-6 text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{{ session.summary }}</p>
+                  {% endif %}
+                </div>
+                <div class="flex flex-row gap-4 text-xs text-gray-500 dark:text-gray-400 sm:flex-col sm:items-end sm:gap-1">
+                  <span>{{ session.update_count }} {{ t("work_session.updates_suffix") }}</span>
+                  <time datetime="{{ session.updated_at }}">{{ session.updated_at[:16] | replace('T', ' ') }}</time>
+                </div>
+              </div>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p class="text-sm text-gray-400 dark:text-gray-600 italic">{{ t("work_session.empty") }}</p>
+      {% endif %}
+    </div>
+  </div>
+
   {# ── Activity timeline section ── #}
   <div class="rounded-lg border border-gray-200 dark:border-gray-800
               bg-white dark:bg-gray-900 shadow-sm">

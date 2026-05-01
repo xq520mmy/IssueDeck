@@ -58,6 +58,10 @@ class Item(Base):
         back_populates="item", cascade="all, delete-orphan",
         order_by="ItemExternalLink.id",
     )
+    work_sessions: Mapped[list[WorkSession]] = relationship(
+        back_populates="item",
+        order_by="WorkSession.updated_at.desc()",
+    )
 
     __table_args__ = (
         UniqueConstraint("project_key", "local_id", name="uq_items_project_local"),
@@ -172,6 +176,62 @@ class ItemEvent(Base):
 
     __table_args__ = (
         Index("ix_item_events_item_created", "item_pk", "created_at"),
+    )
+
+
+class WorkSession(Base):
+    __tablename__ = "work_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    project_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    item_pk: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("items.pk", ondelete="SET NULL"), nullable=True,
+    )
+    agent_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    goal: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    branch: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    started_at: Mapped[str] = mapped_column(String(40), nullable=False)
+    updated_at: Mapped[str] = mapped_column(String(40), nullable=False)
+    ended_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    metadata_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+
+    item: Mapped[Item | None] = relationship(back_populates="work_sessions")
+    updates: Mapped[list[WorkSessionUpdate]] = relationship(
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="WorkSessionUpdate.created_at",
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_work_sessions_project_status_updated",
+            "project_key",
+            "status",
+            "updated_at",
+        ),
+        Index("ix_work_sessions_item_updated", "item_pk", "updated_at"),
+        Index("ix_work_sessions_agent_status", "agent_name", "status"),
+    )
+
+
+class WorkSessionUpdate(Base):
+    __tablename__ = "work_session_updates"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    session_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("work_sessions.id", ondelete="CASCADE"), nullable=False,
+    )
+    update_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    metadata_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    created_at: Mapped[str] = mapped_column(String(40), nullable=False)
+
+    session: Mapped[WorkSession] = relationship(back_populates="updates")
+
+    __table_args__ = (
+        Index("ix_work_session_updates_session_created", "session_id", "created_at"),
     )
 
 

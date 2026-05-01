@@ -131,6 +131,12 @@ cursor-agent mcp list-tools issuedeck
 在 Cursor 编辑器里，可以打开 Tools & MCP 设置，确认 IssueDeck 显示为可用的
 stdio server。
 
+## Agent 工作会话
+
+当 agent 开始处理一个实质性 item 时，可以让它先调用 `start_work_session`，
+过程中用 `update_work_session` 追加进展，最后用 `finish_work_session` 收尾。
+Dashboard 会在项目总览展示活跃会话，也会在 item 详情页展示会话历史。
+
 ## 冒烟测试提示词
 
 客户端能看到工具后，可以问：

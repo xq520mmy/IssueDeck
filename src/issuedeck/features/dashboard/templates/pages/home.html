@@ -88,6 +88,58 @@
   {# ── Stats cards ───────────────────────────────────────────────── #}
   {% include "components/stats_cards.html" %}
 
+  <section class="bg-white dark:bg-ledger-darkPanel rounded-md border border-ledger-line dark:border-ledger-darkLine overflow-hidden"
+           aria-label="{{ t('home.work_sessions_title') }}">
+    <div class="px-5 py-4 border-b border-ledger-line dark:border-ledger-darkLine bg-ledger-surfaceAlt dark:bg-ledger-darkPanelAlt">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t("home.work_sessions_title") }}</h2>
+    </div>
+    {% if active_work_sessions %}
+      <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+        {% for session in active_work_sessions %}
+          <li class="px-5 py-4">
+            <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div class="min-w-0 space-y-2">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium
+                               {% if session.status == 'paused' %}
+                                 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300
+                               {% else %}
+                                 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300
+                               {% endif %}">
+                    <span class="h-1.5 w-1.5 rounded-full
+                                 {% if session.status == 'paused' %}bg-amber-500{% else %}bg-green-500{% endif %}"></span>
+                    {{ work_session_status_labels.get(session.status, session.status) }}
+                  </span>
+                  <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ session.agent_name }}</span>
+                  {% if session.local_id %}
+                    <a href="/dashboard/{{ project_key }}/items/{{ session.local_id }}"
+                       class="text-xs font-mono text-primary-700 dark:text-primary-300 hover:underline">
+                      {{ session.local_id }}
+                    </a>
+                  {% endif %}
+                </div>
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 break-words">
+                  {{ session.item_title or t("common.no") }}
+                </p>
+                <p class="text-sm leading-6 text-gray-600 dark:text-gray-400 break-words">
+                  {{ session.goal }}
+                </p>
+              </div>
+              <div class="flex flex-row gap-4 text-xs text-gray-500 dark:text-gray-400 md:flex-col md:items-end md:gap-1">
+                <span>{{ session.update_count }} {{ t("work_session.updates_suffix") }}</span>
+                <time datetime="{{ session.updated_at }}">{{ session.updated_at[:16] | replace('T', ' ') }}</time>
+              </div>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="px-5 py-8 text-center">
+        <p class="text-sm text-gray-400 dark:text-gray-500">{{ t("home.work_sessions_empty") }}</p>
+      </div>
+    {% endif %}
+  </section>
+
   {# ── Charts row ────────────────────────────────────────────────── #}
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 

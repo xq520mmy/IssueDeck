@@ -47,11 +47,15 @@ See the [screenshot gallery](docs/gallery.md) for list, kanban, detail,
 search, and project creation surfaces.
 Daily triage shortcuts are documented in
 [Keyboard Shortcuts](docs/keyboard-shortcuts.md).
+Agent handoffs and progress tracking are covered in
+[Agent Work Sessions](docs/agent-work-sessions.md).
 
 ## Features
 
 - Agent-ready: MCP tools let coding agents create, update, search, relate, and
   ship tracked work without scraping Markdown.
+- Agent Work Sessions track which agent is working on which item, the goal,
+  progress updates, and the final outcome.
 - Multi-project: one SQLite DB holds items for any number of projects, keyed by
   `project_key`. Each project has its own `kinds`, `statuses`, `branches`,
   and numeric ID prefix (e.g. `FEAT-0001`, `BUG-0003`).

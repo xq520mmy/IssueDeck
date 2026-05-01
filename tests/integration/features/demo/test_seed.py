@@ -54,6 +54,7 @@ async def test_seed_demo_project_writes_fake_items(ctx):
     assert report.items_written == 8
     assert report.relationships_written == 3
     assert report.events_written == 3
+    assert report.work_sessions_written == 2
 
     items = await ItemService(ItemRepo(session), registry, session).list_items(
         "example",
