@@ -27,6 +27,8 @@ versioning once public releases begin.
   from a recorded import batch.
 - Added a dashboard import-history restore action for recovering soft-deleted
   items from an import batch.
+- Added active/deleted item counts to dashboard import history and disabled
+  empty batch delete or restore actions.
 - Added maintainer workflow docs and repo-level AI agent guidance for
   requirements, validation, git commits, pushes, and CI checks.
 - Documented local browser recovery steps and disabled caching for root

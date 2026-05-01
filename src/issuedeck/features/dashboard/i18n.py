@@ -201,6 +201,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
         ),
         "github_import.view_items": "View items",
         "github_import.written": "Written",
+        "import_history.active_items": "Active",
         "import_history.batch_tag": "Batch tag",
         "import_history.confirm_delete_batch": (
             "Soft-delete all active items in this import batch?"
@@ -221,6 +222,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
         ),
         "import_history.empty_body": "Run a GitHub or file import to create the first batch.",
         "import_history.empty_title": "No imports recorded",
+        "import_history.deleted_items": "Deleted",
         "import_history.external_links": "Links",
         "import_history.planned": "Planned",
         "import_history.restore_batch": "Restore batch",
@@ -538,6 +540,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "github_import.triage_import_help": "打开列表并只显示本次导入写入的事项。",
         "github_import.view_items": "查看事项",
         "github_import.written": "已写入",
+        "import_history.active_items": "活跃",
         "import_history.batch_tag": "批次标签",
         "import_history.confirm_delete_batch": "软删除这个导入批次里的所有活跃事项？",
         "import_history.confirm_restore_batch": "恢复这个导入批次里的所有已删除事项？",
@@ -548,6 +551,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "import_history.description": "回看最近导入记录，并重新打开对应的批次分诊视图。",
         "import_history.empty_body": "运行一次 GitHub 或文件导入后，这里会显示第一个批次。",
         "import_history.empty_title": "暂无导入记录",
+        "import_history.deleted_items": "已删除",
         "import_history.external_links": "链接",
         "import_history.planned": "将创建",
         "import_history.restore_batch": "恢复批次",

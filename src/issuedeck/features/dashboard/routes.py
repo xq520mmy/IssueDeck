@@ -15,7 +15,7 @@ import httpx
 from fastapi import APIRouter, File, Form, Query, Request, Response, UploadFile
 from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from issuedeck.core.auth import (
     DASHBOARD_SESSION_COOKIE,
@@ -48,7 +48,7 @@ from issuedeck.features.dashboard.saved_filters import (
     save_dashboard_filter,
     saved_filter_href,
 )
-from issuedeck.features.items.models import ImportBatch
+from issuedeck.features.items.models import ImportBatch, Item, ItemTag
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
     BulkUpdateItemsRequest,
@@ -426,13 +426,45 @@ async def _record_import_batch(
     await session.commit()
 
 
-def _import_batch_view(project_key: str, batch: ImportBatch) -> dict[str, object]:
+async def _import_batch_item_counts(
+    session,
+    *,
+    project_key: str,
+    batch_tags: list[str],
+) -> dict[str, dict[str, int]]:
+    counts = {
+        tag: {"active_items": 0, "deleted_items": 0}
+        for tag in batch_tags
+    }
+    if not batch_tags:
+        return counts
+
+    result = await session.execute(
+        select(ItemTag.tag, Item.deleted_at, func.count())
+        .join(Item, Item.pk == ItemTag.item_pk)
+        .where(Item.project_key == project_key, ItemTag.tag.in_(batch_tags))
+        .group_by(ItemTag.tag, Item.deleted_at)
+    )
+    for tag, deleted_at, item_count in result.all():
+        bucket = "active_items" if deleted_at is None else "deleted_items"
+        counts.setdefault(tag, {"active_items": 0, "deleted_items": 0})[bucket] += item_count
+    return counts
+
+
+def _import_batch_view(
+    project_key: str,
+    batch: ImportBatch,
+    item_counts: dict[str, dict[str, int]],
+) -> dict[str, object]:
+    counts = item_counts.get(batch.batch_tag, {})
     return {
         "batch_tag": batch.batch_tag,
         "source_type": batch.source_type,
         "source_name": batch.source_name,
         "items_planned": batch.items_planned,
         "items_written": batch.items_written,
+        "active_items": counts.get("active_items", 0),
+        "deleted_items": counts.get("deleted_items", 0),
         "skipped_count": batch.skipped_count,
         "status_mapped": batch.status_mapped,
         "external_links": batch.external_links,
@@ -915,9 +947,15 @@ async def import_history_page(
             .order_by(ImportBatch.created_at.desc(), ImportBatch.id.desc())
             .limit(50)
         )
+        batch_rows = list(result.scalars().all())
+        item_counts = await _import_batch_item_counts(
+            session,
+            project_key=project_key,
+            batch_tags=[batch.batch_tag for batch in batch_rows],
+        )
         batches = [
-            _import_batch_view(project_key, batch)
-            for batch in result.scalars().all()
+            _import_batch_view(project_key, batch, item_counts)
+            for batch in batch_rows
         ]
     finally:
         await session.close()
