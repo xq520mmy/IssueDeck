@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import os
 import sys
 from pathlib import Path
@@ -126,6 +127,42 @@ def main(argv: list[str] | None = None) -> int:
     p_seed.add_argument("--config", default="server.toml")
     p_seed.add_argument("--project-key", default="example")
     p_seed.add_argument("--force-reset", action="store_true")
+
+    p_list = sub.add_parser("list-items", help="List project items from the local database")
+    p_list.add_argument("--config", default="server.toml")
+    p_list.add_argument("--project-key", required=True)
+    p_list.add_argument("--kind", action="append", default=[], help="Filter by kind")
+    p_list.add_argument("--status", action="append", default=[], help="Filter by status")
+    p_list.add_argument("--tag", action="append", default=[], help="Filter by tag")
+    p_list.add_argument(
+        "--applies-to",
+        action="append",
+        default=[],
+        metavar="BRANCH",
+        help="Filter by target branch; repeat for multiple branches",
+    )
+    p_list.add_argument(
+        "--relation-type",
+        action="append",
+        default=[],
+        help="Filter by relationship type, e.g. blocked_by",
+    )
+    p_list.add_argument(
+        "--custom-field",
+        action="append",
+        default=[],
+        metavar="FIELD=VALUE",
+        help="Filter by custom field; supports FIELD=VALUE, FIELD>=VALUE, FIELD:missing",
+    )
+    p_list.add_argument("--include-deleted", action="store_true")
+    p_list.add_argument("--only-deleted", action="store_true")
+    p_list.add_argument("--limit", type=int, default=50)
+    p_list.add_argument(
+        "--format",
+        choices=["table", "json"],
+        default="table",
+        help="Output format",
+    )
 
     p_gh = sub.add_parser(
         "import-github-url",
@@ -372,6 +409,21 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "seed-demo":
         return asyncio.run(_cmd_seed_demo(
             Path(args.config), args.project_key, args.force_reset,
+        ))
+    if args.cmd == "list-items":
+        return asyncio.run(_cmd_list_items(
+            Path(args.config),
+            args.project_key,
+            kinds=args.kind,
+            statuses=args.status,
+            tags=args.tag,
+            applies_to=args.applies_to,
+            relation_types=args.relation_type,
+            custom_field_options=args.custom_field,
+            include_deleted=args.include_deleted,
+            only_deleted=args.only_deleted,
+            limit=args.limit,
+            output_format=args.format,
         ))
     if args.cmd == "import-github-url":
         return asyncio.run(_cmd_import_github_url(
@@ -622,6 +674,26 @@ def _demo_token_hint(config_created: bool) -> str:
     return "api_token from your config file"
 
 
+def _format_custom_fields(values: dict[str, object]) -> str:
+    parts = [
+        f"{key}={value}"
+        for key, value in sorted(values.items())
+        if value is not None and value != ""
+    ]
+    return ", ".join(parts)
+
+
+def _print_table(headers: list[str], rows: list[list[str]]) -> None:
+    widths = [
+        max(len(header), *(len(str(row[index])) for row in rows))
+        for index, header in enumerate(headers)
+    ]
+    print("  ".join(header.ljust(widths[index]) for index, header in enumerate(headers)))
+    print("  ".join("-" * width for width in widths))
+    for row in rows:
+        print("  ".join(str(value).ljust(widths[index]) for index, value in enumerate(row)))
+
+
 async def _cmd_migrate(
     config_path: Path, source_dir: Path, project_key: str,
     dry_run: bool, force_reset: bool, field_aliases: list[str], presets: list[str],
@@ -739,6 +811,84 @@ async def _cmd_seed_demo(
             )
     finally:
         await engine.dispose()
+    return 0
+
+
+async def _cmd_list_items(
+    config_path: Path,
+    project_key: str,
+    *,
+    kinds: list[str],
+    statuses: list[str],
+    tags: list[str],
+    applies_to: list[str],
+    relation_types: list[str],
+    custom_field_options: list[str],
+    include_deleted: bool,
+    only_deleted: bool,
+    limit: int,
+    output_format: str,
+) -> int:
+    from issuedeck.core.db import make_engine, make_session_factory
+    from issuedeck.features.items.custom_fields import parse_custom_field_filter_options
+    from issuedeck.features.items.repo import ItemRepo
+    from issuedeck.features.items.service import ItemService
+
+    _upgrade_database(config_path)
+    registry = _build_registry(config_path)
+    project = registry.project(project_key)
+    custom_fields = parse_custom_field_filter_options(project, custom_field_options)
+    db_path = registry.server.data_dir / "tracker.db"
+    engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_factory = make_session_factory(engine)
+    try:
+        async with session_factory() as session:
+            service = ItemService(ItemRepo(session), registry, session)
+            result = await service.list_items(
+                project_key,
+                kinds=kinds or None,
+                statuses=statuses or None,
+                tags=tags or None,
+                applies_to=applies_to or None,
+                relationship_types=relation_types or None,
+                custom_fields=custom_fields or None,
+                include_deleted=include_deleted,
+                only_deleted=only_deleted,
+                limit=limit,
+            )
+    finally:
+        await engine.dispose()
+
+    payload = [item.model_dump(mode="json") for item in result.items]
+    if output_format == "json":
+        print(json.dumps({
+            "items": payload,
+            "next_cursor": result.next_cursor,
+            "limit": result.limit,
+        }, ensure_ascii=False, indent=2))
+        return 0
+
+    if not result.items:
+        print("No matching items.", file=sys.stderr)
+        return 0
+
+    rows = [
+        [
+            item.local_id,
+            item.kind,
+            item.status,
+            item.title,
+            ", ".join(item.tags),
+            _format_custom_fields(item.custom_fields),
+        ]
+        for item in result.items
+    ]
+    _print_table(["ID", "Kind", "Status", "Title", "Tags", "Custom fields"], rows)
+    if result.next_cursor:
+        print(
+            f"[more] increase --limit or use the dashboard/API cursor: {result.next_cursor}",
+            file=sys.stderr,
+        )
     return 0
 
 

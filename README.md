@@ -249,6 +249,22 @@ To intentionally replace that project's items, add `--force-reset`.
 For the full first-run flow, prefer `uv run issuedeck demo`; it creates config,
 runs migrations, seeds fake data, and starts the dashboard.
 
+## CLI Item Listing
+
+List local items without starting the dashboard:
+
+```bash
+uv run issuedeck list-items \
+  --config server.toml \
+  --project-key example \
+  --status in_progress \
+  --custom-field 'estimate>=3'
+```
+
+Use `--format json` for scripts. Filters include `--kind`, `--status`, `--tag`,
+`--applies-to`, `--relation-type`, `--custom-field`, `--include-deleted`, and
+`--only-deleted`.
+
 ## GitHub URL Helper
 
 Create an IssueDeck item from a GitHub issue, pull request, or commit URL:

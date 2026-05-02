@@ -123,7 +123,7 @@ uv run issuedeck serve --config server.toml
 
 ## SQLite 迁移错误
 
-`demo`、`serve`、`seed-demo` 和 `import-github-url` 命令都会自动执行数据库迁移。
+`demo`、`serve`、`seed-demo`、`list-items` 和 `import-github-url` 命令都会自动执行数据库迁移。
 如果你直接调用 Alembic，可以运行：
 
 ```bash

@@ -16,6 +16,7 @@ from issuedeck.cli import (
     _cmd_import_github_url,
     _cmd_import_json,
     _cmd_import_markdown_list,
+    _cmd_list_items,
     _cmd_seed_demo,
     _cmd_serve,
     _ensure_demo_config,
@@ -38,6 +39,7 @@ def test_issuedeck_help_lists_subcommands():
         "export",
         "export-audit-bundle",
         "seed-demo",
+        "list-items",
         "import-github-url",
         "import-github-issues",
         "import-markdown-list",
@@ -152,6 +154,94 @@ def test_seed_demo_runs_migrations_for_empty_database(tmp_path):
         ).fetchone()
     assert item_count == 8
     assert external_link_table == ("item_external_links",)
+
+
+def test_list_items_cli_prints_filtered_table(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+
+    rc = asyncio.run(_cmd_list_items(
+        cfg_path,
+        "example",
+        kinds=["feature"],
+        statuses=[],
+        tags=[],
+        applies_to=[],
+        relation_types=[],
+        custom_field_options=[],
+        include_deleted=False,
+        only_deleted=False,
+        limit=5,
+        output_format="table",
+    ))
+
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "ID" in out
+    assert "Kind" in out
+    assert "feature" in out
+    assert "bug" not in out
+
+
+def test_list_items_cli_supports_json_and_custom_field_filters(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+    project_path = tmp_path / "projects" / "example.toml"
+    project_path.write_text(
+        project_path.read_text(encoding="utf-8") + "\n".join([
+            "",
+            "[custom_fields.priority]",
+            'label = "Priority"',
+            'type = "select"',
+            'options = ["low", "high"]',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        conn.execute(
+            """
+            update items
+            set custom_fields_json = '{"priority":"high"}'
+            where pk = (select pk from items order by pk limit 1)
+            """
+        )
+
+    rc = asyncio.run(_cmd_list_items(
+        cfg_path,
+        "example",
+        kinds=[],
+        statuses=[],
+        tags=[],
+        applies_to=[],
+        relation_types=[],
+        custom_field_options=["priority=high"],
+        include_deleted=False,
+        only_deleted=False,
+        limit=10,
+        output_format="json",
+    ))
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert len(payload["items"]) == 1
+    assert payload["items"][0]["custom_fields"] == {"priority": "high"}
 
 
 def test_export_audit_bundle_cli_writes_zip(tmp_path):

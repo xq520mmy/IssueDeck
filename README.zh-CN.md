@@ -152,6 +152,22 @@ uv run issuedeck seed-demo --config server.toml --project-key example
 如果目标项目已经有事项，命令会拒绝覆盖。确认要替换该项目事项时再加
 `--force-reset`。
 
+## CLI 事项列表
+
+不启动 Dashboard 也可以直接查看本地事项：
+
+```bash
+uv run issuedeck list-items \
+  --config server.toml \
+  --project-key example \
+  --status in_progress \
+  --custom-field 'estimate>=3'
+```
+
+脚本集成可以加 `--format json`。筛选项包括 `--kind`、`--status`、`--tag`、
+`--applies-to`、`--relation-type`、`--custom-field`、`--include-deleted` 和
+`--only-deleted`。
+
 ## 配置项目
 
 `api_token` 会继续作为兼容旧部署的 admin token。需要给多个客户端分配权限时，
