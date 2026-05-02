@@ -285,6 +285,26 @@ def main(argv: list[str] | None = None) -> int:
         help="Output format after bulk update",
     )
 
+    p_ship = sub.add_parser("ship-item", help="Mark a local item as shipped")
+    p_ship.add_argument("local_id", help="Item local ID, for example FEAT-0001")
+    p_ship.add_argument("--config", default="server.toml")
+    p_ship.add_argument("--project-key", required=True)
+    p_ship.add_argument("--branch", required=True)
+    p_ship.add_argument("--version", required=True)
+    p_ship.add_argument(
+        "--commit",
+        action="append",
+        default=[],
+        help="Commit SHA to attach to the ship record; repeat for multiple commits",
+    )
+    p_ship.add_argument("--dry-run", action="store_true", help="Print the ship payload only")
+    p_ship.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format after shipping",
+    )
+
     p_list = sub.add_parser("list-items", help="List project items from the local database")
     p_list.add_argument("--config", default="server.toml")
     p_list.add_argument("--project-key", required=True)
@@ -626,6 +646,17 @@ def main(argv: list[str] | None = None) -> int:
             applies_to=args.applies_to,
             custom_field_options=args.custom_field,
             reason=args.reason,
+            dry_run=args.dry_run,
+            output_format=args.format,
+        ))
+    if args.cmd == "ship-item":
+        return asyncio.run(_cmd_ship_item(
+            Path(args.config),
+            args.project_key,
+            args.local_id,
+            branch=args.branch,
+            version=args.version,
+            commits=args.commit,
             dry_run=args.dry_run,
             output_format=args.format,
         ))
@@ -1412,6 +1443,62 @@ async def _cmd_bulk_update_items(
     )
     for item in result.items:
         print(item.local_id)
+    return 0
+
+
+async def _cmd_ship_item(
+    config_path: Path,
+    project_key: str,
+    local_id: str,
+    *,
+    branch: str,
+    version: str,
+    commits: list[str],
+    dry_run: bool,
+    output_format: str,
+) -> int:
+    from pydantic import ValidationError
+
+    from issuedeck.core.db import make_engine, make_session_factory
+    from issuedeck.core.errors import IssueDeckError
+    from issuedeck.features.items.repo import ItemRepo
+    from issuedeck.features.items.schemas import ShipItemRequest
+    from issuedeck.features.items.service import ItemService
+
+    try:
+        registry = _build_registry(config_path)
+        registry.project(project_key)
+        registry.validate_branch(project_key, branch)
+        req = ShipItemRequest(branch=branch, version=version, commits=commits)
+    except (ValidationError, ValueError, IssueDeckError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if dry_run:
+        print(req.model_dump_json(indent=2))
+        return 0
+
+    _upgrade_database(config_path)
+    db_path = registry.server.data_dir / "tracker.db"
+    engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_factory = make_session_factory(engine)
+    try:
+        async with session_factory() as session:
+            service = ItemService(ItemRepo(session), registry, session)
+            item = await service.ship(project_key, local_id, req)
+    except IssueDeckError as exc:
+        print(f"{exc.code}: {exc.message}", file=sys.stderr)
+        return 2
+    finally:
+        await engine.dispose()
+
+    payload = item.model_dump(mode="json")
+    if output_format == "json":
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print(item.local_id)
+    print(f"[ok] shipped {item.local_id} to {branch} as {version}", file=sys.stderr)
     return 0
 
 

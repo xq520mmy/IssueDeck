@@ -296,6 +296,17 @@ uv run issuedeck bulk-update-items FEAT-0001 FEAT-0002 \
 Set `--action delete` or `--action restore` for bulk cleanup. Bulk updates also
 support branch and custom-field changes.
 
+Record a shipped version and commit list:
+
+```bash
+uv run issuedeck ship-item FEAT-0001 \
+  --config server.toml \
+  --project-key example \
+  --branch main \
+  --version v1.0.0 \
+  --commit abc1234
+```
+
 List local items without starting the dashboard:
 
 ```bash

@@ -17,6 +17,8 @@ versioning once public releases begin.
   support, JSON output, and dry-run previews.
 - Added `issuedeck bulk-update-items` for local CLI bulk status, tag, branch,
   custom-field, delete, and restore workflows.
+- Added `issuedeck ship-item` for local CLI ship records with branch, version,
+  commits, JSON output, and dry-run previews.
 - Added `issuedeck list-items` for local CLI item listing with the same kind,
   status, tag, branch, relationship, custom-field, and deletion filters as the
   REST list API.

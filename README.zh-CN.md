@@ -197,6 +197,17 @@ uv run issuedeck bulk-update-items FEAT-0001 FEAT-0002 \
 
 批量清理可用 `--action delete` 或 `--action restore`。批量更新也支持分支和自定义字段。
 
+记录事项发布版本和 commit：
+
+```bash
+uv run issuedeck ship-item FEAT-0001 \
+  --config server.toml \
+  --project-key example \
+  --branch main \
+  --version v1.0.0 \
+  --commit abc1234
+```
+
 不启动 Dashboard 也可以直接查看本地事项：
 
 ```bash

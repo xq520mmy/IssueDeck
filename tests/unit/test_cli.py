@@ -22,6 +22,7 @@ from issuedeck.cli import (
     _cmd_list_items,
     _cmd_seed_demo,
     _cmd_serve,
+    _cmd_ship_item,
     _cmd_update_item,
     _ensure_demo_config,
     _ensure_demo_project_config,
@@ -46,6 +47,7 @@ def test_issuedeck_help_lists_subcommands():
         "create-item",
         "update-item",
         "bulk-update-items",
+        "ship-item",
         "list-items",
         "get-item",
         "import-github-url",
@@ -473,6 +475,86 @@ def test_bulk_update_items_cli_dry_run_without_writing(tmp_path, capsys):
             """
         ).fetchone()[0]
     assert deleted_at is None
+
+
+def test_ship_item_cli_records_version_and_commits(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+
+    rc = asyncio.run(_cmd_ship_item(
+        cfg_path,
+        "example",
+        "FEAT-0001",
+        branch="main",
+        version="1.2.3",
+        commits=["abc1234", "def5678"],
+        dry_run=False,
+        output_format="json",
+    ))
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["local_id"] == "FEAT-0001"
+    assert payload["status"] == "done"
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        row = conn.execute(
+            """
+            select sr.branch_key, sr.version, group_concat(sc.sha, ',')
+            from ship_records sr
+            join ship_commits sc on sc.ship_record_id = sr.id
+            where sr.item_pk = (
+                select pk from items
+                where project_key = 'example' and local_id = 'FEAT-0001'
+            )
+            group by sr.id
+            """
+        ).fetchone()
+    assert row == ("main", "1.2.3", "abc1234,def5678")
+
+
+def test_ship_item_cli_dry_run_without_writing(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        before_count = conn.execute("select count(*) from ship_records").fetchone()[0]
+
+    rc = asyncio.run(_cmd_ship_item(
+        cfg_path,
+        "example",
+        "FEAT-0001",
+        branch="main",
+        version="1.2.3",
+        commits=["abc1234"],
+        dry_run=True,
+        output_format="json",
+    ))
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == {
+        "branch": "main",
+        "version": "1.2.3",
+        "commits": ["abc1234"],
+    }
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        count = conn.execute("select count(*) from ship_records").fetchone()[0]
+    assert count == before_count
 
 
 def test_list_items_cli_prints_filtered_table(tmp_path, capsys):
