@@ -57,6 +57,8 @@ Reopening earlier import batches is covered in
 [Dashboard Import History](docs/dashboard-import-history.md).
 Bulk cleanup after imports is covered in
 [Dashboard Bulk Triage](docs/dashboard-bulk-triage.md).
+Starter configs for new workspaces are covered in
+[Project Templates](docs/project-templates.md).
 
 ## Features
 
@@ -94,7 +96,8 @@ Bulk cleanup after imports is covered in
 - Frontmatter migration from existing Markdown trackers.
 - Server-rendered dashboard with list, kanban, detail, search, and create/edit flows.
 - Keyboard-friendly dashboard triage for search, filters, create, and item focus.
-- Dashboard project creation, language switching, and first-run setup checklist.
+- Dashboard project creation with starter templates, language switching, and
+  first-run setup checklist.
 - MCP tools for coding-agent workflows.
 
 ## Requirements

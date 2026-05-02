@@ -42,6 +42,7 @@ listed in `CHANGELOG.md`.
   public sharing snippets.
 - Hosted tracker export helper docs for GitHub Issues, Linear, Jira, and
   generic tables.
+- Built-in project templates for first-run dashboard project creation.
 
 ## Near Term
 
@@ -51,7 +52,7 @@ listed in `CHANGELOG.md`.
 ## Later
 
 - Optional notification hooks for Slack, Discord, or email.
-- A lightweight plugin surface for custom item fields and project templates.
+- A lightweight plugin surface for custom item fields and third-party templates.
 - Project-level audit/export bundles for teams that need periodic snapshots.
 
 ## Contribution Areas

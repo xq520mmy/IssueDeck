@@ -298,20 +298,34 @@ _MESSAGES: dict[str, dict[str, str]] = {
             "Project key must start with a letter and use lowercase letters, "
             "numbers, - or _."
         ),
+        "project_form.error.invalid_template": "Choose one of the built-in project templates.",
         "project_form.error.name_required": "Project name is required.",
         "project_form.help": (
-            "Create a default project config. You can tune kinds, statuses, "
+            "Create a project config from a starter template. You can tune kinds, statuses, "
             "branches, and ship rules in TOML later."
         ),
         "project_form.key": "Project key",
         "project_form.key_help": "Lowercase URL/config identifier. Example: acme-web.",
         "project_form.name": "Project name",
         "project_form.name_placeholder": "Acme Web",
-        "project_form.template_body": (
-            "Kinds: Feature, Bug, Improvement. Statuses: Proposed, In Progress, "
-            "Done, Won't Fix. Branch: Main."
+        "project_form.template_branches": "Branches",
+        "project_form.template_kinds": "Kinds",
+        "project_form.template_statuses": "Statuses",
+        "project_form.template_title": "Project template",
+        "project_template.agent.description": (
+            "Designed for human plus AI agent triage with blocked and "
+            "ready-to-ship queues."
         ),
-        "project_form.template_title": "Default template",
+        "project_template.agent.name": "Agent workflow",
+        "project_template.basic.description": (
+            "Small default deck for lightweight backlog tracking and demos."
+        ),
+        "project_template.basic.name": "Basic issue deck",
+        "project_template.software.description": (
+            "A broader software delivery board with epic, review, and release "
+            "branch lanes."
+        ),
+        "project_template.software.name": "Software team",
         "relationship.add": "Add relationship",
         "relationship.empty": "No relationships",
         "relationship.kind": "Relationship type",
@@ -632,17 +646,29 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "project_form.error.exists": "项目 '{key}' 已存在。",
         "project_form.error.exists_on_disk": "{name} 已存在于磁盘。",
         "project_form.error.invalid_key": "项目键必须以字母开头，只能使用小写字母、数字、- 或 _。",
+        "project_form.error.invalid_template": "请选择一个内置项目模板。",
         "project_form.error.name_required": "项目名称不能为空。",
-        "project_form.help": "创建默认项目配置。之后可以在 TOML 中调整类型、状态、分支和发布规则。",
+        "project_form.help": (
+            "基于起步模板创建项目配置。之后可以在 TOML 中调整类型、状态、分支和发布规则。"
+        ),
         "project_form.key": "项目键",
         "project_form.key_help": "小写 URL/配置标识符。例如: acme-web。",
         "project_form.name": "项目名称",
         "project_form.name_placeholder": "Acme Web",
-        "project_form.template_body": (
-            "类型: Feature、Bug、Improvement。状态: Proposed、In Progress、"
-            "Done、Won't Fix。分支: Main。"
+        "project_form.template_branches": "分支",
+        "project_form.template_kinds": "类型",
+        "project_form.template_statuses": "状态",
+        "project_form.template_title": "项目模板",
+        "project_template.agent.description": (
+            "适合人类和 AI agent 协同分诊，包含阻塞和待发布队列。"
         ),
-        "project_form.template_title": "默认模板",
+        "project_template.agent.name": "Agent 工作流",
+        "project_template.basic.description": "适合轻量 backlog 跟踪和演示的小型默认看板。",
+        "project_template.basic.name": "基础事项看板",
+        "project_template.software.description": (
+            "更完整的软件交付看板，包含 Epic、Review 和 Release 分支。"
+        ),
+        "project_template.software.name": "软件团队",
         "relationship.add": "添加关联",
         "relationship.empty": "暂无关联",
         "relationship.kind": "关联类型",

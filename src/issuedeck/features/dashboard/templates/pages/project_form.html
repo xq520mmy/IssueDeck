@@ -76,12 +76,40 @@
                        resize-y">{{ values.get('description', '') }}</textarea>
     </div>
 
-    <div class="rounded-md border border-ledger-line dark:border-ledger-darkLine bg-ledger-surfaceAlt dark:bg-ledger-darkPanelAlt px-4 py-3">
-      <p class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{{ t("project_form.template_title") }}</p>
-      <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-        {{ t("project_form.template_body") }}
-      </p>
-    </div>
+    {% set selected_template_key = values.get('template_key', default_template_key) %}
+    <fieldset>
+      <legend class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+        {{ t("project_form.template_title") }}
+      </legend>
+      <div class="space-y-2">
+        {% for template in project_templates %}
+          <label class="flex gap-3 rounded-md border border-ledger-line dark:border-ledger-darkLine bg-ledger-surfaceAlt dark:bg-ledger-darkPanelAlt px-4 py-3 cursor-pointer hover:border-primary-400 dark:hover:border-primary-500">
+            <input type="radio"
+                   name="template_key"
+                   value="{{ template.key }}"
+                   {% if selected_template_key == template.key %}checked{% endif %}
+                   class="mt-1 h-4 w-4 border-gray-300 text-primary-600 focus:ring-primary-500">
+            <span class="min-w-0">
+              <span class="block text-sm font-semibold text-gray-900 dark:text-gray-100">
+                {{ t(template.name_i18n) }}
+              </span>
+              <span class="mt-1 block text-sm text-gray-600 dark:text-gray-300">
+                {{ t(template.description_i18n) }}
+              </span>
+              <span class="mt-2 block text-xs text-gray-500 dark:text-gray-400">
+                {{ t("project_form.template_kinds") }}: {{ template.kind_labels | join(", ") }}
+              </span>
+              <span class="block text-xs text-gray-500 dark:text-gray-400">
+                {{ t("project_form.template_statuses") }}: {{ template.status_labels | join(", ") }}
+              </span>
+              <span class="block text-xs text-gray-500 dark:text-gray-400">
+                {{ t("project_form.template_branches") }}: {{ template.branch_labels | join(", ") }}
+              </span>
+            </span>
+          </label>
+        {% endfor %}
+      </div>
+    </fieldset>
 
     <div class="flex items-center justify-end gap-2 pt-2">
       <a href="/dashboard/"

@@ -78,6 +78,12 @@ from issuedeck.features.migrate.markdown_tasks import (
     MarkdownTaskImportReport,
     import_markdown_task_list,
 )
+from issuedeck.features.projects.project_templates import (
+    DEFAULT_PROJECT_TEMPLATE_KEY,
+    get_project_template,
+    list_project_templates,
+    render_project_toml,
+)
 from issuedeck.features.relationships.repo import RelationshipRepo
 from issuedeck.features.relationships.service import RelationshipService
 from issuedeck.features.search.repo import SearchRepo
@@ -665,47 +671,20 @@ def _work_queue_nav(project_key: str, active_view: str) -> list[dict[str, str | 
     ]
 
 
-def _default_project_toml(*, key: str, name: str, description: str) -> str:
-    escaped_name = name.replace('"', '\\"')
-    escaped_description = description.replace('"', '\\"')
-    return f'''key = "{key}"
-name = "{escaped_name}"
-description = "{escaped_description}"
-
-[kinds.feature]
-label = "Feature"
-prefix = "FEAT"
-
-[kinds.bug]
-label = "Bug"
-prefix = "BUG"
-
-[kinds.improvement]
-label = "Improvement"
-prefix = "IMP"
-
-[statuses.proposed]
-label = "Proposed"
-
-[statuses.in_progress]
-label = "In Progress"
-
-[statuses.done]
-label = "Done"
-terminal = true
-requires_ship = true
-
-[statuses.wontfix]
-label = "Won't Fix"
-terminal = true
-
-[[branches]]
-key = "main"
-label = "Main"
-
-[id_format]
-digits = 4
-'''
+def _project_form_context(
+    *,
+    error: str | None = None,
+    form: dict[str, object] | None = None,
+    status_code: int = 200,
+) -> dict[str, object]:
+    return {
+        "active_page": "new_project",
+        "error": error,
+        "form": form or {"template_key": DEFAULT_PROJECT_TEMPLATE_KEY},
+        "project_templates": list_project_templates(),
+        "default_template_key": DEFAULT_PROJECT_TEMPLATE_KEY,
+        "status_code": status_code,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -810,8 +789,7 @@ async def create_project_form(request: Request):
     return render(
         "pages/project_form.html", request,
         **_ctx(request),
-        active_page="new_project",
-        error=None,
+        **_project_form_context(),
     )
 
 
@@ -821,12 +799,21 @@ async def create_project_submit(
     key: str = Form(...),
     name: str = Form(...),
     description: str = Form(""),
+    template_key: str = Form(DEFAULT_PROJECT_TEMPLATE_KEY),
 ):
     registry = request.app.state.registry
     key = key.strip().lower()
     name = name.strip()
     description = description.strip()
+    template_key = template_key.strip()
+    template = get_project_template(template_key)
     t = make_translator(language_from_request(request))
+    form = {
+        "key": key,
+        "name": name,
+        "description": description,
+        "template_key": template_key,
+    }
 
     error = None
     if not PROJECT_KEY_RE.fullmatch(key):
@@ -835,15 +822,14 @@ async def create_project_submit(
         error = t("project_form.error.name_required")
     elif key in {p.key for p in registry.all_projects()}:
         error = t("project_form.error.exists", key=key)
+    elif template is None:
+        error = t("project_form.error.invalid_template")
 
     if error:
         return render(
             "pages/project_form.html", request,
             **_ctx(request),
-            active_page="new_project",
-            error=error,
-            form={"key": key, "name": name, "description": description},
-            status_code=422,
+            **_project_form_context(error=error, form=form, status_code=422),
         )
 
     path = registry.server.projects_dir / f"{key}.toml"
@@ -852,14 +838,20 @@ async def create_project_submit(
         return render(
             "pages/project_form.html", request,
             **_ctx(request),
-            active_page="new_project",
-            error=t("project_form.error.exists_on_disk", name=path.name),
-            form={"key": key, "name": name, "description": description},
-            status_code=409,
+            **_project_form_context(
+                error=t("project_form.error.exists_on_disk", name=path.name),
+                form=form,
+                status_code=409,
+            ),
         )
 
     path.write_text(
-        _default_project_toml(key=key, name=name, description=description),
+        render_project_toml(
+            key=key,
+            name=name,
+            description=description,
+            template=template,
+        ),
         encoding="utf-8",
     )
 
@@ -873,10 +865,7 @@ async def create_project_submit(
         return render(
             "pages/project_form.html", request,
             **_ctx(request),
-            active_page="new_project",
-            error=str(exc),
-            form={"key": key, "name": name, "description": description},
-            status_code=422,
+            **_project_form_context(error=str(exc), form=form, status_code=422),
         )
 
     return RedirectResponse(url=f"/dashboard/{key}", status_code=303)
