@@ -27,3 +27,7 @@ projects/*.toml
 
 # Server config is per-deploy
 server.toml
+
+# Local AI-agent instructions; keep personal workflow files out of the public repo
+AGENTS.md
+CLAUDE.md
