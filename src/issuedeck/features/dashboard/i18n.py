@@ -68,7 +68,9 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "common.no_items": "No items yet",
         "common.no_matching_items": "No matching items",
         "common.no_tags": "No tags",
+        "common.next": "Next",
         "common.preview": "Preview",
+        "common.previous": "Previous",
         "common.reset": "Reset",
         "common.restore": "Restore",
         "common.save": "Save",
@@ -226,6 +228,9 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "import_history.external_links": "Links",
         "import_history.filter_source": "Source",
         "import_history.filter_state": "State",
+        "import_history.pagination_summary": (
+            "Showing {start}-{end} of {total} recent matches."
+        ),
         "import_history.planned": "Planned",
         "import_history.restore_batch": "Restore batch",
         "import_history.restore_empty": (
@@ -425,7 +430,9 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "common.no_items": "暂无条目",
         "common.no_matching_items": "暂无匹配条目",
         "common.no_tags": "暂无标签",
+        "common.next": "下一页",
         "common.preview": "预览",
+        "common.previous": "上一页",
         "common.reset": "重置",
         "common.restore": "恢复",
         "common.save": "保存",
@@ -562,6 +569,9 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "import_history.external_links": "链接",
         "import_history.filter_source": "来源",
         "import_history.filter_state": "状态",
+        "import_history.pagination_summary": (
+            "显示最近匹配记录中的第 {start}-{end} 条，共 {total} 条。"
+        ),
         "import_history.planned": "将创建",
         "import_history.restore_batch": "恢复批次",
         "import_history.restore_empty": "这个导入批次里没有可恢复的已删除事项。",

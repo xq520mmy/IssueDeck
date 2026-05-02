@@ -424,3 +424,40 @@ async def test_import_history_filters_by_source_and_item_state(dashboard_client)
     assert active_history.status_code == 200
     assert "active-batch.json" in active_history.text
     assert "deleted-batch.csv" not in active_history.text
+
+
+async def test_import_history_paginates_recent_batches(dashboard_client):
+    client, Session = dashboard_client
+
+    async with Session() as session:
+        for idx in range(26):
+            session.add(ImportBatch(
+                project_key="test",
+                batch_tag=f"csv-import-page-{idx:02d}",
+                source_type="csv",
+                source_name=f"page-{idx:02d}.csv",
+                items_planned=1,
+                items_written=1,
+                skipped_count=0,
+                status_mapped=0,
+                external_links=0,
+                created_at=f"2026-05-01T00:00:{idx:02d}Z",
+                metadata_json="{}",
+            ))
+        await session.commit()
+
+    first_page = await client.get("/dashboard/test/imports?source=csv")
+
+    assert first_page.status_code == 200
+    assert "page-25.csv" in first_page.text
+    assert "page-00.csv" not in first_page.text
+    assert "Showing 1-25 of 26 recent matches." in first_page.text
+    assert "/dashboard/test/imports?source=csv&amp;batch_state=all&amp;page=2" in first_page.text
+
+    second_page = await client.get("/dashboard/test/imports?source=csv&page=2")
+
+    assert second_page.status_code == 200
+    assert "page-00.csv" in second_page.text
+    assert "page-25.csv" not in second_page.text
+    assert "Showing 26-26 of 26 recent matches." in second_page.text
+    assert "/dashboard/test/imports?source=csv&amp;batch_state=all&amp;page=1" in second_page.text

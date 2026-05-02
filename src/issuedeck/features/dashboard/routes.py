@@ -115,6 +115,8 @@ WORK_QUEUE_KEYS = {
 PROJECT_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]{1,62}$")
 IMPORT_HISTORY_SOURCES = {"all", "github", "csv", "json", "markdown"}
 IMPORT_HISTORY_STATES = {"all", "active", "deleted", "mixed"}
+IMPORT_HISTORY_PAGE_SIZE = 25
+IMPORT_HISTORY_MAX_SCAN = 250
 
 
 def _item_svc(request: Request):
@@ -955,6 +957,7 @@ async def import_history_page(
     request: Request,
     source: str = Query("all"),
     batch_state: str = Query("all"),
+    page: int = Query(1),
     deleted_count: int | None = Query(None),
     restored_count: int | None = Query(None),
     delete_empty: bool = Query(False),
@@ -967,13 +970,14 @@ async def import_history_page(
     selected_batch_state = (
         batch_state if batch_state in IMPORT_HISTORY_STATES else "all"
     )
+    current_page = max(page, 1)
     session = request.app.state.session_factory()
     try:
         stmt = (
             select(ImportBatch)
             .where(ImportBatch.project_key == project_key)
             .order_by(ImportBatch.created_at.desc(), ImportBatch.id.desc())
-            .limit(50)
+            .limit(IMPORT_HISTORY_MAX_SCAN)
         )
         if selected_source != "all":
             stmt = stmt.where(ImportBatch.source_type == selected_source)
@@ -996,13 +1000,44 @@ async def import_history_page(
     finally:
         await session.close()
 
+    total_matches = len(batches)
+    page_start = (current_page - 1) * IMPORT_HISTORY_PAGE_SIZE
+    page_end = page_start + IMPORT_HISTORY_PAGE_SIZE
+    page_batches = batches[page_start:page_end]
+    has_previous_page = current_page > 1
+    has_next_page = page_end < total_matches
+    previous_page_url = (
+        _dashboard_url_with_params(
+            f"/dashboard/{project_key}/imports",
+            source=selected_source,
+            batch_state=selected_batch_state,
+            page=current_page - 1,
+        )
+        if has_previous_page else None
+    )
+    next_page_url = (
+        _dashboard_url_with_params(
+            f"/dashboard/{project_key}/imports",
+            source=selected_source,
+            batch_state=selected_batch_state,
+            page=current_page + 1,
+        )
+        if has_next_page else None
+    )
+
     return render(
         "pages/import_history.html", request,
         **_ctx(request, project_key),
         active_page="import_history",
-        batches=batches,
+        batches=page_batches,
         selected_source=selected_source,
         selected_batch_state=selected_batch_state,
+        current_page=current_page,
+        total_matches=total_matches,
+        page_start=page_start + 1 if page_batches else 0,
+        page_end=page_start + len(page_batches),
+        previous_page_url=previous_page_url,
+        next_page_url=next_page_url,
         deleted_count=deleted_count,
         restored_count=restored_count,
         delete_empty=delete_empty,

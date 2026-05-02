@@ -30,5 +30,8 @@ Use the filters above the history list to narrow batches by source (`GitHub`,
 want to review only fully deleted imports before restoring them, or only active
 imports before triage.
 
+The history list is paginated, and page links preserve the selected source and
+state filters while browsing older batches.
+
 Preview-only imports are not recorded because they do not write items. Formal
 imports that write zero items are also omitted from the history.

@@ -162,6 +162,33 @@
         </article>
       {% endfor %}
     </div>
+    <div class="flex flex-col gap-3 border-t border-ledger-line pt-4 dark:border-ledger-darkLine sm:flex-row sm:items-center sm:justify-between">
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        {{ t("import_history.pagination_summary", start=page_start, end=page_end, total=total_matches) }}
+      </p>
+      <div class="flex gap-2">
+        {% if previous_page_url %}
+          <a href="{{ previous_page_url }}"
+             class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold border border-ledger-line dark:border-ledger-darkLine text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            {{ t("common.previous") }}
+          </a>
+        {% else %}
+          <span class="inline-flex cursor-not-allowed items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold border border-ledger-line dark:border-ledger-darkLine text-gray-400 opacity-60">
+            {{ t("common.previous") }}
+          </span>
+        {% endif %}
+        {% if next_page_url %}
+          <a href="{{ next_page_url }}"
+             class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold border border-ledger-line dark:border-ledger-darkLine text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            {{ t("common.next") }}
+          </a>
+        {% else %}
+          <span class="inline-flex cursor-not-allowed items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold border border-ledger-line dark:border-ledger-darkLine text-gray-400 opacity-60">
+            {{ t("common.next") }}
+          </span>
+        {% endif %}
+      </div>
+    </div>
   {% else %}
     <div class="rounded-md border border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-ledger-darkPanel p-8 text-center">
       <h2 class="text-base font-display font-semibold text-gray-900 dark:text-gray-100">
