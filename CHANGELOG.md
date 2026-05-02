@@ -7,6 +7,8 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-02
+
 ### Added
 
 - Added `issuedeck list-project-templates` and `issuedeck create-project` for

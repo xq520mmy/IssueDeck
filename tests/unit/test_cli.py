@@ -66,6 +66,16 @@ def test_issuedeck_help_lists_subcommands():
         assert cmd in out, f"{cmd} missing from --help"
 
 
+def test_issuedeck_version_outputs_package_version():
+    r = subprocess.run(
+        [sys.executable, "-m", "issuedeck", "--version"],
+        capture_output=True, text=True,
+    )
+
+    assert r.returncode == 0
+    assert "issuedeck 0.8.0" in r.stdout
+
+
 def test_migrate_help_lists_presets():
     r = subprocess.run(
         [sys.executable, "-m", "issuedeck", "migrate", "--help"],

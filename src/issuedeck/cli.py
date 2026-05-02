@@ -57,7 +57,10 @@ ship_exempt_kinds = []
 
 
 def main(argv: list[str] | None = None) -> int:
+    from issuedeck import __version__
+
     parser = argparse.ArgumentParser(prog="issuedeck")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="cmd")
 
     p_demo = sub.add_parser(
