@@ -147,6 +147,8 @@ async def test_dashboard_list_filters_by_custom_fields(dashboard_client):
     assert response.status_code == 200
     assert "Custom fields" in response.text
     assert "High priority" in response.text
+    assert "Priority: high" in response.text
+    assert "Estimate: 8" in response.text
     assert "Low priority" not in response.text
     assert 'name="custom_field__priority"' in response.text
     assert 'value="high"' in response.text

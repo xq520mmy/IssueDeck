@@ -17,6 +17,7 @@ versioning once public releases begin.
 - Added custom-field support to local project-template packs.
 - Added dashboard/API custom-field list filters and CSV/JSON import mappings.
 - Added custom-field support to REST and dashboard bulk updates.
+- Added custom-field chips to dashboard list, mobile, and kanban item summaries.
 
 ## [0.5.0] - 2026-05-02
 

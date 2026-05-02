@@ -37,6 +37,25 @@
     {{ item.title }}
   </a>
 
+  {% if item.custom_fields %}
+    <div class="mb-2 flex flex-wrap items-center gap-1">
+      {% for field_key, field_cfg in project.custom_fields.items() %}
+        {% set field_value = item.custom_fields.get(field_key) %}
+        {% if field_value is sameas true %}
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+                       bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-200">
+            {{ field_cfg.label }}: {{ t("custom_fields.true") }}
+          </span>
+        {% elif field_value is not none and field_value != "" and field_value is not sameas false %}
+          <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+                       bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-200">
+            {{ field_cfg.label }}: {{ field_value }}
+          </span>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
   {# Bottom row: tags + branches #}
   <div class="flex flex-wrap items-center gap-1">
     {% for tag in item.tags %}
@@ -115,6 +134,24 @@
         {{ t("common.deleted") }}
       </span>
     {% endif %}
+    {% if item.custom_fields %}
+      <div class="mt-1 flex flex-wrap items-center gap-1">
+        {% for field_key, field_cfg in project.custom_fields.items() %}
+          {% set field_value = item.custom_fields.get(field_key) %}
+          {% if field_value is sameas true %}
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+                         bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-200">
+              {{ field_cfg.label }}: {{ t("custom_fields.true") }}
+            </span>
+          {% elif field_value is not none and field_value != "" and field_value is not sameas false %}
+            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+                         bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-200">
+              {{ field_cfg.label }}: {{ field_value }}
+            </span>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endif %}
   </td>
 
   {# Status badge with dot #}
@@ -189,6 +226,24 @@
                 focus:ring-offset-2 dark:focus:ring-offset-ledger-darkPanel rounded">
         {{ item.title }}
       </a>
+      {% if item.custom_fields %}
+        <div class="flex flex-wrap items-center gap-1">
+          {% for field_key, field_cfg in project.custom_fields.items() %}
+            {% set field_value = item.custom_fields.get(field_key) %}
+            {% if field_value is sameas true %}
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+                           bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-200">
+                {{ field_cfg.label }}: {{ t("custom_fields.true") }}
+              </span>
+            {% elif field_value is not none and field_value != "" and field_value is not sameas false %}
+              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium
+                           bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-200">
+                {{ field_cfg.label }}: {{ field_value }}
+              </span>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
     </div>
     </div>
     <span class="inline-flex shrink-0 items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium
