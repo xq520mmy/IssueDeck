@@ -119,6 +119,32 @@ async def test_client_add_relationship_uses_item_scoped_route():
     assert data["rel_id"] == 7
 
 
+async def test_client_bulk_update_items_uses_bulk_route():
+    captured = {}
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        captured["method"] = request.method
+        captured["path"] = request.url.path
+        captured["json"] = request.content.decode()
+        return httpx.Response(200, json={"updated_count": 2, "items": []})
+
+    client = IssueDeckClient(
+        base_url="http://issuedeck.local",
+        token="t",
+        transport=httpx.MockTransport(handler),
+    )
+    data = await client.bulk_update_items(
+        "demo",
+        {"local_ids": ["FEAT-1", "BUG-2"], "tags": ["triaged"]},
+    )
+    await client.aclose()
+
+    assert captured["method"] == "POST"
+    assert captured["path"] == "/api/v1/projects/demo/items/bulk"
+    assert captured["json"] == '{"local_ids":["FEAT-1","BUG-2"],"tags":["triaged"]}'
+    assert data["updated_count"] == 2
+
+
 async def test_client_create_item_event_uses_item_events_route():
     captured = {}
 

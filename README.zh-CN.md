@@ -281,8 +281,8 @@ GitHub Issues、Linear、Jira 和通用表格的导出方式见
 客户端配置示例见 [MCP 客户端接入](docs/mcp-clients.zh-CN.md)。
 
 MCP 进程通过 REST API 与 IssueDeck 通信，不直接访问 SQLite。`create_item` 和
-`update_item` 可写入 `custom_fields`，`list_items` 可使用重复的 `custom_field`
-筛选条件。环境变量：
+`update_item` 可写入 `custom_fields`，`bulk_update_items` 可批量更新自定义字段，
+`list_items` 可使用重复的 `custom_field` 筛选条件。环境变量：
 
 ```bash
 ISSUEDECK_BASE_URL=http://127.0.0.1:8765

@@ -13,6 +13,7 @@ versioning once public releases begin.
   queries, dashboard filters, saved filters, and pagination links.
 - Added built-in custom-field presets to project templates.
 - Added MCP create/update/list support for item custom fields.
+- Added an MCP bulk-update tool for agent-driven triage across many items.
 
 ## [0.6.0] - 2026-05-02
 

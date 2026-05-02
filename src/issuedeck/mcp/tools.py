@@ -69,6 +69,33 @@ async def update_item(
     return await get_client().update_item(project_key, local_id, payload)
 
 
+async def bulk_update_items(
+    project_key: str,
+    local_ids: list[str],
+    action: str = "update",
+    kind: str | None = None,
+    status: str | None = None,
+    applies_to: list[str] | None = None,
+    tags: list[str] | None = None,
+    tag_mode: str = "add",
+    custom_fields: dict[str, Any] | None = None,
+    reason: str = "mcp bulk update",
+) -> dict[str, Any]:
+    """Update, delete, or restore multiple items by local_id."""
+    payload = _drop_none({
+        "local_ids": local_ids,
+        "action": action,
+        "kind": kind,
+        "status": status,
+        "applies_to": applies_to,
+        "tags": tags,
+        "tag_mode": tag_mode,
+        "custom_fields": custom_fields,
+        "reason": reason,
+    })
+    return await get_client().bulk_update_items(project_key, payload)
+
+
 async def ship_item(
     project_key: str,
     local_id: str,

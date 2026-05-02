@@ -96,6 +96,13 @@ class IssueDeckClient:
             "PATCH", f"/api/v1/projects/{key}/items/{local_id}", json=body,
         )
 
+    async def bulk_update_items(
+        self, key: str, body: dict[str, Any],
+    ) -> dict[str, Any]:
+        return await self._request(
+            "POST", f"/api/v1/projects/{key}/items/bulk", json=body,
+        )
+
     async def ship_item(
         self, key: str, local_id: str, body: dict[str, Any],
     ) -> dict[str, Any]:

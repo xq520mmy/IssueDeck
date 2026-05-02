@@ -23,6 +23,9 @@ class _FakeClient:
     async def update_item(self, key, local_id, body):
         return await self._record("update_item", key, local_id, body=body)
 
+    async def bulk_update_items(self, key, body):
+        return await self._record("bulk_update_items", key, body=body)
+
     async def ship_item(self, key, local_id, body):
         return await self._record("ship_item", key, local_id, body=body)
 
@@ -151,6 +154,30 @@ async def test_ship_item_passes_commits(fake_client):
         "branch": "main",
         "version": "v0.2.0",
         "commits": ["abc123"],
+    }
+
+
+async def test_bulk_update_items_builds_body(fake_client):
+    await tools.bulk_update_items(
+        project_key="demo",
+        local_ids=["FEAT-1", "BUG-2"],
+        status="in_progress",
+        tags=["triaged"],
+        tag_mode="replace",
+        custom_fields={"priority": "high"},
+        reason="post-import triage",
+    )
+    name, args, kwargs = fake_client.calls[0]
+    assert name == "bulk_update_items"
+    assert args == ("demo",)
+    assert kwargs["body"] == {
+        "local_ids": ["FEAT-1", "BUG-2"],
+        "action": "update",
+        "status": "in_progress",
+        "tags": ["triaged"],
+        "tag_mode": "replace",
+        "custom_fields": {"priority": "high"},
+        "reason": "post-import triage",
     }
 
 

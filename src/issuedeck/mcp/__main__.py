@@ -12,6 +12,7 @@ for fn in (
     tools.get_project_config,
     tools.create_item,
     tools.update_item,
+    tools.bulk_update_items,
     tools.ship_item,
     tools.append_item_event,
     tools.delete_item,

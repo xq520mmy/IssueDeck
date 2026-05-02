@@ -410,12 +410,13 @@ Generic stdio config:
 > `ISSUEDECK_API_TOKEN`. They may hold the same value but the env var names
 > differ by design (client/server are separate processes).
 
-17 tools: `list_projects`, `get_project_config`, `create_item`, `update_item`,
-`ship_item`, `append_item_event`, `delete_item`, `get_item`, `list_items`,
-`search_items`, `add_relationship`, `remove_relationship`,
+18 tools: `list_projects`, `get_project_config`, `create_item`, `update_item`,
+`bulk_update_items`, `ship_item`, `append_item_event`, `delete_item`,
+`get_item`, `list_items`, `search_items`, `add_relationship`, `remove_relationship`,
 `start_work_session`, `list_work_sessions`, `get_work_session`,
 `update_work_session`, `finish_work_session`. `create_item` and `update_item`
-accept `custom_fields`; `list_items` accepts repeated `custom_field` filters.
+accept `custom_fields`; `bulk_update_items` can update custom fields across
+many items; `list_items` accepts repeated `custom_field` filters.
 
 The MCP process reads `ISSUEDECK_BASE_URL` and `ISSUEDECK_TOKEN`, then talks to
 the REST server over HTTP. It does not access SQLite directly.

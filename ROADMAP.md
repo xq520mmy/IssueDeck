@@ -58,6 +58,7 @@ listed in `CHANGELOG.md`.
 - Built-in project templates with custom-field presets for lightweight,
   agent-assisted, and software-team workflows.
 - MCP tools can create, update, and filter items with custom fields.
+- MCP bulk update support for agent-driven post-import triage.
 
 ## Near Term
 
