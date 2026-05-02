@@ -44,6 +44,7 @@ listed in `CHANGELOG.md`.
   generic tables.
 - Built-in project templates for first-run dashboard project creation.
 - Project-level audit/export ZIP bundles for periodic snapshots.
+- Dashboard download controls for project-level audit/export bundles.
 
 ## Near Term
 
@@ -54,7 +55,6 @@ listed in `CHANGELOG.md`.
 
 - Optional notification hooks for Slack, Discord, or email.
 - A lightweight plugin surface for custom item fields and third-party templates.
-- Dashboard download controls for project-level audit/export bundles.
 
 ## Contribution Areas
 

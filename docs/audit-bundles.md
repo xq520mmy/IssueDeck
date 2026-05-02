@@ -3,6 +3,8 @@
 Audit bundles are ZIP snapshots for teams that need periodic project archives,
 handoffs, or lightweight migration checkpoints.
 
+From the dashboard, open a project overview and use **Export snapshot**.
+
 ```bash
 uv run issuedeck export-audit-bundle \
   --project-key example \

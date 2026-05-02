@@ -33,6 +33,7 @@ versioning once public releases begin.
 - Added pagination to dashboard import history while preserving selected filters.
 - Added built-in starter templates to dashboard project creation.
 - Added `issuedeck export-audit-bundle` for project-level ZIP snapshots.
+- Added dashboard audit-bundle downloads from the project overview.
 - Added maintainer workflow docs for requirements, validation, git commits,
   pushes, and CI checks.
 - Documented local browser recovery steps and disabled caching for root

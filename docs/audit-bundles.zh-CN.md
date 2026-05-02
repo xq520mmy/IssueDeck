@@ -3,6 +3,8 @@
 审计导出包是一个 ZIP 快照，适合团队定期归档项目、交接上下文，或在迁移前保存
 轻量检查点。
 
+在 Dashboard 中，打开项目总览页，点击 **导出快照** 即可下载。
+
 ```bash
 uv run issuedeck export-audit-bundle \
   --project-key example \

@@ -48,6 +48,7 @@ from issuedeck.features.dashboard.saved_filters import (
     save_dashboard_filter,
     saved_filter_href,
 )
+from issuedeck.features.export.md_bundle import export_audit_bundle
 from issuedeck.features.items.models import ImportBatch, Item, ItemTag
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
@@ -869,6 +870,34 @@ async def create_project_submit(
         )
 
     return RedirectResponse(url=f"/dashboard/{key}", status_code=303)
+
+
+# ---------------------------------------------------------------------------
+# Project exports
+# ---------------------------------------------------------------------------
+
+@router.get("/{project_key}/exports/audit-bundle")
+async def download_audit_bundle(project_key: str, request: Request):
+    registry = request.app.state.registry
+    registry.project(project_key)
+    session = request.app.state.session_factory()
+    try:
+        with TemporaryDirectory() as tmp:
+            report = await export_audit_bundle(
+                session=session,
+                registry=registry,
+                project_key=project_key,
+                out_path=Path(tmp) / f"{project_key}-audit-bundle.zip",
+            )
+            content = report.bundle_path.read_bytes()
+    finally:
+        await session.close()
+
+    filename = f"{project_key}-audit-bundle.zip"
+    response = Response(content=content, media_type="application/zip")
+    response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 # ---------------------------------------------------------------------------
