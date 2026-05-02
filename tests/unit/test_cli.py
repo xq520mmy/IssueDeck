@@ -9,6 +9,7 @@ import pytest
 
 from issuedeck.cli import (
     _build_registry,
+    _cmd_bulk_update_items,
     _cmd_create_item,
     _cmd_demo,
     _cmd_export_audit_bundle,
@@ -44,6 +45,7 @@ def test_issuedeck_help_lists_subcommands():
         "seed-demo",
         "create-item",
         "update-item",
+        "bulk-update-items",
         "list-items",
         "get-item",
         "import-github-url",
@@ -358,6 +360,119 @@ def test_update_item_cli_dry_run_reads_append_body_file_without_writing(tmp_path
             """
         ).fetchone()[0]
     assert title != "Updated from CLI"
+
+
+def test_bulk_update_items_cli_updates_multiple_items(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+    project_path = tmp_path / "projects" / "example.toml"
+    project_path.write_text(
+        project_path.read_text(encoding="utf-8") + "\n".join([
+            "",
+            "[custom_fields.priority]",
+            'label = "Priority"',
+            'type = "select"',
+            'options = ["low", "high"]',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        local_ids = [
+            row[0]
+            for row in conn.execute(
+                """
+                select local_id from items
+                where project_key = 'example' and kind = 'feature'
+                order by local_id
+                limit 2
+                """
+            ).fetchall()
+        ]
+
+    rc = asyncio.run(_cmd_bulk_update_items(
+        cfg_path,
+        "example",
+        local_ids,
+        action="update",
+        kind=None,
+        status="in_progress",
+        tags=["triaged"],
+        tag_mode="replace",
+        applies_to=["main"],
+        custom_field_options=["priority=high"],
+        reason="cli test",
+        dry_run=False,
+        output_format="json",
+    ))
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["requested_count"] == 2
+    assert payload["updated_count"] == 2
+    assert [item["local_id"] for item in payload["items"]] == local_ids
+    assert [item["status"] for item in payload["items"]] == [
+        "in_progress",
+        "in_progress",
+    ]
+    assert [item["tags"] for item in payload["items"]] == [
+        ["triaged"],
+        ["triaged"],
+    ]
+    assert [item["custom_fields"] for item in payload["items"]] == [
+        {"priority": "high"},
+        {"priority": "high"},
+    ]
+
+
+def test_bulk_update_items_cli_dry_run_without_writing(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+
+    rc = asyncio.run(_cmd_bulk_update_items(
+        cfg_path,
+        "example",
+        ["FEAT-0001"],
+        action="delete",
+        kind=None,
+        status=None,
+        tags=None,
+        tag_mode="add",
+        applies_to=None,
+        custom_field_options=[],
+        reason="cleanup",
+        dry_run=True,
+        output_format="json",
+    ))
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["action"] == "delete"
+    assert payload["local_ids"] == ["FEAT-0001"]
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        deleted_at = conn.execute(
+            """
+            select deleted_at from items
+            where project_key = 'example' and local_id = 'FEAT-0001'
+            """
+        ).fetchone()[0]
+    assert deleted_at is None
 
 
 def test_list_items_cli_prints_filtered_table(tmp_path, capsys):

@@ -125,9 +125,9 @@ Common causes:
 
 ## SQLite Migration Errors
 
-The `demo`, `serve`, `seed-demo`, `create-item`, `update-item`, `list-items`,
-`get-item`, and `import-github-url` commands run database migrations
-automatically. If you call
+The `demo`, `serve`, `seed-demo`, `create-item`, `update-item`,
+`bulk-update-items`, `list-items`, `get-item`, and `import-github-url` commands
+run database migrations automatically. If you call
 Alembic directly, use:
 
 ```bash

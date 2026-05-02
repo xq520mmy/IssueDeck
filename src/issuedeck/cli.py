@@ -237,6 +237,54 @@ def main(argv: list[str] | None = None) -> int:
         help="Output format after update",
     )
 
+    p_bulk = sub.add_parser(
+        "bulk-update-items",
+        help="Update, delete, or restore multiple local items",
+    )
+    p_bulk.add_argument("local_ids", nargs="+", help="Item local IDs, for example FEAT-0001")
+    p_bulk.add_argument("--config", default="server.toml")
+    p_bulk.add_argument("--project-key", required=True)
+    p_bulk.add_argument(
+        "--action",
+        choices=["update", "delete", "restore"],
+        default="update",
+    )
+    p_bulk.add_argument("--kind", default=None)
+    p_bulk.add_argument("--status", default=None)
+    p_bulk.add_argument(
+        "--tag",
+        action="append",
+        default=None,
+        help="Tag to add/remove/replace; repeat for multiple tags",
+    )
+    p_bulk.add_argument(
+        "--tag-mode",
+        choices=["add", "remove", "replace"],
+        default="add",
+    )
+    p_bulk.add_argument(
+        "--applies-to",
+        action="append",
+        default=None,
+        metavar="BRANCH",
+        help="Replace target branches; repeat for multiple branches",
+    )
+    p_bulk.add_argument(
+        "--custom-field",
+        action="append",
+        default=[],
+        metavar="FIELD=VALUE",
+        help="Set or clear a project custom field; use FIELD= to clear",
+    )
+    p_bulk.add_argument("--reason", default="cli bulk update")
+    p_bulk.add_argument("--dry-run", action="store_true", help="Print the bulk payload only")
+    p_bulk.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format after bulk update",
+    )
+
     p_list = sub.add_parser("list-items", help="List project items from the local database")
     p_list.add_argument("--config", default="server.toml")
     p_list.add_argument("--project-key", required=True)
@@ -562,6 +610,22 @@ def main(argv: list[str] | None = None) -> int:
             custom_field_options=args.custom_field,
             external_link_options=args.external_link,
             clear_external_links=args.clear_external_links,
+            dry_run=args.dry_run,
+            output_format=args.format,
+        ))
+    if args.cmd == "bulk-update-items":
+        return asyncio.run(_cmd_bulk_update_items(
+            Path(args.config),
+            args.project_key,
+            args.local_ids,
+            action=args.action,
+            kind=args.kind,
+            status=args.status,
+            tags=args.tag,
+            tag_mode=args.tag_mode,
+            applies_to=args.applies_to,
+            custom_field_options=args.custom_field,
+            reason=args.reason,
             dry_run=args.dry_run,
             output_format=args.format,
         ))
@@ -1257,6 +1321,97 @@ async def _cmd_update_item(
 
     print(item.local_id)
     print(f"[ok] updated {item.local_id}", file=sys.stderr)
+    return 0
+
+
+async def _cmd_bulk_update_items(
+    config_path: Path,
+    project_key: str,
+    local_ids: list[str],
+    *,
+    action: str,
+    kind: str | None,
+    status: str | None,
+    tags: list[str] | None,
+    tag_mode: str,
+    applies_to: list[str] | None,
+    custom_field_options: list[str],
+    reason: str,
+    dry_run: bool,
+    output_format: str,
+) -> int:
+    from pydantic import ValidationError
+
+    from issuedeck.core.db import make_engine, make_session_factory
+    from issuedeck.core.errors import IssueDeckError
+    from issuedeck.features.items.repo import ItemRepo
+    from issuedeck.features.items.schemas import BulkUpdateItemsRequest
+    from issuedeck.features.items.service import ItemService
+
+    try:
+        registry = _build_registry(config_path)
+        project = registry.project(project_key)
+        if kind is not None:
+            registry.validate_kind(project_key, kind)
+        if status is not None:
+            registry.validate_status(project_key, status)
+        if applies_to is not None:
+            for branch in applies_to:
+                registry.validate_branch(project_key, branch)
+        custom_fields = (
+            _parse_custom_field_assignments(
+                project,
+                custom_field_options,
+                require_required=False,
+            )
+            if custom_field_options
+            else None
+        )
+        req = BulkUpdateItemsRequest(
+            local_ids=local_ids,
+            action=action,
+            kind=kind,
+            status=status,
+            tags=tags,
+            tag_mode=tag_mode,
+            applies_to=applies_to,
+            custom_fields=custom_fields,
+            reason=reason,
+        )
+    except (ValidationError, ValueError, IssueDeckError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if dry_run:
+        print(req.model_dump_json(indent=2, exclude_none=True))
+        return 0
+
+    _upgrade_database(config_path)
+    db_path = registry.server.data_dir / "tracker.db"
+    engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_factory = make_session_factory(engine)
+    try:
+        async with session_factory() as session:
+            service = ItemService(ItemRepo(session), registry, session)
+            result = await service.bulk_update(project_key, req)
+    except IssueDeckError as exc:
+        print(f"{exc.code}: {exc.message}", file=sys.stderr)
+        return 2
+    finally:
+        await engine.dispose()
+
+    payload = result.model_dump(mode="json")
+    if output_format == "json":
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print(
+        f"[ok] {result.action} updated={result.updated_count} "
+        f"requested={result.requested_count}",
+        file=sys.stderr,
+    )
+    for item in result.items:
+        print(item.local_id)
     return 0
 
 

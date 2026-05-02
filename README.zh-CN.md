@@ -184,6 +184,19 @@ uv run issuedeck update-item FEAT-0001 \
 `update-item` 可替换标题、状态、正文、标签、分支、自定义字段和外部链接。
 需要移除全部外部链接时使用 `--clear-external-links`。
 
+导入后的批量整理可以直接更新多个事项：
+
+```bash
+uv run issuedeck bulk-update-items FEAT-0001 FEAT-0002 \
+  --config server.toml \
+  --project-key example \
+  --status in_progress \
+  --tag triaged \
+  --tag-mode replace
+```
+
+批量清理可用 `--action delete` 或 `--action restore`。批量更新也支持分支和自定义字段。
+
 不启动 Dashboard 也可以直接查看本地事项：
 
 ```bash

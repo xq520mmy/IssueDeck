@@ -63,6 +63,8 @@ listed in `CHANGELOG.md`.
   body files, JSON output, and dry-run previews.
 - Local CLI item updates with status, tags, branches, custom fields, external
   link replacement, body files, append-body support, JSON output, and dry-runs.
+- Local CLI bulk updates for status, tags, branches, custom fields, deletion,
+  and restore.
 - Local CLI item listing with REST-aligned filters and JSON output.
 - Local CLI item detail output for terminal-first triage.
 

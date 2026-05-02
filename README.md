@@ -282,6 +282,20 @@ uv run issuedeck update-item FEAT-0001 \
 and external links. Use `--clear-external-links` when a link set should be
 removed.
 
+For post-import cleanup, update many items at once:
+
+```bash
+uv run issuedeck bulk-update-items FEAT-0001 FEAT-0002 \
+  --config server.toml \
+  --project-key example \
+  --status in_progress \
+  --tag triaged \
+  --tag-mode replace
+```
+
+Set `--action delete` or `--action restore` for bulk cleanup. Bulk updates also
+support branch and custom-field changes.
+
 List local items without starting the dashboard:
 
 ```bash

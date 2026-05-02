@@ -15,6 +15,8 @@ versioning once public releases begin.
 - Added `issuedeck update-item` for local CLI item updates with status, tags,
   branches, custom fields, external link replacement, body files, append-body
   support, JSON output, and dry-run previews.
+- Added `issuedeck bulk-update-items` for local CLI bulk status, tag, branch,
+  custom-field, delete, and restore workflows.
 - Added `issuedeck list-items` for local CLI item listing with the same kind,
   status, tag, branch, relationship, custom-field, and deletion filters as the
   REST list API.
