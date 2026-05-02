@@ -55,6 +55,7 @@ WebhookEvent = Literal[
     "item.restored",
 ]
 NotificationProvider = Literal["slack", "discord"]
+EmailSecurity = Literal["starttls", "ssl", "none"]
 
 DEFAULT_WEBHOOK_EVENTS: list[WebhookEvent] = [
     "item.created",
@@ -97,6 +98,40 @@ class NotificationConfig(BaseModel):
         return self
 
 
+class EmailNotificationConfig(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    smtp_host: str = Field(min_length=1, max_length=255)
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_security: EmailSecurity = "starttls"
+    username: str | None = Field(default=None, min_length=1, max_length=255)
+    password: SecretStr | None = None
+    from_email: str = Field(min_length=1, max_length=255)
+    to_emails: list[str] = Field(min_length=1)
+    subject_prefix: str = Field(default="[IssueDeck]", min_length=1, max_length=80)
+    events: list[WebhookEvent] = Field(default_factory=lambda: DEFAULT_WEBHOOK_EVENTS.copy())
+    retries: int = Field(default=3, ge=0, le=10)
+    timeout_seconds: float = Field(default=10.0, gt=0, le=60)
+    backoff_seconds: float = Field(default=0.5, ge=0, le=10)
+
+    @model_validator(mode="after")
+    def _validate_email_notification(self) -> EmailNotificationConfig:
+        if not self.events:
+            raise ValueError("email notification events must not be empty")
+        if bool(self.username) != bool(self.password):
+            raise ValueError("email notification username and password must be set together")
+        values = [
+            self.smtp_host,
+            self.from_email,
+            self.subject_prefix,
+            *self.to_emails,
+        ]
+        if any("\r" in value or "\n" in value for value in values):
+            raise ValueError("email notification fields must not contain newlines")
+        if any(not email.strip() for email in self.to_emails):
+            raise ValueError("email notification recipients must not be empty")
+        return self
+
+
 class ServerConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8765
@@ -109,6 +144,7 @@ class ServerConfig(BaseModel):
     sqlite: SqliteConfig = SqliteConfig()
     webhooks: list[WebhookConfig] = Field(default_factory=list)
     notifications: list[NotificationConfig] = Field(default_factory=list)
+    email_notifications: list[EmailNotificationConfig] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -158,6 +194,15 @@ class ServerConfig(BaseModel):
         for notification in self.notifications:
             if notification.name in seen_names:
                 raise ValueError(f"duplicate notification name '{notification.name}'")
+            seen_names.add(notification.name)
+        return self
+
+    @model_validator(mode="after")
+    def _validate_email_notifications(self) -> ServerConfig:
+        seen_names: set[str] = set()
+        for notification in self.email_notifications:
+            if notification.name in seen_names:
+                raise ValueError(f"duplicate email notification name '{notification.name}'")
             seen_names.add(notification.name)
         return self
 

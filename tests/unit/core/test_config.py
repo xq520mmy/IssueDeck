@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from issuedeck.core.config import (
     ConfigRegistry,
+    EmailNotificationConfig,
     NotificationConfig,
     ServerConfig,
     WebhookConfig,
@@ -185,6 +186,72 @@ def test_server_config_rejects_duplicate_notification_names():
                     url="https://discord.com/api/webhooks/123/two",
                 ),
             ],
+        )
+
+
+def test_server_config_supports_email_notifications(tmp_path):
+    cfg_path = tmp_path / "server.toml"
+    cfg_path.write_text(
+        "\n".join([
+            'api_token = "legacy-admin"',
+            "",
+            "[[email_notifications]]",
+            'name = "ops-inbox"',
+            'smtp_host = "smtp.example.com"',
+            "smtp_port = 587",
+            'smtp_security = "starttls"',
+            'username = "issuebot"',
+            'password = "smtp-secret"',
+            'from_email = "issuebot@example.com"',
+            'to_emails = ["ops@example.com", "dev@example.com"]',
+            'subject_prefix = "[IssueDeck Ops]"',
+            'events = ["item.shipped"]',
+            "retries = 2",
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    cfg = load_server_config(cfg_path)
+
+    notification = cfg.email_notifications[0]
+    assert notification.name == "ops-inbox"
+    assert notification.smtp_host == "smtp.example.com"
+    assert notification.to_emails == ["ops@example.com", "dev@example.com"]
+    assert notification.password is not None
+    assert notification.password.get_secret_value() == "smtp-secret"
+    assert notification.events == ["item.shipped"]
+
+
+def test_server_config_rejects_duplicate_email_notification_names():
+    with pytest.raises(ValidationError, match="duplicate email notification name"):
+        ServerConfig(
+            api_token="legacy-admin",
+            email_notifications=[
+                EmailNotificationConfig(
+                    name="ops-inbox",
+                    smtp_host="smtp.example.com",
+                    from_email="issuebot@example.com",
+                    to_emails=["ops@example.com"],
+                ),
+                EmailNotificationConfig(
+                    name="ops-inbox",
+                    smtp_host="smtp.example.com",
+                    from_email="issuebot@example.com",
+                    to_emails=["dev@example.com"],
+                ),
+            ],
+        )
+
+
+def test_email_notification_auth_requires_username_and_password():
+    with pytest.raises(ValidationError, match="username and password"):
+        EmailNotificationConfig(
+            name="ops-inbox",
+            smtp_host="smtp.example.com",
+            username="issuebot",
+            from_email="issuebot@example.com",
+            to_emails=["ops@example.com"],
         )
 
 

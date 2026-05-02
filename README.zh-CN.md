@@ -69,7 +69,7 @@ Dashboard CSV、JSON 和 Markdown 上传见
 - CSV、JSON 和 Markdown task-list 导入：可从 Dashboard 或 CLI 把 tracker 导出、
   `TODO.md` 和 GitHub checklist 转成 IssueDeck item。
 - Activity Timeline：自动记录生命周期事件，也支持手动评论。
-- Slack 和 Discord 生命周期通知：把创建、更新、发布等事项变化同步到团队频道。
+- Slack、Discord 和邮件生命周期通知：把创建、更新、发布等事项变化同步给团队。
 - Dashboard 工作队列：最近更新、待办、进行中、被阻塞、待发布、已完成、已删除。
 - Dashboard 批量分诊：多选事项后批量更新状态、类型、标签、分支、删除和恢复。
 - Dashboard 导入历史：重新打开最近的 GitHub、CSV、JSON 和 Markdown 导入批次。
@@ -183,7 +183,7 @@ Basic issue deck、Agent workflow、Software team 等起步模板生成项目配
 IssueDeck 支持可选的签名生命周期 Webhooks，可以在事项创建、更新、发布、删除、
 恢复时通知外部自动化系统。配置示例和签名校验方式见
 [生命周期 Webhooks](docs/webhooks.zh-CN.md)，同一篇文档也包含 Slack 和 Discord
-团队通知配置。FastAPI、Flask、Node/Express 的 receiver 示例见
+以及邮件团队通知配置。FastAPI、Flask、Node/Express 的 receiver 示例见
 [Webhook Receiver 示例](docs/webhook-receivers.zh-CN.md)。
 
 ## GitHub URL Helper

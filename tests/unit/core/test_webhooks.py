@@ -1,13 +1,16 @@
 import hmac
 import json
+import smtplib
 
 import httpx
 
-from issuedeck.core.config import NotificationConfig, WebhookConfig
+from issuedeck.core.config import EmailNotificationConfig, NotificationConfig, WebhookConfig
 from issuedeck.core.webhooks import (
+    build_email_notification_message,
     build_notification_payload,
     build_webhook_headers,
     build_webhook_payload,
+    deliver_email_notification,
     deliver_notification,
     deliver_webhook,
     encode_webhook_body,
@@ -161,3 +164,75 @@ async def test_deliver_notification_retries_until_success():
     assert len(seen) == 2
     assert seen[0].headers["X-IssueDeck-Event"] == "item.updated"
     assert json.loads(seen[1].content)["allowed_mentions"] == {"parse": []}
+
+
+def test_email_notification_message_shape():
+    notification = EmailNotificationConfig(
+        name="ops-inbox",
+        smtp_host="smtp.example.com",
+        from_email="issuebot@example.com",
+        to_emails=["ops@example.com", "dev@example.com"],
+        subject_prefix="[IssueDeck Ops]",
+    )
+
+    message = build_email_notification_message(
+        notification,
+        "item.shipped",
+        _summary(),
+    )
+
+    assert message["Subject"].startswith("[IssueDeck Ops] FEAT-0001 shipped")
+    assert message["From"] == "issuebot@example.com"
+    assert message["To"] == "ops@example.com, dev@example.com"
+    assert message["X-IssueDeck-Event"] == "item.shipped"
+    assert "Webhook payload" in message.get_content()
+
+
+async def test_deliver_email_notification_retries_until_success():
+    attempts: list[object] = []
+    sent_messages = []
+
+    class FakeSmtp:
+        def __init__(self, host: str, port: int, *, timeout: float):
+            attempts.append((host, port, timeout))
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def starttls(self):
+            attempts.append("starttls")
+
+        def login(self, username: str, password: str):
+            attempts.append(("login", username, password))
+
+        def send_message(self, message):
+            sent_messages.append(message)
+            if len(sent_messages) == 1:
+                raise smtplib.SMTPException("temporary failure")
+
+    notification = EmailNotificationConfig(
+        name="ops-inbox",
+        smtp_host="smtp.example.com",
+        username="issuebot",
+        password="smtp-secret",
+        from_email="issuebot@example.com",
+        to_emails=["ops@example.com"],
+        retries=1,
+        backoff_seconds=0,
+    )
+
+    delivered = await deliver_email_notification(
+        notification,
+        "item.updated",
+        _summary(),
+        smtp_factory=FakeSmtp,
+    )
+
+    assert delivered is True
+    assert len(sent_messages) == 2
+    assert attempts.count("starttls") == 2
+    assert ("login", "issuebot", "smtp-secret") in attempts
+    assert sent_messages[1]["X-IssueDeck-Event"] == "item.updated"

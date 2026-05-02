@@ -56,6 +56,30 @@ Discord notifications send `{"content": "...", "allowed_mentions": {"parse":
 []}}` so issue titles cannot accidentally ping a channel. Notification URLs are
 secrets; store them in local deployment config, not in public repositories.
 
+## Email Notifications
+
+Use `[[email_notifications]]` for teams that prefer inbox or ops-mail workflows:
+
+```toml
+[[email_notifications]]
+name = "ops-inbox"
+smtp_host = "smtp.example.com"
+smtp_port = 587
+smtp_security = "starttls" # starttls, ssl, or none
+username = "issuebot"
+password = "replace-with-smtp-password"
+from_email = "issuebot@example.com"
+to_emails = ["ops@example.com", "dev@example.com"]
+subject_prefix = "[IssueDeck]"
+events = ["item.created", "item.shipped"]
+retries = 3
+timeout_seconds = 10
+backoff_seconds = 0.5
+```
+
+`username` and `password` are optional, but must be set together when SMTP auth
+is required. Passwords are secrets; keep them in deployment-local config.
+
 ## Events
 
 - `item.created`

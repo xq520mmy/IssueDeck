@@ -55,6 +55,30 @@ Slack 通知会向 incoming webhook URL 发送 `{"text": "..."}`。Discord 通�
 发送 `{"content": "...", "allowed_mentions": {"parse": []}}`，避免事项标题意外
 触发频道提醒。通知 URL 属于 secret，应该放在本地部署配置中，不要提交到公开仓库。
 
+## 邮件通知
+
+如果团队更依赖邮箱或运维邮件流，可以使用 `[[email_notifications]]`：
+
+```toml
+[[email_notifications]]
+name = "ops-inbox"
+smtp_host = "smtp.example.com"
+smtp_port = 587
+smtp_security = "starttls" # starttls、ssl 或 none
+username = "issuebot"
+password = "replace-with-smtp-password"
+from_email = "issuebot@example.com"
+to_emails = ["ops@example.com", "dev@example.com"]
+subject_prefix = "[IssueDeck]"
+events = ["item.created", "item.shipped"]
+retries = 3
+timeout_seconds = 10
+backoff_seconds = 0.5
+```
+
+`username` 和 `password` 是可选项，但 SMTP 需要认证时必须同时设置。密码属于
+secret，应该只放在部署本地配置里。
+
 ## 事件
 
 - `item.created`

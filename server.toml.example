@@ -56,6 +56,18 @@ log_level = "info"
 # provider = "discord"
 # url = "https://discord.com/api/webhooks/1234567890/replace-with-token"
 # events = ["item.shipped"]
+#
+# [[email_notifications]]
+# name = "ops-inbox"
+# smtp_host = "smtp.example.com"
+# smtp_port = 587
+# smtp_security = "starttls" # starttls, ssl, or none
+# username = "issuebot"
+# password = "replace-with-smtp-password"
+# from_email = "issuebot@example.com"
+# to_emails = ["ops@example.com"]
+# subject_prefix = "[IssueDeck]"
+# events = ["item.created", "item.shipped"]
 
 [sqlite]
 wal_mode = true

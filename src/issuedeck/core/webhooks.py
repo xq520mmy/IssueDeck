@@ -7,15 +7,22 @@ import hashlib
 import hmac
 import json
 import logging
+import smtplib
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
+from email.message import EmailMessage
 from typing import Any
 from uuid import uuid4
 
 import httpx
 from pydantic import BaseModel
 
-from issuedeck.core.config import NotificationConfig, WebhookConfig, WebhookEvent
+from issuedeck.core.config import (
+    EmailNotificationConfig,
+    NotificationConfig,
+    WebhookConfig,
+    WebhookEvent,
+)
 
 log = logging.getLogger("issuedeck.webhooks")
 
@@ -88,6 +95,27 @@ def build_notification_payload(
             "allowed_mentions": {"parse": []},
         }
     raise ValueError(f"unsupported notification provider: {notification.provider}")
+
+
+def build_email_notification_message(
+    notification: EmailNotificationConfig,
+    event: WebhookEvent,
+    item: BaseModel,
+) -> EmailMessage:
+    data = item.model_dump(mode="json")
+    item_id = _compact_text(data.get("local_id") or "item", limit=80)
+    title = _compact_text(data.get("title") or "Untitled item", limit=120)
+    verb = _notification_event_label(event)
+    message = EmailMessage()
+    message["Subject"] = _compact_text(
+        f"{notification.subject_prefix} {item_id} {verb}: {title}",
+        limit=180,
+    )
+    message["From"] = notification.from_email
+    message["To"] = ", ".join(notification.to_emails)
+    message["X-IssueDeck-Event"] = event
+    message.set_content(build_notification_text(event, item) + "\n")
+    return message
 
 
 def encode_webhook_body(payload: dict[str, Any]) -> bytes:
@@ -212,14 +240,78 @@ async def deliver_notification(
     return False
 
 
+def _send_email_notification(
+    notification: EmailNotificationConfig,
+    message: EmailMessage,
+    smtp_factory: Callable[..., Any],
+    smtp_ssl_factory: Callable[..., Any],
+) -> None:
+    factory = (
+        smtp_ssl_factory
+        if notification.smtp_security == "ssl"
+        else smtp_factory
+    )
+    with factory(
+        notification.smtp_host,
+        notification.smtp_port,
+        timeout=notification.timeout_seconds,
+    ) as smtp:
+        if notification.smtp_security == "starttls":
+            smtp.starttls()
+        if notification.username and notification.password:
+            smtp.login(
+                notification.username,
+                notification.password.get_secret_value(),
+            )
+        smtp.send_message(message)
+
+
+async def deliver_email_notification(
+    notification: EmailNotificationConfig,
+    event: WebhookEvent,
+    item: BaseModel,
+    *,
+    smtp_factory: Callable[..., Any] = smtplib.SMTP,
+    smtp_ssl_factory: Callable[..., Any] = smtplib.SMTP_SSL,
+    sleep: SleepFn = asyncio.sleep,
+) -> bool:
+    message = build_email_notification_message(notification, event, item)
+    attempts = notification.retries + 1
+
+    for attempt in range(attempts):
+        try:
+            await asyncio.to_thread(
+                _send_email_notification,
+                notification,
+                message,
+                smtp_factory,
+                smtp_ssl_factory,
+            )
+            return True
+        except (OSError, smtplib.SMTPException) as exc:
+            log.warning(
+                "email notification '%s' delivery failed for %s: %s",
+                notification.name,
+                event,
+                exc.__class__.__name__,
+            )
+
+        if attempt < attempts - 1 and notification.backoff_seconds > 0:
+            await sleep(notification.backoff_seconds * (2**attempt))
+
+    return False
+
+
 class WebhookDispatcher:
     def __init__(
         self,
         webhooks: list[WebhookConfig],
         notifications: list[NotificationConfig] | None = None,
+        email_notifications: list[EmailNotificationConfig] | None = None,
     ) -> None:
         self._webhooks = webhooks
         self._notifications = notifications or []
+        self._email_notifications = email_notifications or []
 
     def emit(self, event: WebhookEvent, item: BaseModel) -> None:
         targets = [webhook for webhook in self._webhooks if event in webhook.events]
@@ -228,7 +320,12 @@ class WebhookDispatcher:
             for notification in self._notifications
             if event in notification.events
         ]
-        if not targets and not notification_targets:
+        email_targets = [
+            notification
+            for notification in self._email_notifications
+            if event in notification.events
+        ]
+        if not targets and not notification_targets and not email_targets:
             return
         webhook_payload = build_webhook_payload(event, item)
         for webhook in targets:
@@ -237,6 +334,10 @@ class WebhookDispatcher:
             payload = build_notification_payload(notification, event, item)
             asyncio.create_task(
                 self._deliver_notification_safe(notification, payload, event)
+            )
+        for notification in email_targets:
+            asyncio.create_task(
+                self._deliver_email_notification_safe(notification, event, item)
             )
 
     async def _deliver_safe(
@@ -260,6 +361,20 @@ class WebhookDispatcher:
             log.warning(
                 "%s notification '%s' exhausted retries for %s",
                 notification.provider,
+                notification.name,
+                event,
+            )
+
+    async def _deliver_email_notification_safe(
+        self,
+        notification: EmailNotificationConfig,
+        event: WebhookEvent,
+        item: BaseModel,
+    ) -> None:
+        delivered = await deliver_email_notification(notification, event, item)
+        if not delivered:
+            log.warning(
+                "email notification '%s' exhausted retries for %s",
                 notification.name,
                 event,
             )

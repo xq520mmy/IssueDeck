@@ -102,6 +102,7 @@ def create_app(server_toml: Path | str) -> FastAPI:
     app.state.webhook_dispatcher = WebhookDispatcher(
         server_cfg.webhooks,
         server_cfg.notifications,
+        server_cfg.email_notifications,
     )
 
     install_error_handlers(app)
