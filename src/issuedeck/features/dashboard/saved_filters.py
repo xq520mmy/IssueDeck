@@ -124,6 +124,25 @@ def normalize_filter_params(params: dict[str, object]) -> dict[str, object]:
     if include_deleted in (True, "true", "True", "1", "on"):
         normalized["include_deleted"] = True
 
+    custom_fields = params.get("custom_fields")
+    if isinstance(custom_fields, dict):
+        clean_custom_fields: dict[str, str | bool | int | float] = {}
+        for key, value in custom_fields.items():
+            if not isinstance(key, str):
+                continue
+            clean_key = key.strip()
+            if not clean_key:
+                continue
+            if isinstance(value, bool | int | float):
+                clean_custom_fields[clean_key] = value
+                continue
+            if isinstance(value, str):
+                clean_value = value.strip()
+                if clean_value:
+                    clean_custom_fields[clean_key] = clean_value
+        if clean_custom_fields:
+            normalized["custom_fields"] = clean_custom_fields
+
     return normalized
 
 
@@ -140,6 +159,7 @@ def filter_params_from_form(
     applies_to: list[str] | None,
     relation_type: list[str] | None,
     include_deleted: bool,
+    custom_fields: dict[str, object] | None = None,
 ) -> dict[str, object]:
     return normalize_filter_params({
         "view": view,
@@ -148,6 +168,7 @@ def filter_params_from_form(
         "tag": tag,
         "applies_to": applies_to,
         "relation_type": relation_type,
+        "custom_fields": custom_fields,
         "include_deleted": include_deleted,
     })
 

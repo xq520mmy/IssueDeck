@@ -97,3 +97,16 @@ Available presets are `github`, `linear`, `jira`, and `generic`.
 Use `--field-alias` for custom JSON keys and `--status-map` for source workflow
 states that do not match your project config. Unknown statuses fail the import
 before any rows are written.
+
+Project custom fields use the `custom.<field_key>` alias prefix:
+
+```bash
+uv run issuedeck import-json backlog.json \
+  --config server.toml \
+  --project-key example \
+  --field-alias custom.priority=priority \
+  --field-alias custom.customer_impact=impact
+```
+
+Custom field values are validated against the project config during preview and
+import.

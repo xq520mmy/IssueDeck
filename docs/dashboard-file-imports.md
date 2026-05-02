@@ -33,7 +33,9 @@ be reopened later.
   `github`, `jira`, `linear`, and `generic`.
 - `Field aliases`: one `FIELD=alias[,alias...]` mapping per line. Supported
   fields are `title`, `body`, `kind`, `status`, `tags`, `applies_to`,
-  `external_links`, `source_id`, and `source_url`.
+  `external_links`, `source_id`, and `source_url`. Use
+  `custom.<field_key>=alias` for project custom fields, such as
+  `custom.priority=Priority`.
 - `Status map`: one `SOURCE=TARGET` mapping per line, such as `closed=done`.
 
 ## Markdown Options

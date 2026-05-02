@@ -50,11 +50,13 @@ listed in `CHANGELOG.md`.
   changes.
 - Project-defined custom fields for item metadata, dashboard forms, exports,
   and API payloads.
+- Custom-field list filters and CSV/JSON import mappings.
 
 ## Near Term
 
-- Add list filters and import mappings for custom fields.
 - Explore richer third-party extension points beyond project templates.
+- Add range and presence filters for numeric/text custom fields if real users
+  need more than exact-match filters.
 
 ## Later
 

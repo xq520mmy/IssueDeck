@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Query, Request, Response, status
 
+from issuedeck.features.items.custom_fields import parse_custom_field_filter_options
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
     BulkUpdateItemsRequest,
@@ -26,6 +27,7 @@ STATUS_QUERY = Query(None, alias="status")
 APPLIES_TO_QUERY = Query(None)
 TAG_QUERY = Query(None)
 RELATION_TYPE_QUERY = Query(None)
+CUSTOM_FIELD_QUERY = Query(None, alias="custom_field")
 
 
 def _service(request: Request):
@@ -63,6 +65,7 @@ async def list_items(
     shipped_in_version: str | None = None,
     tag: list[str] | None = TAG_QUERY,
     relation_type: list[str] | None = RELATION_TYPE_QUERY,
+    custom_field: list[str] | None = CUSTOM_FIELD_QUERY,
     since: str | None = None,
     include_deleted: bool = False,
     only_deleted: bool = False,
@@ -71,10 +74,12 @@ async def list_items(
 ):
     svc, session = _service(request)
     try:
+        project = request.app.state.registry.project(project_key)
         return await svc.list_items(
             project_key, kinds=kind, statuses=status_, applies_to=applies_to,
             shipped_in_branch=shipped_in_branch,
             shipped_in_version=shipped_in_version, tags=tag,
+            custom_fields=parse_custom_field_filter_options(project, custom_field),
             relationship_types=relation_type, since=since,
             include_deleted=include_deleted, only_deleted=only_deleted,
             limit=limit, after=after,

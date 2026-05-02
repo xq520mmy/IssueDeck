@@ -81,6 +81,19 @@ uv run issuedeck import-csv backlog.csv \
 可映射字段包括 `title`、`body`、`kind`、`status`、`tags`、`applies_to`、
 `external_links`、`source_id` 和 `source_url`。
 
+项目自定义字段使用 `custom.<field_key>` 前缀：
+
+```bash
+uv run issuedeck import-csv backlog.csv \
+  --config server.toml \
+  --project-key example \
+  --field-alias custom.priority=Priority \
+  --field-alias custom.estimate=Points
+```
+
+导入写入前会按照项目配置校验自定义字段，因此必填字段、select 选项、数字和
+checkbox 与 API 创建事项时保持一致。
+
 ## 状态映射
 
 IssueDeck 会用项目配置校验导入后的 status。`open`、`closed`、`in progress`

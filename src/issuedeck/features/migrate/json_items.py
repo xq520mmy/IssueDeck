@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from issuedeck.core.config import ConfigRegistry
+from issuedeck.features.items.custom_fields import (
+    custom_fields_to_json,
+    normalize_custom_fields,
+)
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.migrate.csv_items import (
+    _custom_field_key,
     _dedupe,
     _default_statuses,
     _external_links_for_values,
@@ -36,6 +41,7 @@ class JsonItemMapping:
     external_links: tuple[str, ...] = ("external_links", "links", "refs", "references")
     source_id: tuple[str, ...] = ("source_id", "id", "key", "identifier", "issue_key", "number")
     source_url: tuple[str, ...] = ("source_url", "html_url", "web_url", "url")
+    custom_fields: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
     @classmethod
     def from_alias_options(
@@ -46,6 +52,10 @@ class JsonItemMapping:
     ) -> JsonItemMapping:
         mapping = cls()
         aliases_by_field = {field: list(getattr(mapping, field)) for field in _MAPPABLE_FIELDS}
+        custom_fields: dict[str, list[str]] = {
+            key: list(aliases)
+            for key, aliases in mapping.custom_fields.items()
+        }
 
         for preset in presets or []:
             preset_key = preset.strip().lower()
@@ -56,10 +66,10 @@ class JsonItemMapping:
                 raise ValueError(
                     f"unknown JSON preset '{preset}'; expected one of: {expected}"
                 ) from exc
-            for field, aliases in preset_aliases.items():
+            for target_field, aliases in preset_aliases.items():
                 for alias in aliases:
-                    if alias not in aliases_by_field[field]:
-                        aliases_by_field[field].append(alias)
+                    if alias not in aliases_by_field[target_field]:
+                        aliases_by_field[target_field].append(alias)
 
         for option in options or []:
             if "=" not in option:
@@ -68,7 +78,12 @@ class JsonItemMapping:
             field = field.strip()
             if field == "id":
                 field = "source_id"
-            if field not in aliases_by_field:
+            custom_field_key = _custom_field_key(field)
+            if custom_field_key is not None:
+                target_aliases = custom_fields.setdefault(custom_field_key, [])
+            elif field in aliases_by_field:
+                target_aliases = aliases_by_field[field]
+            else:
                 expected = ", ".join([
                     "title",
                     "body",
@@ -79,14 +94,18 @@ class JsonItemMapping:
                     "external_links",
                     "source_id",
                     "source_url",
+                    "custom.<field_key>",
                 ])
                 raise ValueError(f"unknown JSON field '{field}'; expected one of: {expected}")
             for alias in raw_aliases.split(","):
                 alias = alias.strip()
-                if alias and alias not in aliases_by_field[field]:
-                    aliases_by_field[field].append(alias)
+                if alias and alias not in target_aliases:
+                    target_aliases.append(alias)
 
-        return cls(**{field: tuple(aliases) for field, aliases in aliases_by_field.items()})
+        return cls(
+            **{field: tuple(aliases) for field, aliases in aliases_by_field.items()},
+            custom_fields={key: tuple(aliases) for key, aliases in custom_fields.items()},
+        )
 
     @classmethod
     def available_presets(cls) -> tuple[str, ...]:
@@ -154,6 +173,7 @@ class JsonImportRow:
     tags: list[str]
     applies_to: list[str]
     external_links: list[dict[str, str | None]]
+    custom_fields: dict[str, object]
     source_id: str
     source_url: str
     object_number: int
@@ -167,6 +187,7 @@ class JsonImportReport:
     items_written: int = 0
     status_mapped: int = 0
     external_links: int = 0
+    custom_fields: int = 0
 
 
 def parse_json_items(
@@ -211,6 +232,7 @@ def parse_json_items(
             tags=_field_list(obj, mapping.tags),
             applies_to=_field_list(obj, mapping.applies_to),
             external_links=external_links,
+            custom_fields=_custom_fields_for_object(obj, mapping.custom_fields),
             source_id=_field_text(obj, mapping.source_id),
             source_url=source_url,
             object_number=object_number,
@@ -218,6 +240,7 @@ def parse_json_items(
 
     report.items_planned = len(rows)
     report.external_links = sum(len(row.external_links) for row in rows)
+    report.custom_fields = sum(len(row.custom_fields) for row in rows)
     return rows, report
 
 
@@ -253,7 +276,7 @@ async def import_json_items(
         registry.validate_status(project_key, target)
 
     rows, report = parse_json_items(source, mapping=mapping)
-    prepared: list[tuple[JsonImportRow, str, str, list[str]]] = []
+    prepared: list[tuple[JsonImportRow, str, str, list[str], dict[str, object]]] = []
     for row in rows:
         row_kind = _resolve_kind(row.kind, project, default_kind=kind, row_number=row.object_number)
         row_status, was_mapped = _resolve_status(
@@ -272,13 +295,14 @@ async def import_json_items(
         )
         if was_mapped:
             report.status_mapped += 1
-        prepared.append((row, row_kind, row_status, row_branches))
+        row_custom_fields = normalize_custom_fields(project, row.custom_fields)
+        prepared.append((row, row_kind, row_status, row_branches, row_custom_fields))
 
     if dry_run:
         return report
 
     repo = ItemRepo(db)
-    for row, row_kind, row_status, row_branches in prepared:
+    for row, row_kind, row_status, row_branches, row_custom_fields in prepared:
         kind_cfg = registry.validate_kind(project_key, row_kind)
         local_id = await repo.next_local_id(
             project_key,
@@ -295,6 +319,7 @@ async def import_json_items(
             body=_row_body(row, source),
             tags=_dedupe(["json", *(tags or []), *row.tags]),
             applies_to=row_branches,
+            custom_fields_json=custom_fields_to_json(row_custom_fields),
             external_links=row.external_links,
         )
         report.items_written += 1
@@ -366,6 +391,18 @@ def _field_value(obj: dict[str, Any], aliases: tuple[str, ...]) -> object | None
         if key is not None:
             return obj.get(key)
     return None
+
+
+def _custom_fields_for_object(
+    obj: dict[str, Any],
+    custom_field_aliases: dict[str, tuple[str, ...]],
+) -> dict[str, object]:
+    values: dict[str, object] = {}
+    for field_key, aliases in custom_field_aliases.items():
+        value = _field_value(obj, aliases)
+        if value not in (None, "", [], {}):
+            values[field_key] = value
+    return values
 
 
 def _json_value_strings(value: object) -> list[str]:

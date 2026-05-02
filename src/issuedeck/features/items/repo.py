@@ -7,6 +7,7 @@ lands atomically.
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 
 from sqlalchemy import Integer, delete, func, select, update
@@ -242,6 +243,7 @@ class ItemRepo:
         shipped_in_version: str | None = None,
         tags: list[str] | None = None,
         relationship_types: list[str] | None = None,
+        custom_fields: dict[str, object] | None = None,
         since: str | None = None,
         include_deleted: bool = False,
         only_deleted: bool = False,
@@ -266,6 +268,12 @@ class ItemRepo:
             for t in tags:
                 stmt = stmt.where(
                     Item.pk.in_(select(ItemTag.item_pk).where(ItemTag.tag == t))
+                )
+        if custom_fields:
+            for key, value in custom_fields.items():
+                stmt = stmt.where(
+                    func.json_extract(Item.custom_fields_json, _json_path(key))
+                    == _json_value(value)
                 )
         if applies_to:
             stmt = stmt.where(
@@ -313,3 +321,13 @@ class ItemRepo:
 
 def _iso_now() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _json_path(key: str) -> str:
+    return f"$.{json.dumps(key)}"
+
+
+def _json_value(value: object) -> object:
+    if isinstance(value, bool):
+        return 1 if value else 0
+    return value

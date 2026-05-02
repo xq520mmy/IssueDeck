@@ -89,6 +89,20 @@ uv run issuedeck import-csv backlog.csv \
 Accepted fields are `title`, `body`, `kind`, `status`, `tags`, `applies_to`,
 `external_links`, `source_id`, and `source_url`.
 
+Project custom fields use the `custom.<field_key>` prefix:
+
+```bash
+uv run issuedeck import-csv backlog.csv \
+  --config server.toml \
+  --project-key example \
+  --field-alias custom.priority=Priority \
+  --field-alias custom.estimate=Points
+```
+
+Custom field values are validated against the project config before any rows are
+written, so required fields, select options, numbers, and checkboxes behave the
+same as API-created items.
+
 ## Status Mapping
 
 IssueDeck validates imported statuses against the project config. Common source

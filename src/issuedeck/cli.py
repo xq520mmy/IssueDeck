@@ -278,7 +278,7 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         default=[],
         metavar="FIELD=ALIAS[,ALIAS...]",
-        help="Add CSV column aliases, e.g. title=Issue, status=Workflow",
+        help="Add CSV column aliases, e.g. title=Issue, custom.priority=Priority",
     )
     p_csv.add_argument(
         "--status-map",
@@ -329,7 +329,7 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         default=[],
         metavar="FIELD=ALIAS[,ALIAS...]",
-        help="Add JSON field aliases, e.g. title=Issue, status=Workflow",
+        help="Add JSON field aliases, e.g. title=Issue, custom.priority=priority",
     )
     p_json.add_argument(
         "--status-map",
@@ -1000,6 +1000,7 @@ async def _cmd_import_csv(
                 f"planned={report.items_planned} "
                 f"written={report.items_written} "
                 f"status_mapped={report.status_mapped} "
+                f"custom_fields={report.custom_fields} "
                 f"external_links={report.external_links}",
                 file=sys.stderr,
             )
@@ -1068,6 +1069,7 @@ async def _cmd_import_json(
                 f"planned={report.items_planned} "
                 f"written={report.items_written} "
                 f"status_mapped={report.status_mapped} "
+                f"custom_fields={report.custom_fields} "
                 f"external_links={report.external_links}",
                 file=sys.stderr,
             )

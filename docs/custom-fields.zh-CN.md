@@ -58,11 +58,32 @@ type = "url"
 
 未知字段、非法 select 选项、非数字 number 值都会返回 `invalid_custom_field`。
 
+列表 API 可以通过重复的 `custom_field=FIELD=VALUE` 查询参数筛选自定义字段：
+
+```bash
+curl \
+  -H "Authorization: Bearer $ISSUEDECK_API_TOKEN" \
+  "http://127.0.0.1:8775/api/v1/projects/example/items?custom_field=priority=high"
+```
+
 ## Dashboard
 
 事项创建/编辑表单会自动渲染配置好的自定义字段，提交后的值会展示在事项详情页。
+列表筛选面板也会渲染配置好的自定义字段，因此保存筛选可以包含 `priority=high`
+或 `customer_impact=true` 这类条件。
 
-## 当前范围
+## 导入
 
-自定义字段现在会被存储和导出，但还不能在列表视图中搜索、筛选，也暂未从
-CSV/JSON/Markdown 导入源自动映射。
+CSV 和 JSON 导入可以通过 `custom.<field_key>=alias` 字段别名，把来源列或对象
+字段映射到项目自定义字段：
+
+```bash
+uv run issuedeck import-csv backlog.csv \
+  --config server.toml \
+  --project-key example \
+  --field-alias custom.priority=Priority \
+  --field-alias custom.estimate=Points
+```
+
+Dashboard 文件导入表单也支持同样的别名语法。Markdown 任务列表没有结构化字段，
+因此不会映射自定义字段。

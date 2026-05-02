@@ -28,7 +28,8 @@ Dashboard 可以直接导入 CSV、JSON 和 Markdown 任务列表文件，不需
 - `预设`: 常见导出格式的字段别名。支持 `github`、`jira`、`linear` 和 `generic`。
 - `字段别名`: 每行一个 `FIELD=alias[,alias...]`。支持字段包括 `title`、`body`、
   `kind`、`status`、`tags`、`applies_to`、`external_links`、`source_id` 和
-  `source_url`。
+  `source_url`。项目自定义字段使用 `custom.<field_key>=alias`，例如
+  `custom.priority=Priority`。
 - `状态映射`: 每行一个 `SOURCE=TARGET`，例如 `closed=done`。
 
 ## Markdown 选项

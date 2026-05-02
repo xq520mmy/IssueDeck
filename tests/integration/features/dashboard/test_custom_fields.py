@@ -118,3 +118,35 @@ async def test_dashboard_item_detail_shows_custom_fields(dashboard_client):
     assert "low" in response.text
     assert "Estimate" in response.text
     assert "3" in response.text
+
+
+async def test_dashboard_list_filters_by_custom_fields(dashboard_client):
+    client, _Session, _registry = dashboard_client
+    await client.post(
+        "/dashboard/test/items-new",
+        data={
+            "kind": "feature",
+            "title": "High priority",
+            "custom_field__priority": "high",
+            "custom_field__estimate": "8",
+            "applies_to": "main",
+        },
+    )
+    await client.post(
+        "/dashboard/test/items-new",
+        data={
+            "kind": "feature",
+            "title": "Low priority",
+            "custom_field__priority": "low",
+            "applies_to": "main",
+        },
+    )
+
+    response = await client.get("/dashboard/test/list?custom_field__priority=high")
+
+    assert response.status_code == 200
+    assert "Custom fields" in response.text
+    assert "High priority" in response.text
+    assert "Low priority" not in response.text
+    assert 'name="custom_field__priority"' in response.text
+    assert 'value="high"' in response.text

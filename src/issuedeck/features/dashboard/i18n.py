@@ -48,6 +48,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "common.add": "Add",
         "common.back": "Back",
         "common.back_to_list": "Back to list",
+        "common.any": "Any",
         "common.branch": "Branch",
         "common.branches": "Branches",
         "common.cancel": "Cancel",
@@ -98,6 +99,9 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "form.body_placeholder": "Supports Markdown",
         "form.create_item": "Create item",
         "form.custom_fields": "Custom fields",
+        "custom_fields.false": "No",
+        "custom_fields.filters": "Custom fields",
+        "custom_fields.true": "Yes",
         "form.done_requires_ship": "\"Done\" must be set by shipping the item.",
         "form.edit_item": "Edit item",
         "form.empty_preview": "Nothing to preview",
@@ -127,9 +131,11 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "data_import.error.invalid_type": "Import type must be CSV, JSON, or Markdown.",
         "data_import.error_title": "Import failed",
         "data_import.external_links": "Links",
+        "data_import.custom_fields": "Custom fields",
         "data_import.field_aliases": "Field aliases",
         "data_import.field_aliases_help": (
-            "Optional CSV/JSON mappings, one FIELD=alias[,alias...] per line."
+            "Optional CSV/JSON mappings, one FIELD=alias[,alias...] per line. "
+            "Use custom.priority=Priority to map project custom fields."
         ),
         "data_import.import": "Import items",
         "data_import.include_checked": "Include checked Markdown tasks",
@@ -428,6 +434,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "common.add": "添加",
         "common.back": "返回",
         "common.back_to_list": "返回列表",
+        "common.any": "任意",
         "common.branch": "分支",
         "common.branches": "分支",
         "common.cancel": "取消",
@@ -478,6 +485,9 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "form.body_placeholder": "支持 Markdown 格式",
         "form.create_item": "新建条目",
         "form.custom_fields": "自定义字段",
+        "custom_fields.false": "否",
+        "custom_fields.filters": "自定义字段",
+        "custom_fields.true": "是",
         "form.done_requires_ship": "\"已完成\" 状态需通过发布操作设置",
         "form.edit_item": "编辑条目",
         "form.empty_preview": "暂无内容可预览",
@@ -507,8 +517,12 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "data_import.error.invalid_type": "导入类型必须是 CSV、JSON 或 Markdown。",
         "data_import.error_title": "导入失败",
         "data_import.external_links": "链接",
+        "data_import.custom_fields": "自定义字段",
         "data_import.field_aliases": "字段别名",
-        "data_import.field_aliases_help": "可选 CSV/JSON 映射，每行一个 FIELD=alias[,alias...]。",
+        "data_import.field_aliases_help": (
+            "可选 CSV/JSON 映射，每行一个 FIELD=alias[,alias...]。"
+            "使用 custom.priority=Priority 映射项目自定义字段。"
+        ),
         "data_import.import": "导入事项",
         "data_import.include_checked": "包含已勾选的 Markdown 任务",
         "data_import.objects_found": "对象",

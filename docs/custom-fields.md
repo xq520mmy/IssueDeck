@@ -62,12 +62,35 @@ Create or update items with `custom_fields`:
 Unknown fields, invalid select options, and non-numeric number values are
 rejected with `invalid_custom_field`.
 
+Filter REST list responses with repeated `custom_field=FIELD=VALUE` query
+parameters:
+
+```bash
+curl \
+  -H "Authorization: Bearer $ISSUEDECK_API_TOKEN" \
+  "http://127.0.0.1:8775/api/v1/projects/example/items?custom_field=priority=high"
+```
+
 ## Dashboard
 
 The item create/edit form renders configured custom fields automatically.
-Submitted values appear on the item detail page.
+Submitted values appear on the item detail page. The list filter panel also
+renders configured custom fields, so saved dashboard filters can include values
+such as `priority=high` or `customer_impact=true`.
 
-## Current Scope
+## Imports
 
-Custom fields are stored and exported, but they are not yet searchable, filterable
-in list views, or imported from CSV/JSON/Markdown sources.
+CSV and JSON imports can map source columns or object keys into project custom
+fields with `custom.<field_key>=alias` field aliases:
+
+```bash
+uv run issuedeck import-csv backlog.csv \
+  --config server.toml \
+  --project-key example \
+  --field-alias custom.priority=Priority \
+  --field-alias custom.estimate=Points
+```
+
+The same alias syntax is available in the dashboard file-import form. Markdown
+task-list imports do not map custom fields because task lines do not carry
+structured per-field metadata.

@@ -5,12 +5,16 @@ from __future__ import annotations
 import csv
 import re
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from issuedeck.core.config import ConfigRegistry, ProjectConfig
+from issuedeck.features.items.custom_fields import (
+    custom_fields_to_json,
+    normalize_custom_fields,
+)
 from issuedeck.features.items.external_links import normalize_external_link_payload
 from issuedeck.features.items.repo import ItemRepo
 
@@ -28,6 +32,7 @@ class CsvItemMapping:
     external_links: tuple[str, ...] = ("external_links", "links", "refs", "references")
     source_id: tuple[str, ...] = ("source_id", "id", "key", "identifier", "issue_key", "number")
     source_url: tuple[str, ...] = ("source_url", "html_url", "web_url", "url")
+    custom_fields: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
     @classmethod
     def from_alias_options(
@@ -38,6 +43,10 @@ class CsvItemMapping:
     ) -> CsvItemMapping:
         mapping = cls()
         aliases_by_field = {field: list(getattr(mapping, field)) for field in _MAPPABLE_FIELDS}
+        custom_fields: dict[str, list[str]] = {
+            key: list(aliases)
+            for key, aliases in mapping.custom_fields.items()
+        }
 
         for preset in presets or []:
             preset_key = preset.strip().lower()
@@ -48,10 +57,10 @@ class CsvItemMapping:
                 raise ValueError(
                     f"unknown CSV preset '{preset}'; expected one of: {expected}"
                 ) from exc
-            for field, aliases in preset_aliases.items():
+            for target_field, aliases in preset_aliases.items():
                 for alias in aliases:
-                    if alias not in aliases_by_field[field]:
-                        aliases_by_field[field].append(alias)
+                    if alias not in aliases_by_field[target_field]:
+                        aliases_by_field[target_field].append(alias)
 
         for option in options or []:
             if "=" not in option:
@@ -60,7 +69,12 @@ class CsvItemMapping:
             field = field.strip()
             if field == "id":
                 field = "source_id"
-            if field not in aliases_by_field:
+            custom_field_key = _custom_field_key(field)
+            if custom_field_key is not None:
+                target_aliases = custom_fields.setdefault(custom_field_key, [])
+            elif field in aliases_by_field:
+                target_aliases = aliases_by_field[field]
+            else:
                 expected = ", ".join([
                     "title",
                     "body",
@@ -71,14 +85,18 @@ class CsvItemMapping:
                     "external_links",
                     "source_id",
                     "source_url",
+                    "custom.<field_key>",
                 ])
                 raise ValueError(f"unknown CSV field '{field}'; expected one of: {expected}")
             for alias in raw_aliases.split(","):
                 alias = alias.strip()
-                if alias and alias not in aliases_by_field[field]:
-                    aliases_by_field[field].append(alias)
+                if alias and alias not in target_aliases:
+                    target_aliases.append(alias)
 
-        return cls(**{field: tuple(aliases) for field, aliases in aliases_by_field.items()})
+        return cls(
+            **{field: tuple(aliases) for field, aliases in aliases_by_field.items()},
+            custom_fields={key: tuple(aliases) for key, aliases in custom_fields.items()},
+        )
 
     @classmethod
     def available_presets(cls) -> tuple[str, ...]:
@@ -146,6 +164,7 @@ class CsvImportRow:
     tags: list[str]
     applies_to: list[str]
     external_links: list[dict[str, str | None]]
+    custom_fields: dict[str, object]
     source_id: str
     source_url: str
     row_number: int
@@ -159,6 +178,7 @@ class CsvImportReport:
     items_written: int = 0
     status_mapped: int = 0
     external_links: int = 0
+    custom_fields: int = 0
 
 
 def parse_status_map_options(options: list[str] | None) -> dict[str, str]:
@@ -209,6 +229,7 @@ def parse_csv_items(
                 _field(row, header_index, mapping.external_links),
                 source_url,
             ])
+            custom_fields = _custom_fields_for_row(row, header_index, mapping.custom_fields)
             rows.append(CsvImportRow(
                 title=title,
                 body=body,
@@ -217,6 +238,7 @@ def parse_csv_items(
                 tags=_split_list(_field(row, header_index, mapping.tags)),
                 applies_to=_split_list(_field(row, header_index, mapping.applies_to)),
                 external_links=external_links,
+                custom_fields=custom_fields,
                 source_id=source_id,
                 source_url=source_url,
                 row_number=row_number,
@@ -224,6 +246,7 @@ def parse_csv_items(
 
     report.items_planned = len(rows)
     report.external_links = sum(len(row.external_links) for row in rows)
+    report.custom_fields = sum(len(row.custom_fields) for row in rows)
     return rows, report
 
 
@@ -259,7 +282,7 @@ async def import_csv_items(
         registry.validate_status(project_key, target)
 
     rows, report = parse_csv_items(source, mapping=mapping)
-    prepared: list[tuple[CsvImportRow, str, str, list[str]]] = []
+    prepared: list[tuple[CsvImportRow, str, str, list[str], dict[str, object]]] = []
     for row in rows:
         row_kind = _resolve_kind(row.kind, project, default_kind=kind, row_number=row.row_number)
         row_status, was_mapped = _resolve_status(
@@ -278,13 +301,14 @@ async def import_csv_items(
         )
         if was_mapped:
             report.status_mapped += 1
-        prepared.append((row, row_kind, row_status, row_branches))
+        row_custom_fields = normalize_custom_fields(project, row.custom_fields)
+        prepared.append((row, row_kind, row_status, row_branches, row_custom_fields))
 
     if dry_run:
         return report
 
     repo = ItemRepo(db)
-    for row, row_kind, row_status, row_branches in prepared:
+    for row, row_kind, row_status, row_branches, row_custom_fields in prepared:
         kind_cfg = registry.validate_kind(project_key, row_kind)
         local_id = await repo.next_local_id(
             project_key,
@@ -301,6 +325,7 @@ async def import_csv_items(
             body=_row_body(row, source),
             tags=_dedupe(["csv", *(tags or []), *row.tags]),
             applies_to=row_branches,
+            custom_fields_json=custom_fields_to_json(row_custom_fields),
             external_links=row.external_links,
         )
         report.items_written += 1
@@ -338,6 +363,19 @@ def _is_blank_row(row: Mapping[str, object]) -> bool:
         if value is not None and str(value).strip():
             return False
     return True
+
+
+def _custom_fields_for_row(
+    row: Mapping[str, object],
+    header_index: dict[str, str],
+    custom_field_aliases: dict[str, tuple[str, ...]],
+) -> dict[str, object]:
+    values: dict[str, object] = {}
+    for field_key, aliases in custom_field_aliases.items():
+        value = _field(row, header_index, aliases)
+        if value:
+            values[field_key] = value
+    return values
 
 
 def _split_list(value: str) -> list[str]:
@@ -498,6 +536,19 @@ def _normalize_header(value: str) -> str:
 
 def _normalize_value(value: str) -> str:
     return _normalize_header(value)
+
+
+def _custom_field_key(field: str) -> str | None:
+    for prefix in ("custom.", "custom_fields."):
+        if field.startswith(prefix):
+            key = field[len(prefix):].strip()
+            if not re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", key):
+                raise ValueError(
+                    f"invalid custom field key '{key}'; expected lowercase letters, "
+                    "numbers, - or _"
+                )
+            return key
+    return None
 
 
 def _dedupe(values: list[str]) -> list[str]:

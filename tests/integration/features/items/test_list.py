@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from issuedeck.core.config import (
     BranchConfig,
     ConfigRegistry,
+    CustomFieldConfig,
     KindConfig,
     ProjectConfig,
     ServerConfig,
@@ -28,6 +29,17 @@ def _registry():
             },
             statuses={"proposed": StatusConfig(label="P")},
             branches=[BranchConfig(key="main", label="Main")],
+            custom_fields={
+                "priority": CustomFieldConfig(
+                    label="Priority",
+                    type="select",
+                    options=["low", "high"],
+                ),
+                "customer_impact": CustomFieldConfig(
+                    label="Customer impact",
+                    type="checkbox",
+                ),
+            },
         )},
     )
 
@@ -44,6 +56,11 @@ async def service():
             await svc.create("test", CreateItemRequest(
                 kind="feature" if i % 2 == 0 else "bug",
                 title=f"t{i}", tags=["hot"] if i == 0 else [],
+                custom_fields=(
+                    {"priority": "high", "customer_impact": True}
+                    if i == 0
+                    else {"priority": "low"} if i == 1 else {}
+                ),
             ))
         yield svc
     await engine.dispose()
@@ -64,6 +81,17 @@ async def test_list_filters_by_kind(service):
 async def test_list_filters_by_tag(service):
     r = await service.list_items("test", tags=["hot"])
     assert len(r.items) == 1
+
+
+async def test_list_filters_by_custom_field(service):
+    high = await service.list_items("test", custom_fields={"priority": "high"})
+    assert [item.title for item in high.items] == ["t0"]
+
+    impacted = await service.list_items(
+        "test",
+        custom_fields={"customer_impact": True},
+    )
+    assert [item.title for item in impacted.items] == ["t0"]
 
 
 async def test_list_pagination_cursor_roundtrip(service):

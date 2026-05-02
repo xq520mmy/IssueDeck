@@ -1,3 +1,4 @@
+import json
 import re
 
 import pytest
@@ -9,6 +10,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from issuedeck.core.config import (
     BranchConfig,
     ConfigRegistry,
+    CustomFieldConfig,
     KindConfig,
     ProjectConfig,
     ServerConfig,
@@ -52,6 +54,14 @@ def _registry():
                 "done": StatusConfig(label="Done", terminal=True),
             },
             branches=[BranchConfig(key="main", label="Main")],
+            custom_fields={
+                "priority": CustomFieldConfig(
+                    label="Priority",
+                    type="select",
+                    options=["low", "high"],
+                ),
+                "estimate": CustomFieldConfig(label="Estimate", type="number"),
+            },
         )},
     )
 
@@ -211,6 +221,40 @@ async def test_data_import_submit_writes_items(
     assert "Import History" in history_response.text
     assert filename in history_response.text
     assert f"/dashboard/test/list?tag={tag_prefix}" in history_response.text
+
+
+async def test_data_import_csv_maps_custom_fields(dashboard_client):
+    client, Session = dashboard_client
+
+    response = await client.post(
+        "/dashboard/test/imports/files",
+        data={
+            "source_type": "csv",
+            "kind": "feature",
+            "default_status": "proposed",
+            "field_aliases": "custom.priority=Priority\ncustom.estimate=Points",
+            "mode": "import",
+            "applies_to": "main",
+        },
+        files={
+            "source_file": (
+                "items.csv",
+                "title,Priority,Points\nMapped custom fields,high,3\n",
+                "text/csv",
+            ),
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    assert "Custom fields" in response.text
+    async with Session() as session:
+        item = await session.scalar(select(Item).where(Item.local_id == "FEAT-0001"))
+
+    assert item is not None
+    assert json.loads(item.custom_fields_json) == {
+        "estimate": 3,
+        "priority": "high",
+    }
 
 
 async def test_import_history_can_soft_delete_batch(dashboard_client):

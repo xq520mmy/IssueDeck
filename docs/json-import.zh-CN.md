@@ -89,3 +89,15 @@ uv run issuedeck import-json github-issues.json \
 
 自定义 JSON key 可以用 `--field-alias`，源工作流状态和项目配置不一致时用
 `--status-map`。遇到未知 status 时，导入会在写入任何数据前失败。
+
+项目自定义字段使用 `custom.<field_key>` 别名前缀：
+
+```bash
+uv run issuedeck import-json backlog.json \
+  --config server.toml \
+  --project-key example \
+  --field-alias custom.priority=priority \
+  --field-alias custom.customer_impact=impact
+```
+
+预览和正式导入都会按照项目配置校验自定义字段值。

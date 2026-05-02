@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -5,6 +7,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from issuedeck.core.config import (
     BranchConfig,
     ConfigRegistry,
+    CustomFieldConfig,
     KindConfig,
     ProjectConfig,
     ServerConfig,
@@ -40,6 +43,21 @@ def _registry():
             ],
         )},
     )
+
+
+def _registry_with_custom_fields():
+    registry = _registry()
+    project = registry.project("sample")
+    project.custom_fields = {
+        "priority": CustomFieldConfig(
+            label="Priority",
+            type="select",
+            required=True,
+            options=["low", "high"],
+        ),
+        "estimate": CustomFieldConfig(label="Estimate", type="number"),
+    }
+    return registry
 
 
 @pytest.fixture
@@ -127,3 +145,37 @@ async def test_import_csv_items_writes_items(session, tmp_path):
         .all()
     )
     assert links == ["github_issue", "github_pr"]
+
+
+async def test_import_csv_items_maps_custom_fields(session, tmp_path):
+    source = tmp_path / "issues.csv"
+    source.write_text(
+        "\n".join([
+            "Title,Priority,Points",
+            "Custom import,high,5",
+        ]),
+        encoding="utf-8",
+    )
+    mapping = CsvItemMapping.from_alias_options([
+        "custom.priority=Priority",
+        "custom.estimate=Points",
+    ])
+
+    report = await import_csv_items(
+        source,
+        "sample",
+        _registry_with_custom_fields(),
+        session,
+        kind="feature",
+        mapping=mapping,
+        dry_run=False,
+    )
+
+    assert report.items_written == 1
+    assert report.custom_fields == 2
+    item = await session.scalar(select(Item).where(Item.local_id == "FEAT-0001"))
+    assert item is not None
+    assert json.loads(item.custom_fields_json) == {
+        "estimate": 5,
+        "priority": "high",
+    }

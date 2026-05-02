@@ -90,6 +90,18 @@ async def test_create_get_list_roundtrip(client):
     assert len(r.json()["items"]) == 1
     assert r.json()["items"][0]["external_links"][0]["url"].endswith("/issues/42")
 
+    await client.post(
+        "/api/v1/projects/test/items",
+        json={
+            "kind": "feature",
+            "title": "Low priority",
+            "custom_fields": {"priority": "low"},
+        },
+    )
+    r = await client.get("/api/v1/projects/test/items?custom_field=priority%3Dhigh")
+    assert r.status_code == 200, r.text
+    assert [item["title"] for item in r.json()["items"]] == ["Hello"]
+
 
 async def test_ship_item(client):
     await client.post("/api/v1/projects/test/items",

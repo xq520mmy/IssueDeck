@@ -49,6 +49,7 @@ from issuedeck.features.dashboard.saved_filters import (
     saved_filter_href,
 )
 from issuedeck.features.export.md_bundle import export_audit_bundle
+from issuedeck.features.items.custom_fields import normalize_custom_field_filters
 from issuedeck.features.items.models import ImportBatch, Item, ItemTag
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
@@ -279,6 +280,23 @@ def _custom_fields_from_form(project: ProjectConfig, form_data) -> dict[str, obj
     return values
 
 
+def _custom_field_filters_from_form(project: ProjectConfig, form_data) -> dict[str, object]:
+    incoming: dict[str, object] = {}
+    for key, cfg in project.custom_fields.items():
+        form_key = f"custom_field__{key}"
+        raw_values = form_data.getlist(form_key) if hasattr(form_data, "getlist") else []
+        raw_value = raw_values[-1] if raw_values else None
+        if raw_value is None:
+            continue
+        text = str(raw_value).strip()
+        if not text:
+            continue
+        if cfg.type == "checkbox" and text == "any":
+            continue
+        incoming[key] = text
+    return normalize_custom_field_filters(project, incoming)
+
+
 def _split_form_tokens(raw: str) -> list[str]:
     parts = re.split(r"[\n,;]+", raw)
     values: list[str] = []
@@ -384,6 +402,7 @@ def _data_import_result(
             ("data_import.planned", report.items_planned),
             ("data_import.written", report.items_written),
             ("data_import.status_mapped", report.status_mapped),
+            ("data_import.custom_fields", report.custom_fields),
             ("data_import.external_links", report.external_links),
         ]
     else:
@@ -393,6 +412,7 @@ def _data_import_result(
             ("data_import.planned", report.items_planned),
             ("data_import.written", report.items_written),
             ("data_import.status_mapped", report.status_mapped),
+            ("data_import.custom_fields", report.custom_fields),
             ("data_import.external_links", report.external_links),
         ]
     return {
@@ -1606,6 +1626,7 @@ async def list_view(
 ):
     registry = request.app.state.registry
     project = registry.project(project_key)
+    custom_field_filters = _custom_field_filters_from_form(project, request.query_params)
     saved_filters = list_saved_dashboard_filters(registry.server.data_dir, project_key)
     active_saved_filter = None
     if saved_filter:
@@ -1630,6 +1651,12 @@ async def list_view(
                 if isinstance(params.get("relation_type"), list)
                 else None
             )
+            saved_custom_fields = params.get("custom_fields")
+            custom_field_filters = (
+                saved_custom_fields
+                if isinstance(saved_custom_fields, dict)
+                else {}
+            )
             include_deleted = bool(params.get("include_deleted"))
 
     active_view = view if view in WORK_QUEUE_KEYS else "recent"
@@ -1644,6 +1671,7 @@ async def list_view(
         result = await svc.list_items(
             project_key, kinds=kind, statuses=effective_status,
             tags=tag, applies_to=applies_to,
+            custom_fields=custom_field_filters,
             relationship_types=effective_relation_type,
             include_deleted=effective_include_deleted,
             only_deleted=effective_only_deleted,
@@ -1686,6 +1714,7 @@ async def list_view(
         filter_tag=tag or [],
         filter_applies_to=applies_to or [],
         filter_relation_type=relation_type or [],
+        filter_custom_fields=custom_field_filters,
         filter_include_deleted=effective_include_deleted,
         current_list_url=_current_dashboard_url(
             request,
@@ -1792,7 +1821,8 @@ async def create_saved_filter(
     include_deleted: bool = Form(False),
 ):
     registry = request.app.state.registry
-    registry.project(project_key)
+    project = registry.project(project_key)
+    form_data = await request.form()
     saved_filter = save_dashboard_filter(
         registry.server.data_dir,
         project_key,
@@ -1804,6 +1834,7 @@ async def create_saved_filter(
             tag=tag,
             applies_to=applies_to,
             relation_type=relation_type,
+            custom_fields=_custom_field_filters_from_form(project, form_data),
             include_deleted=include_deleted,
         ),
     )
