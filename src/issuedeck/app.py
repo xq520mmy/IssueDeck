@@ -99,7 +99,10 @@ def create_app(server_toml: Path | str) -> FastAPI:
     app.state.registry = registry
     app.state.engine = engine
     app.state.session_factory = session_factory
-    app.state.webhook_dispatcher = WebhookDispatcher(server_cfg.webhooks)
+    app.state.webhook_dispatcher = WebhookDispatcher(
+        server_cfg.webhooks,
+        server_cfg.notifications,
+    )
 
     install_error_handlers(app)
     app.add_middleware(

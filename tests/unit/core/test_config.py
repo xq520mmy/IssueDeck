@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from issuedeck.core.config import (
     ConfigRegistry,
+    NotificationConfig,
     ServerConfig,
     WebhookConfig,
     load_project_config,
@@ -127,6 +128,59 @@ def test_server_config_rejects_duplicate_webhook_names():
                     name="automation",
                     url="https://example.com/two",
                     secret="two",
+                ),
+            ],
+        )
+
+
+def test_server_config_supports_lifecycle_notifications(tmp_path):
+    cfg_path = tmp_path / "server.toml"
+    cfg_path.write_text(
+        "\n".join([
+            'api_token = "legacy-admin"',
+            "",
+            "[[notifications]]",
+            'name = "team-alerts"',
+            'provider = "slack"',
+            'url = "https://hooks.slack.com/services/T000/B000/secret"',
+            'events = ["item.created", "item.shipped"]',
+            "retries = 2",
+            "timeout_seconds = 3",
+            "backoff_seconds = 0.1",
+            "",
+            "[[notifications]]",
+            'name = "release-room"',
+            'provider = "discord"',
+            'url = "https://discord.com/api/webhooks/123/secret"',
+            'events = ["item.shipped"]',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    cfg = load_server_config(cfg_path)
+
+    assert cfg.notifications[0].name == "team-alerts"
+    assert cfg.notifications[0].provider == "slack"
+    assert cfg.notifications[0].events == ["item.created", "item.shipped"]
+    assert cfg.notifications[0].url.get_secret_value().startswith("https://hooks.")
+    assert cfg.notifications[1].provider == "discord"
+
+
+def test_server_config_rejects_duplicate_notification_names():
+    with pytest.raises(ValidationError, match="duplicate notification name"):
+        ServerConfig(
+            api_token="legacy-admin",
+            notifications=[
+                NotificationConfig(
+                    name="team-alerts",
+                    provider="slack",
+                    url="https://hooks.slack.com/services/T000/B000/one",
+                ),
+                NotificationConfig(
+                    name="team-alerts",
+                    provider="discord",
+                    url="https://discord.com/api/webhooks/123/two",
                 ),
             ],
         )

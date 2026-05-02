@@ -45,10 +45,11 @@ listed in `CHANGELOG.md`.
 - Built-in project templates for first-run dashboard project creation.
 - Project-level audit/export ZIP bundles for periodic snapshots.
 - Dashboard download controls for project-level audit/export bundles.
+- Slack and Discord lifecycle notifications for team-visible item updates.
 
 ## Near Term
 
-- Add optional notification hooks for Slack, Discord, or email.
+- Add optional email notifications for teams that prefer inbox workflows.
 - Explore a lightweight plugin surface for custom item fields and third-party
   templates.
 

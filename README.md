@@ -84,6 +84,7 @@ Project snapshots are covered in
 - Item activity timeline with automatic lifecycle events and manual comments.
 - Signed lifecycle webhooks for downstream automation on create, update, ship,
   delete, and restore events.
+- Slack and Discord lifecycle notifications for team-visible item updates.
 - Built-in dashboard work queues for backlog, active, blocked, ready-to-ship,
   done, deleted, and recently touched items.
 - Dashboard bulk triage for updating status, kind, tags, branches, delete, and
@@ -211,8 +212,9 @@ templates; edit TOML directly for advanced customizations.
 
 Optional signed lifecycle webhooks can notify downstream automation when items
 are created, updated, shipped, deleted, or restored; see
-[Lifecycle Webhooks](docs/webhooks.md). Receiver examples for FastAPI, Flask,
-and Node/Express live in
+[Lifecycle Webhooks](docs/webhooks.md). The same guide covers Slack and
+Discord team notifications. Receiver examples for FastAPI, Flask, and
+Node/Express live in
 [Webhook Receiver Examples](docs/webhook-receivers.md).
 
 Project files live in `projects/*.toml`. Each file defines one project and

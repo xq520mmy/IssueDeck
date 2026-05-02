@@ -1,11 +1,14 @@
 import hmac
+import json
 
 import httpx
 
-from issuedeck.core.config import WebhookConfig
+from issuedeck.core.config import NotificationConfig, WebhookConfig
 from issuedeck.core.webhooks import (
+    build_notification_payload,
     build_webhook_headers,
     build_webhook_payload,
+    deliver_notification,
     deliver_webhook,
     encode_webhook_body,
     webhook_signature,
@@ -100,3 +103,61 @@ async def test_deliver_webhook_retries_until_success():
     assert len(seen) == 2
     assert seen[0].headers["X-IssueDeck-Event"] == "item.updated"
     assert seen[1].headers["X-IssueDeck-Signature"].startswith("sha256=")
+
+
+def test_slack_notification_payload_uses_text():
+    notification = NotificationConfig(
+        name="team-alerts",
+        provider="slack",
+        url="https://hooks.slack.com/services/T000/B000/secret",
+    )
+
+    payload = build_notification_payload(notification, "item.created", _summary())
+
+    assert set(payload) == {"text"}
+    assert payload["text"].startswith("IssueDeck: FEAT-0001 created")
+    assert "Webhook payload" in payload["text"]
+    assert "project: example" in payload["text"]
+
+
+def test_discord_notification_payload_disables_mentions():
+    notification = NotificationConfig(
+        name="team-alerts",
+        provider="discord",
+        url="https://discord.com/api/webhooks/123/secret",
+    )
+
+    payload = build_notification_payload(notification, "item.shipped", _summary())
+
+    assert payload["content"].startswith("IssueDeck: FEAT-0001 shipped")
+    assert payload["allowed_mentions"] == {"parse": []}
+
+
+async def test_deliver_notification_retries_until_success():
+    seen: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        if len(seen) == 1:
+            return httpx.Response(500)
+        return httpx.Response(204)
+
+    notification = NotificationConfig(
+        name="team-alerts",
+        provider="discord",
+        url="https://discord.com/api/webhooks/123/secret",
+        retries=1,
+        backoff_seconds=0,
+    )
+
+    delivered = await deliver_notification(
+        notification,
+        build_notification_payload(notification, "item.updated", _summary()),
+        "item.updated",
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert delivered is True
+    assert len(seen) == 2
+    assert seen[0].headers["X-IssueDeck-Event"] == "item.updated"
+    assert json.loads(seen[1].content)["allowed_mentions"] == {"parse": []}

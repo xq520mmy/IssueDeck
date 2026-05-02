@@ -28,6 +28,34 @@ backoff_seconds = 0.5
 If `events` is omitted, IssueDeck sends all lifecycle events. `retries` is the
 number of retry attempts after the first delivery attempt.
 
+## Team Notifications
+
+Use `[[notifications]]` when humans need a simple chat update instead of a
+signed machine-readable webhook payload. IssueDeck currently supports Slack and
+Discord incoming webhook URLs:
+
+```toml
+[[notifications]]
+name = "team-alerts"
+provider = "slack"
+url = "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXX"
+events = ["item.created", "item.shipped"]
+retries = 3
+timeout_seconds = 5
+backoff_seconds = 0.5
+
+[[notifications]]
+name = "release-room"
+provider = "discord"
+url = "https://discord.com/api/webhooks/1234567890/replace-with-token"
+events = ["item.shipped"]
+```
+
+Slack notifications send `{"text": "..."}` to the incoming webhook URL.
+Discord notifications send `{"content": "...", "allowed_mentions": {"parse":
+[]}}` so issue titles cannot accidentally ping a channel. Notification URLs are
+secrets; store them in local deployment config, not in public repositories.
+
 ## Events
 
 - `item.created`

@@ -54,6 +54,7 @@ WebhookEvent = Literal[
     "item.deleted",
     "item.restored",
 ]
+NotificationProvider = Literal["slack", "discord"]
 
 DEFAULT_WEBHOOK_EVENTS: list[WebhookEvent] = [
     "item.created",
@@ -80,6 +81,22 @@ class WebhookConfig(BaseModel):
         return self
 
 
+class NotificationConfig(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    provider: NotificationProvider
+    url: SecretStr = Field(min_length=1, max_length=2048)
+    events: list[WebhookEvent] = Field(default_factory=lambda: DEFAULT_WEBHOOK_EVENTS.copy())
+    retries: int = Field(default=3, ge=0, le=10)
+    timeout_seconds: float = Field(default=5.0, gt=0, le=30)
+    backoff_seconds: float = Field(default=0.5, ge=0, le=10)
+
+    @model_validator(mode="after")
+    def _validate_events(self) -> NotificationConfig:
+        if not self.events:
+            raise ValueError("notification events must not be empty")
+        return self
+
+
 class ServerConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8765
@@ -90,6 +107,7 @@ class ServerConfig(BaseModel):
     log_level: Literal["debug", "info", "warning", "error"] = "info"
     sqlite: SqliteConfig = SqliteConfig()
     webhooks: list[WebhookConfig] = Field(default_factory=list)
+    notifications: list[NotificationConfig] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -129,6 +147,15 @@ class ServerConfig(BaseModel):
             if webhook.name in seen_names:
                 raise ValueError(f"duplicate webhook name '{webhook.name}'")
             seen_names.add(webhook.name)
+        return self
+
+    @model_validator(mode="after")
+    def _validate_notifications(self) -> ServerConfig:
+        seen_names: set[str] = set()
+        for notification in self.notifications:
+            if notification.name in seen_names:
+                raise ValueError(f"duplicate notification name '{notification.name}'")
+            seen_names.add(notification.name)
         return self
 
     def auth_tokens(self) -> list[TokenConfig]:

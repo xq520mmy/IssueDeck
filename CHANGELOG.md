@@ -7,6 +7,11 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+### Added
+
+- Added optional Slack and Discord lifecycle notifications through incoming
+  webhook URLs.
+
 ## [0.5.0] - 2026-05-02
 
 ### Added

@@ -37,6 +37,25 @@ log_level = "info"
 # timeout_seconds = 5
 # backoff_seconds = 0.5
 
+# Optional team notifications. These are plain chat messages delivered through
+# Slack or Discord incoming webhook URLs. Use signed lifecycle webhooks above
+# when another system needs a verifiable machine-readable payload.
+#
+# [[notifications]]
+# name = "team-alerts"
+# provider = "slack"
+# url = "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXX"
+# events = ["item.created", "item.shipped"]
+# retries = 3
+# timeout_seconds = 5
+# backoff_seconds = 0.5
+#
+# [[notifications]]
+# name = "release-room"
+# provider = "discord"
+# url = "https://discord.com/api/webhooks/1234567890/replace-with-token"
+# events = ["item.shipped"]
+
 [sqlite]
 wal_mode = true
 busy_timeout_ms = 5000

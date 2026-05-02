@@ -28,6 +28,33 @@ backoff_seconds = 0.5
 如果省略 `events`，IssueDeck 会发送全部生命周期事件。`retries` 表示首次投递
 失败后的重试次数。
 
+## 团队通知
+
+如果目标是给人看的一条聊天提醒，而不是给系统消费的签名结构化 payload，可以
+使用 `[[notifications]]`。IssueDeck 目前支持 Slack 和 Discord incoming
+webhook URL：
+
+```toml
+[[notifications]]
+name = "team-alerts"
+provider = "slack"
+url = "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXX"
+events = ["item.created", "item.shipped"]
+retries = 3
+timeout_seconds = 5
+backoff_seconds = 0.5
+
+[[notifications]]
+name = "release-room"
+provider = "discord"
+url = "https://discord.com/api/webhooks/1234567890/replace-with-token"
+events = ["item.shipped"]
+```
+
+Slack 通知会向 incoming webhook URL 发送 `{"text": "..."}`。Discord 通知会
+发送 `{"content": "...", "allowed_mentions": {"parse": []}}`，避免事项标题意外
+触发频道提醒。通知 URL 属于 secret，应该放在本地部署配置中，不要提交到公开仓库。
+
 ## 事件
 
 - `item.created`
