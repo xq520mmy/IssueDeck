@@ -357,3 +357,70 @@ async def test_import_history_shows_batch_item_state_counts(dashboard_client):
     assert restored_history_response.status_code == 200
     _assert_stat(restored_history_response.text, "Active", 1)
     _assert_stat(restored_history_response.text, "Deleted", 0)
+
+
+async def test_import_history_filters_by_source_and_item_state(dashboard_client):
+    client, Session = dashboard_client
+
+    csv_response = await client.post(
+        "/dashboard/test/imports/files",
+        data={
+            "source_type": "csv",
+            "kind": "feature",
+            "default_status": "proposed",
+            "mode": "import",
+            "applies_to": "main",
+        },
+        files={"source_file": ("deleted-batch.csv", "title\nDeleted batch\n", "text/csv")},
+    )
+    json_response = await client.post(
+        "/dashboard/test/imports/files",
+        data={
+            "source_type": "json",
+            "kind": "feature",
+            "default_status": "proposed",
+            "mode": "import",
+            "applies_to": "main",
+        },
+        files={
+            "source_file": (
+                "active-batch.json",
+                '{"items":[{"title":"Active batch"}]}',
+                "application/json",
+            ),
+        },
+    )
+
+    assert csv_response.status_code == 200, csv_response.text
+    assert json_response.status_code == 200, json_response.text
+    async with Session() as session:
+        csv_batch = await session.scalar(
+            select(ImportBatch.batch_tag)
+            .where(ImportBatch.source_type == "csv")
+        )
+
+    assert csv_batch is not None
+    delete_response = await client.post(
+        f"/dashboard/test/imports/{csv_batch}/delete",
+        follow_redirects=False,
+    )
+
+    assert delete_response.status_code == 303
+
+    json_history = await client.get("/dashboard/test/imports?source=json")
+
+    assert json_history.status_code == 200
+    assert "active-batch.json" in json_history.text
+    assert "deleted-batch.csv" not in json_history.text
+
+    deleted_history = await client.get("/dashboard/test/imports?batch_state=deleted")
+
+    assert deleted_history.status_code == 200
+    assert "deleted-batch.csv" in deleted_history.text
+    assert "active-batch.json" not in deleted_history.text
+
+    active_history = await client.get("/dashboard/test/imports?batch_state=active")
+
+    assert active_history.status_code == 200
+    assert "active-batch.json" in active_history.text
+    assert "deleted-batch.csv" not in active_history.text

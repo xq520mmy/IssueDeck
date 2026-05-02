@@ -29,6 +29,7 @@ versioning once public releases begin.
   items from an import batch.
 - Added active/deleted item counts to dashboard import history and disabled
   empty batch delete or restore actions.
+- Added source and item-state filters to dashboard import history.
 - Added maintainer workflow docs for requirements, validation, git commits,
   pushes, and CI checks.
 - Documented local browser recovery steps and disabled caching for root

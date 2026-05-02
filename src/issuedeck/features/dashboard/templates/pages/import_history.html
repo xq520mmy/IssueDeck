@@ -25,6 +25,48 @@
     </div>
   </div>
 
+  <form method="get"
+        action="/dashboard/{{ project_key }}/imports"
+        class="grid gap-3 rounded-md border border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-ledger-darkPanel p-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] md:items-end">
+    <div>
+      <label for="import-source" class="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+        {{ t("import_history.filter_source") }}
+      </label>
+      <select id="import-source"
+              name="source"
+              class="mt-1 w-full rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-primary-500">
+        <option value="all" {% if selected_source == "all" %}selected{% endif %}>{{ t("import_history.source_all") }}</option>
+        {% for source_key in ["github", "csv", "json", "markdown"] %}
+          <option value="{{ source_key }}" {% if selected_source == source_key %}selected{% endif %}>
+            {{ t("import_history.source_" ~ source_key) }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="import-state" class="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+        {{ t("import_history.filter_state") }}
+      </label>
+      <select id="import-state"
+              name="batch_state"
+              class="mt-1 w-full rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-primary-500">
+        {% for state_key in ["all", "active", "deleted", "mixed"] %}
+          <option value="{{ state_key }}" {% if selected_batch_state == state_key %}selected{% endif %}>
+            {{ t("import_history.state_" ~ state_key) }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit"
+            class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold bg-ledger-surfaceAlt dark:bg-ledger-darkPanelAlt text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+      {{ t("common.filter") }}
+    </button>
+    <a href="/dashboard/{{ project_key }}/imports"
+       class="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold border border-ledger-line dark:border-ledger-darkLine text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+      {{ t("common.reset") }}
+    </a>
+  </form>
+
   {% if deleted_count is not none %}
     <div class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-200">
       {{ t("import_history.delete_success", count=deleted_count) }}

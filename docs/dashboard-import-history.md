@@ -25,5 +25,10 @@ mistaken batch delete without duplicating active work.
 The delete and restore actions are disabled when there are no matching active or
 deleted items, making the history page safe to scan before acting.
 
+Use the filters above the history list to narrow batches by source (`GitHub`,
+`CSV`, `JSON`, or `Markdown`) and current item state. This is useful when you
+want to review only fully deleted imports before restoring them, or only active
+imports before triage.
+
 Preview-only imports are not recorded because they do not write items. Formal
 imports that write zero items are also omitted from the history.

@@ -113,6 +113,8 @@ WORK_QUEUE_KEYS = {
     "deleted",
 }
 PROJECT_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]{1,62}$")
+IMPORT_HISTORY_SOURCES = {"all", "github", "csv", "json", "markdown"}
+IMPORT_HISTORY_STATES = {"all", "active", "deleted", "mixed"}
 
 
 def _item_svc(request: Request):
@@ -474,6 +476,26 @@ def _import_batch_view(
             tag=batch.batch_tag,
         ),
     }
+
+
+def _filter_import_batch_views(
+    batches: list[dict[str, object]],
+    *,
+    batch_state: str,
+) -> list[dict[str, object]]:
+    if batch_state == "active":
+        return [batch for batch in batches if batch["active_items"] > 0]
+    if batch_state == "deleted":
+        return [
+            batch for batch in batches
+            if batch["active_items"] == 0 and batch["deleted_items"] > 0
+        ]
+    if batch_state == "mixed":
+        return [
+            batch for batch in batches
+            if batch["active_items"] > 0 and batch["deleted_items"] > 0
+        ]
+    return batches
 
 
 async def _local_ids_for_import_batch(
@@ -931,6 +953,8 @@ async def project_overview(project_key: str, request: Request):
 async def import_history_page(
     project_key: str,
     request: Request,
+    source: str = Query("all"),
+    batch_state: str = Query("all"),
     deleted_count: int | None = Query(None),
     restored_count: int | None = Query(None),
     delete_empty: bool = Query(False),
@@ -939,13 +963,22 @@ async def import_history_page(
     restore_missing: bool = Query(False),
 ):
     request.app.state.registry.project(project_key)
+    selected_source = source if source in IMPORT_HISTORY_SOURCES else "all"
+    selected_batch_state = (
+        batch_state if batch_state in IMPORT_HISTORY_STATES else "all"
+    )
     session = request.app.state.session_factory()
     try:
-        result = await session.execute(
+        stmt = (
             select(ImportBatch)
             .where(ImportBatch.project_key == project_key)
             .order_by(ImportBatch.created_at.desc(), ImportBatch.id.desc())
             .limit(50)
+        )
+        if selected_source != "all":
+            stmt = stmt.where(ImportBatch.source_type == selected_source)
+        result = await session.execute(
+            stmt
         )
         batch_rows = list(result.scalars().all())
         item_counts = await _import_batch_item_counts(
@@ -957,6 +990,9 @@ async def import_history_page(
             _import_batch_view(project_key, batch, item_counts)
             for batch in batch_rows
         ]
+        batches = _filter_import_batch_views(
+            batches, batch_state=selected_batch_state,
+        )
     finally:
         await session.close()
 
@@ -965,6 +1001,8 @@ async def import_history_page(
         **_ctx(request, project_key),
         active_page="import_history",
         batches=batches,
+        selected_source=selected_source,
+        selected_batch_state=selected_batch_state,
         deleted_count=deleted_count,
         restored_count=restored_count,
         delete_empty=delete_empty,
