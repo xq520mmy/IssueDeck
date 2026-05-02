@@ -172,9 +172,9 @@ scopes = ["admin"]
 `read` token 只能调用只读 API；`agent` token 可读写 REST API，适合 MCP /
 coding agent；`admin` token 拥有完整 API 权限，也可以登录 Dashboard。
 
-项目配置位于 `projects/*.toml`。Dashboard 也提供轻量的新建项目入口，会生成默认的
-Feature / Bug / Improvement 类型和 Proposed / In Progress / Done / Won't Fix
-状态。高级配置仍建议直接编辑 TOML。
+项目配置位于 `projects/*.toml`。Dashboard 也提供轻量的新建项目入口，可以从
+Basic issue deck、Agent workflow、Software team 等起步模板生成项目配置。
+高级配置仍建议直接编辑 TOML。
 
 ## Webhooks
 

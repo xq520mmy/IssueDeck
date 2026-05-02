@@ -3,7 +3,7 @@
 IssueDeck is starting small on purpose: a local-first issue deck, a dashboard,
 and MCP tools that make coding-agent workflows easier to track.
 
-Current public release: `v0.4.0`.
+Current public release: `v0.5.0`.
 
 The `main` branch may include unreleased contributor-experience improvements
 listed in `CHANGELOG.md`.
@@ -48,13 +48,13 @@ listed in `CHANGELOG.md`.
 
 ## Near Term
 
-- Prepare the next tagged release with the new import helpers and launch kit
-  polish.
+- Add optional notification hooks for Slack, Discord, or email.
+- Explore a lightweight plugin surface for custom item fields and third-party
+  templates.
 
 ## Later
 
-- Optional notification hooks for Slack, Discord, or email.
-- A lightweight plugin surface for custom item fields and third-party templates.
+- Project template marketplace docs once third-party templates exist.
 
 ## Contribution Areas
 

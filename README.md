@@ -205,6 +205,10 @@ scopes = ["admin"]
 write REST API resources for MCP/coding-agent workflows. `admin` tokens have
 full API access and can sign in to the dashboard.
 
+Project configs live in `projects/*.toml`. The dashboard can create new
+projects from Basic issue deck, Agent workflow, and Software team starter
+templates; edit TOML directly for advanced customizations.
+
 Optional signed lifecycle webhooks can notify downstream automation when items
 are created, updated, shipped, deleted, or restored; see
 [Lifecycle Webhooks](docs/webhooks.md). Receiver examples for FastAPI, Flask,

@@ -7,6 +7,8 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-02
+
 ### Added
 
 - Added Agent Work Sessions for tracking active, paused, completed, and
