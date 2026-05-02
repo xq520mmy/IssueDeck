@@ -307,6 +307,18 @@ uv run issuedeck ship-item FEAT-0001 \
   --commit abc1234
 ```
 
+Append a comment, verification note, or handoff event:
+
+```bash
+uv run issuedeck append-item-event FEAT-0001 \
+  --config server.toml \
+  --project-key example \
+  --event-type verification \
+  --actor-type agent \
+  --actor-name codex \
+  --body "Checked locally before release."
+```
+
 List local items without starting the dashboard:
 
 ```bash

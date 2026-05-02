@@ -67,6 +67,8 @@ listed in `CHANGELOG.md`.
   and restore.
 - Local CLI shipping with branch, version, commit records, JSON output, and
   dry-run previews.
+- Local CLI timeline events for comments, verification notes, handoffs,
+  metadata, JSON output, and dry-run previews.
 - Local CLI item listing with REST-aligned filters and JSON output.
 - Local CLI item detail output for terminal-first triage.
 

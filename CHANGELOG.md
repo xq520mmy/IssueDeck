@@ -19,6 +19,8 @@ versioning once public releases begin.
   custom-field, delete, and restore workflows.
 - Added `issuedeck ship-item` for local CLI ship records with branch, version,
   commits, JSON output, and dry-run previews.
+- Added `issuedeck append-item-event` for local CLI comments, verification
+  notes, handoff events, metadata, JSON output, and dry-run previews.
 - Added `issuedeck list-items` for local CLI item listing with the same kind,
   status, tag, branch, relationship, custom-field, and deletion filters as the
   REST list API.

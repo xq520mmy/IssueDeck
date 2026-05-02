@@ -9,6 +9,7 @@ import pytest
 
 from issuedeck.cli import (
     _build_registry,
+    _cmd_append_item_event,
     _cmd_bulk_update_items,
     _cmd_create_item,
     _cmd_demo,
@@ -48,6 +49,7 @@ def test_issuedeck_help_lists_subcommands():
         "update-item",
         "bulk-update-items",
         "ship-item",
+        "append-item-event",
         "list-items",
         "get-item",
         "import-github-url",
@@ -554,6 +556,79 @@ def test_ship_item_cli_dry_run_without_writing(tmp_path, capsys):
     }
     with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
         count = conn.execute("select count(*) from ship_records").fetchone()[0]
+    assert count == before_count
+
+
+def test_append_item_event_cli_records_timeline_event(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+
+    rc = asyncio.run(_cmd_append_item_event(
+        cfg_path,
+        "example",
+        "FEAT-0001",
+        body="Verified from CLI.",
+        body_file=None,
+        event_type="verification",
+        actor_type="agent",
+        actor_name="codex",
+        metadata_options=["source=cli"],
+        dry_run=False,
+        output_format="json",
+    ))
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["event_type"] == "verification"
+    assert payload["actor_type"] == "agent"
+    assert payload["actor_name"] == "codex"
+    assert payload["body"] == "Verified from CLI."
+    assert payload["metadata"] == {"source": "cli"}
+
+
+def test_append_item_event_cli_dry_run_reads_body_file_without_writing(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+    body_path = tmp_path / "event.md"
+    body_path.write_text("Dry-run note.", encoding="utf-8")
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        before_count = conn.execute("select count(*) from item_events").fetchone()[0]
+
+    rc = asyncio.run(_cmd_append_item_event(
+        cfg_path,
+        "example",
+        "FEAT-0001",
+        body=None,
+        body_file=body_path,
+        event_type="comment",
+        actor_type="human",
+        actor_name="cli",
+        metadata_options=[],
+        dry_run=True,
+        output_format="json",
+    ))
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["body"] == "Dry-run note."
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        count = conn.execute("select count(*) from item_events").fetchone()[0]
     assert count == before_count
 
 

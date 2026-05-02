@@ -305,6 +305,42 @@ def main(argv: list[str] | None = None) -> int:
         help="Output format after shipping",
     )
 
+    p_event = sub.add_parser(
+        "append-item-event",
+        help="Append a timeline event or comment to a local item",
+    )
+    p_event.add_argument("local_id", help="Item local ID, for example FEAT-0001")
+    p_event.add_argument("--config", default="server.toml")
+    p_event.add_argument("--project-key", required=True)
+    event_body_group = p_event.add_mutually_exclusive_group(required=True)
+    event_body_group.add_argument("--body", default=None, help="Event body text")
+    event_body_group.add_argument(
+        "--body-file",
+        default=None,
+        help="Read event body from a UTF-8 file, or '-' for stdin",
+    )
+    p_event.add_argument("--event-type", default="comment")
+    p_event.add_argument(
+        "--actor-type",
+        choices=["human", "agent", "system"],
+        default="human",
+    )
+    p_event.add_argument("--actor-name", default="cli")
+    p_event.add_argument(
+        "--metadata",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="Attach event metadata; repeat for multiple values",
+    )
+    p_event.add_argument("--dry-run", action="store_true", help="Print the event payload only")
+    p_event.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format after appending the event",
+    )
+
     p_list = sub.add_parser("list-items", help="List project items from the local database")
     p_list.add_argument("--config", default="server.toml")
     p_list.add_argument("--project-key", required=True)
@@ -657,6 +693,20 @@ def main(argv: list[str] | None = None) -> int:
             branch=args.branch,
             version=args.version,
             commits=args.commit,
+            dry_run=args.dry_run,
+            output_format=args.format,
+        ))
+    if args.cmd == "append-item-event":
+        return asyncio.run(_cmd_append_item_event(
+            Path(args.config),
+            args.project_key,
+            args.local_id,
+            body=args.body,
+            body_file=_path_or_stdin(args.body_file),
+            event_type=args.event_type,
+            actor_type=args.actor_type,
+            actor_name=args.actor_name,
+            metadata_options=args.metadata,
             dry_run=args.dry_run,
             output_format=args.format,
         ))
@@ -1499,6 +1549,72 @@ async def _cmd_ship_item(
 
     print(item.local_id)
     print(f"[ok] shipped {item.local_id} to {branch} as {version}", file=sys.stderr)
+    return 0
+
+
+async def _cmd_append_item_event(
+    config_path: Path,
+    project_key: str,
+    local_id: str,
+    *,
+    body: str | None,
+    body_file: Path | str | None,
+    event_type: str,
+    actor_type: str,
+    actor_name: str,
+    metadata_options: list[str],
+    dry_run: bool,
+    output_format: str,
+) -> int:
+    from pydantic import ValidationError
+
+    from issuedeck.core.db import make_engine, make_session_factory
+    from issuedeck.core.errors import IssueDeckError
+    from issuedeck.features.items.repo import ItemRepo
+    from issuedeck.features.items.schemas import CreateItemEventRequest
+    from issuedeck.features.items.service import ItemService
+
+    try:
+        registry = _build_registry(config_path)
+        registry.project(project_key)
+        body_value = _read_body_value(body, body_file)
+        metadata = _parse_key_value_options(metadata_options, "metadata")
+        req = CreateItemEventRequest(
+            event_type=event_type,
+            actor_type=actor_type,
+            actor_name=actor_name,
+            body=body_value,
+            metadata=metadata,
+        )
+    except (ValidationError, ValueError, IssueDeckError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if dry_run:
+        print(req.model_dump_json(indent=2))
+        return 0
+
+    _upgrade_database(config_path)
+    db_path = registry.server.data_dir / "tracker.db"
+    engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_factory = make_session_factory(engine)
+    try:
+        async with session_factory() as session:
+            service = ItemService(ItemRepo(session), registry, session)
+            event = await service.add_event(project_key, local_id, req)
+    except IssueDeckError as exc:
+        print(f"{exc.code}: {exc.message}", file=sys.stderr)
+        return 2
+    finally:
+        await engine.dispose()
+
+    payload = event.model_dump(mode="json")
+    if output_format == "json":
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print(event.id)
+    print(f"[ok] appended {event.event_type} event to {local_id}", file=sys.stderr)
     return 0
 
 

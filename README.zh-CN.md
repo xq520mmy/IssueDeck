@@ -208,6 +208,18 @@ uv run issuedeck ship-item FEAT-0001 \
   --commit abc1234
 ```
 
+追加评论、验证记录或交接事件：
+
+```bash
+uv run issuedeck append-item-event FEAT-0001 \
+  --config server.toml \
+  --project-key example \
+  --event-type verification \
+  --actor-type agent \
+  --actor-name codex \
+  --body "Checked locally before release."
+```
+
 不启动 Dashboard 也可以直接查看本地事项：
 
 ```bash
