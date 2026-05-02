@@ -52,6 +52,7 @@ Dashboard CSV、JSON 和 Markdown 上传见
 [Dashboard 导入历史](docs/dashboard-import-history.zh-CN.md)。
 导入后的批量整理见 [Dashboard 批量分诊](docs/dashboard-bulk-triage.zh-CN.md)。
 新工作区起步配置见[项目模板](docs/project-templates.zh-CN.md)。
+项目快照归档见[审计导出包](docs/audit-bundles.zh-CN.md)。
 
 ## 功能
 
@@ -74,7 +75,7 @@ Dashboard CSV、JSON 和 Markdown 上传见
 - 已保存筛选：每个项目保存常用视图，例如活跃 Bug、阻塞事项和待发布队列。
 - 软删除和恢复。
 - Ship 记录：绑定版本和 commit。
-- Markdown 导出和通用 frontmatter 迁移。
+- Markdown 导出、项目级审计 ZIP 快照和通用 frontmatter 迁移。
 - Dashboard 新建项目模板、中英文切换、首次启动清单和键盘友好的分诊快捷键。
 
 ## 快速开始

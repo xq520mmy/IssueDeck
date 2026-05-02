@@ -1,13 +1,16 @@
 import asyncio
+import json
 import sqlite3
 import subprocess
 import sys
+import zipfile
 
 import pytest
 
 from issuedeck.cli import (
     _build_registry,
     _cmd_demo,
+    _cmd_export_audit_bundle,
     _cmd_import_csv,
     _cmd_import_github_issues,
     _cmd_import_github_url,
@@ -33,6 +36,7 @@ def test_issuedeck_help_lists_subcommands():
         "serve",
         "migrate",
         "export",
+        "export-audit-bundle",
         "seed-demo",
         "import-github-url",
         "import-github-issues",
@@ -148,6 +152,30 @@ def test_seed_demo_runs_migrations_for_empty_database(tmp_path):
         ).fetchone()
     assert item_count == 8
     assert external_link_table == ("item_external_links",)
+
+
+def test_export_audit_bundle_cli_writes_zip(tmp_path):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+
+    out_path = tmp_path / "audit.zip"
+    rc = asyncio.run(_cmd_export_audit_bundle(cfg_path, "example", out_path))
+
+    assert rc == 0
+    assert out_path.exists()
+    with zipfile.ZipFile(out_path) as bundle:
+        manifest = json.loads(bundle.read("manifest.json"))
+        assert manifest["project_key"] == "example"
+        assert manifest["counts"]["items"] == 8
+        assert "items.json" in bundle.namelist()
 
 
 def test_import_github_url_dry_run_prints_create_payload(tmp_path, capsys):

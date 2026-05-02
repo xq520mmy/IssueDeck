@@ -59,6 +59,8 @@ Bulk cleanup after imports is covered in
 [Dashboard Bulk Triage](docs/dashboard-bulk-triage.md).
 Starter configs for new workspaces are covered in
 [Project Templates](docs/project-templates.md).
+Project snapshots are covered in
+[Audit Bundles](docs/audit-bundles.md).
 
 ## Features
 
@@ -93,6 +95,8 @@ Starter configs for new workspaces are covered in
 - Soft delete + restore.
 - Ship records with version + commits, queryable by shipped branch.
 - Markdown export (one file per item) and changelog rendering.
+- Project-level audit bundles for ZIP snapshots of config, items,
+  relationships, work sessions, and import history.
 - Frontmatter migration from existing Markdown trackers.
 - Server-rendered dashboard with list, kanban, detail, search, and create/edit flows.
 - Keyboard-friendly dashboard triage for search, filters, create, and item focus.

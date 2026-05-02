@@ -110,6 +110,18 @@ def main(argv: list[str] | None = None) -> int:
     p_exp.add_argument("--project-key", required=True)
     p_exp.add_argument("--out", required=True, help="Output directory")
 
+    p_audit = sub.add_parser(
+        "export-audit-bundle",
+        help="Export a project audit snapshot as a ZIP bundle",
+    )
+    p_audit.add_argument("--config", default="server.toml")
+    p_audit.add_argument("--project-key", required=True)
+    p_audit.add_argument(
+        "--out",
+        required=True,
+        help="Output .zip path, or a directory for <project>-audit-bundle.zip",
+    )
+
     p_seed = sub.add_parser("seed-demo", help="Seed fake demo data for docs/screenshots")
     p_seed.add_argument("--config", default="server.toml")
     p_seed.add_argument("--project-key", default="example")
@@ -351,6 +363,10 @@ def main(argv: list[str] | None = None) -> int:
         ))
     if args.cmd == "export":
         return asyncio.run(_cmd_export(
+            Path(args.config), args.project_key, Path(args.out),
+        ))
+    if args.cmd == "export-audit-bundle":
+        return asyncio.run(_cmd_export_audit_bundle(
             Path(args.config), args.project_key, Path(args.out),
         ))
     if args.cmd == "seed-demo":
@@ -658,6 +674,40 @@ async def _cmd_export(config_path: Path, project_key: str, out_dir: Path) -> int
             )
             print(f"[ok] wrote {report.items_written} items to {out_dir}",
                   file=sys.stderr)
+    finally:
+        await engine.dispose()
+    return 0
+
+
+async def _cmd_export_audit_bundle(
+    config_path: Path,
+    project_key: str,
+    out_path: Path,
+) -> int:
+    from issuedeck.core.db import make_engine, make_session_factory
+    from issuedeck.features.export.md_bundle import export_audit_bundle
+
+    registry = _build_registry(config_path)
+    db_path = registry.server.data_dir / "tracker.db"
+    engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_factory = make_session_factory(engine)
+    try:
+        async with session_factory() as session:
+            report = await export_audit_bundle(
+                session=session,
+                registry=registry,
+                project_key=project_key,
+                out_path=out_path,
+            )
+            print(
+                "[ok] wrote audit bundle to "
+                f"{report.bundle_path} "
+                f"(items={report.items_written}, "
+                f"relationships={report.relationships_written}, "
+                f"work_sessions={report.work_sessions_written}, "
+                f"import_batches={report.import_batches_written})",
+                file=sys.stderr,
+            )
     finally:
         await engine.dispose()
     return 0
