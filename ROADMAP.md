@@ -60,6 +60,7 @@ listed in `CHANGELOG.md`.
 - MCP tools can create, update, and filter items with custom fields.
 - MCP bulk update support for agent-driven post-import triage.
 - Local CLI item listing with REST-aligned filters and JSON output.
+- Local CLI item detail output for terminal-first triage.
 
 ## Near Term
 

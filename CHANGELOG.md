@@ -12,6 +12,7 @@ versioning once public releases begin.
 - Added `issuedeck list-items` for local CLI item listing with the same kind,
   status, tag, branch, relationship, custom-field, and deletion filters as the
   REST list API.
+- Added `issuedeck get-item` for local CLI item detail output in text or JSON.
 
 ## [0.7.0] - 2026-05-02
 

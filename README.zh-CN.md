@@ -168,6 +168,12 @@ uv run issuedeck list-items \
 `--applies-to`、`--relation-type`、`--custom-field`、`--include-deleted` 和
 `--only-deleted`。
 
+查看单个事项详情：
+
+```bash
+uv run issuedeck get-item FEAT-0001 --config server.toml --project-key example
+```
+
 ## 配置项目
 
 `api_token` 会继续作为兼容旧部署的 admin token。需要给多个客户端分配权限时，

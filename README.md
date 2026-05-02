@@ -265,6 +265,12 @@ Use `--format json` for scripts. Filters include `--kind`, `--status`, `--tag`,
 `--applies-to`, `--relation-type`, `--custom-field`, `--include-deleted`, and
 `--only-deleted`.
 
+Show one item with full detail:
+
+```bash
+uv run issuedeck get-item FEAT-0001 --config server.toml --project-key example
+```
+
 ## GitHub URL Helper
 
 Create an IssueDeck item from a GitHub issue, pull request, or commit URL:

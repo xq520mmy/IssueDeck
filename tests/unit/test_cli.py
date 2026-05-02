@@ -11,6 +11,7 @@ from issuedeck.cli import (
     _build_registry,
     _cmd_demo,
     _cmd_export_audit_bundle,
+    _cmd_get_item,
     _cmd_import_csv,
     _cmd_import_github_issues,
     _cmd_import_github_url,
@@ -40,6 +41,7 @@ def test_issuedeck_help_lists_subcommands():
         "export-audit-bundle",
         "seed-demo",
         "list-items",
+        "get-item",
         "import-github-url",
         "import-github-issues",
         "import-markdown-list",
@@ -242,6 +244,58 @@ def test_list_items_cli_supports_json_and_custom_field_filters(tmp_path, capsys)
     payload = json.loads(capsys.readouterr().out)
     assert len(payload["items"]) == 1
     assert payload["items"][0]["custom_fields"] == {"priority": "high"}
+
+
+def test_get_item_cli_prints_item_detail(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+
+    rc = asyncio.run(_cmd_get_item(
+        cfg_path,
+        "example",
+        "FEAT-0001",
+        include_deleted=False,
+        output_format="text",
+    ))
+
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "FEAT-0001" in out
+    assert "feature" in out
+
+
+def test_get_item_cli_supports_json(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+
+    rc = asyncio.run(_cmd_get_item(
+        cfg_path,
+        "example",
+        "FEAT-0001",
+        include_deleted=False,
+        output_format="json",
+    ))
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["local_id"] == "FEAT-0001"
+    assert payload["kind"] == "feature"
 
 
 def test_export_audit_bundle_cli_writes_zip(tmp_path):

@@ -164,6 +164,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Output format",
     )
 
+    p_get = sub.add_parser("get-item", help="Show a single project item")
+    p_get.add_argument("local_id", help="Item local ID, for example FEAT-0001")
+    p_get.add_argument("--config", default="server.toml")
+    p_get.add_argument("--project-key", required=True)
+    p_get.add_argument("--include-deleted", action="store_true")
+    p_get.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format",
+    )
+
     p_gh = sub.add_parser(
         "import-github-url",
         help="Create an item linked to a GitHub issue, pull request, or commit URL",
@@ -423,6 +435,14 @@ def main(argv: list[str] | None = None) -> int:
             include_deleted=args.include_deleted,
             only_deleted=args.only_deleted,
             limit=args.limit,
+            output_format=args.format,
+        ))
+    if args.cmd == "get-item":
+        return asyncio.run(_cmd_get_item(
+            Path(args.config),
+            args.project_key,
+            args.local_id,
+            include_deleted=args.include_deleted,
             output_format=args.format,
         ))
     if args.cmd == "import-github-url":
@@ -889,6 +909,69 @@ async def _cmd_list_items(
             f"[more] increase --limit or use the dashboard/API cursor: {result.next_cursor}",
             file=sys.stderr,
         )
+    return 0
+
+
+async def _cmd_get_item(
+    config_path: Path,
+    project_key: str,
+    local_id: str,
+    *,
+    include_deleted: bool,
+    output_format: str,
+) -> int:
+    from issuedeck.core.db import make_engine, make_session_factory
+    from issuedeck.features.items.repo import ItemRepo
+    from issuedeck.features.items.service import ItemService
+
+    _upgrade_database(config_path)
+    registry = _build_registry(config_path)
+    db_path = registry.server.data_dir / "tracker.db"
+    engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_factory = make_session_factory(engine)
+    try:
+        async with session_factory() as session:
+            service = ItemService(ItemRepo(session), registry, session)
+            item = await service.get(
+                project_key,
+                local_id,
+                include_deleted=include_deleted,
+            )
+    finally:
+        await engine.dispose()
+
+    payload = item.model_dump(mode="json")
+    if output_format == "json":
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print(f"{item.local_id}  {item.kind}  {item.status}")
+    print(item.title)
+    if item.deleted_at:
+        print(f"Deleted: {item.deleted_at}")
+    if item.tags:
+        print(f"Tags: {', '.join(item.tags)}")
+    if item.applies_to:
+        print(f"Applies to: {', '.join(item.applies_to)}")
+    custom_fields = _format_custom_fields(item.custom_fields)
+    if custom_fields:
+        print(f"Custom fields: {custom_fields}")
+    if item.external_links:
+        print("External links:")
+        for link in item.external_links:
+            label = f"{link.label}: " if link.label else ""
+            print(f"- {label}{link.url}")
+    if item.ship_records:
+        print("Ship records:")
+        for record in item.ship_records:
+            print(f"- {record.branch_key} {record.version} ({record.shipped_at})")
+    if item.relationships:
+        print("Relationships:")
+        for rel in item.relationships:
+            print(f"- {rel.relation_type}: {rel.to_local_id}")
+    if item.body:
+        print("")
+        print(item.body)
     return 0
 
 
