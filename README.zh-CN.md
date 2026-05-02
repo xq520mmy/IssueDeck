@@ -270,6 +270,16 @@ Basic issue deck、Agent workflow、Software team 等起步模板生成项目配
 高级配置仍建议直接编辑 TOML。也可以通过 `project_templates_dir` 增加本地模板包；
 详见[项目模板](docs/project-templates.zh-CN.md)。
 
+同一套起步模板也可以从 CLI 使用：
+
+```bash
+uv run issuedeck list-project-templates --config server.toml
+uv run issuedeck create-project myapp \
+  --config server.toml \
+  --name "My App" \
+  --template agent
+```
+
 ## Webhooks
 
 IssueDeck 支持可选的签名生命周期 Webhooks，可以在事项创建、更新、发布、删除、

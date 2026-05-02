@@ -12,6 +12,7 @@ from issuedeck.cli import (
     _cmd_append_item_event,
     _cmd_bulk_update_items,
     _cmd_create_item,
+    _cmd_create_project,
     _cmd_demo,
     _cmd_export_audit_bundle,
     _cmd_get_item,
@@ -21,6 +22,7 @@ from issuedeck.cli import (
     _cmd_import_json,
     _cmd_import_markdown_list,
     _cmd_list_items,
+    _cmd_list_project_templates,
     _cmd_seed_demo,
     _cmd_serve,
     _cmd_ship_item,
@@ -45,6 +47,8 @@ def test_issuedeck_help_lists_subcommands():
         "export",
         "export-audit-bundle",
         "seed-demo",
+        "list-project-templates",
+        "create-project",
         "create-item",
         "update-item",
         "bulk-update-items",
@@ -166,6 +170,70 @@ def test_seed_demo_runs_migrations_for_empty_database(tmp_path):
         ).fetchone()
     assert item_count == 8
     assert external_link_table == ("item_external_links",)
+
+
+def test_list_project_templates_cli_outputs_json(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _ensure_demo_config(cfg_path)
+
+    rc = _cmd_list_project_templates(cfg_path, output_format="json")
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert [template["key"] for template in payload["templates"]] == [
+        "basic",
+        "agent",
+        "software",
+    ]
+    assert payload["templates"][0]["name"] == "Basic issue deck"
+
+
+def test_create_project_cli_writes_template_config(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _ensure_demo_config(cfg_path)
+
+    rc = _cmd_create_project(
+        cfg_path,
+        "newapp",
+        name="New App",
+        description="Terminal-created project.",
+        template_key="agent",
+        dry_run=False,
+        output_format="json",
+    )
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["key"] == "newapp"
+    assert payload["template"] == "agent"
+    project_path = tmp_path / "projects" / "newapp.toml"
+    assert project_path.exists()
+    registry = _build_registry(cfg_path)
+    project = registry.project("newapp")
+    assert project.name == "New App"
+    assert "task" in project.kinds
+    assert "estimate" in project.custom_fields
+
+
+def test_create_project_cli_dry_run_does_not_write(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _ensure_demo_config(cfg_path)
+
+    rc = _cmd_create_project(
+        cfg_path,
+        "dryrun",
+        name="Dry Run",
+        description="Preview only.",
+        template_key="basic",
+        dry_run=True,
+        output_format="json",
+    )
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["key"] == "dryrun"
+    assert 'key = "dryrun"' in payload["toml"]
+    assert not (tmp_path / "projects" / "dryrun.toml").exists()
 
 
 def test_create_item_cli_creates_local_item_with_metadata(tmp_path, capsys):

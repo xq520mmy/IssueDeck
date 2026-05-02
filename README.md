@@ -217,6 +217,16 @@ templates; edit TOML directly for advanced customizations. Local template packs
 can be added through `project_templates_dir`; see
 [Project Templates](docs/project-templates.md).
 
+The same starter templates are available from the CLI:
+
+```bash
+uv run issuedeck list-project-templates --config server.toml
+uv run issuedeck create-project myapp \
+  --config server.toml \
+  --name "My App" \
+  --template agent
+```
+
 Optional signed lifecycle webhooks can notify downstream automation when items
 are created, updated, shipped, deleted, or restored; see
 [Lifecycle Webhooks](docs/webhooks.md). The same guide covers Slack, Discord,

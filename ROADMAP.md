@@ -48,6 +48,7 @@ listed in `CHANGELOG.md`.
 - Slack, Discord, and email lifecycle notifications for team-visible item updates.
 - Local project-template packs for custom starter workflows without source
   changes.
+- Local CLI project template listing and project config creation.
 - Project-defined custom fields for item metadata, dashboard forms, exports,
   and API payloads.
 - Custom-field list filters and CSV/JSON import mappings.

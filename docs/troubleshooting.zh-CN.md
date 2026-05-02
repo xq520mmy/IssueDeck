@@ -124,6 +124,7 @@ uv run issuedeck serve --config server.toml
 ## SQLite 迁移错误
 
 `demo`、`serve`、`seed-demo`、`create-item`、`update-item`、`bulk-update-items`、`ship-item`、`append-item-event`、`list-items`、`get-item` 和 `import-github-url` 命令都会自动执行数据库迁移。
+`create-project` 只写入项目 TOML，不需要执行数据库迁移。
 如果你直接调用 Alembic，可以运行：
 
 ```bash

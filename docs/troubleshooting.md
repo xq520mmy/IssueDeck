@@ -127,7 +127,8 @@ Common causes:
 
 The `demo`, `serve`, `seed-demo`, `create-item`, `update-item`,
 `bulk-update-items`, `ship-item`, `append-item-event`, `list-items`, `get-item`,
-and `import-github-url` commands run database migrations automatically. If you call
+and `import-github-url` commands run database migrations automatically.
+`create-project` only writes project TOML and does not need migrations. If you call
 Alembic directly, use:
 
 ```bash

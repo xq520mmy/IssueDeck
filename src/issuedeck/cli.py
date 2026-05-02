@@ -6,10 +6,12 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
 _DEMO_TOKEN = "issuedeck-local-token"
+_PROJECT_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]{1,62}$")
 
 _DEMO_PROJECT_TOML = """key = "example"
 name = "Example Project"
@@ -127,6 +129,29 @@ def main(argv: list[str] | None = None) -> int:
     p_seed.add_argument("--config", default="server.toml")
     p_seed.add_argument("--project-key", default="example")
     p_seed.add_argument("--force-reset", action="store_true")
+
+    p_templates = sub.add_parser("list-project-templates", help="List project templates")
+    p_templates.add_argument("--config", default="server.toml")
+    p_templates.add_argument(
+        "--format",
+        choices=["table", "json"],
+        default="table",
+        help="Output format",
+    )
+
+    p_project = sub.add_parser("create-project", help="Create a project config from a template")
+    p_project.add_argument("key", help="Project key, for example myapp")
+    p_project.add_argument("--config", default="server.toml")
+    p_project.add_argument("--name", required=True)
+    p_project.add_argument("--description", default="")
+    p_project.add_argument("--template", default=None, help="Template key; defaults to basic")
+    p_project.add_argument("--dry-run", action="store_true", help="Print TOML without writing")
+    p_project.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format after creation",
+    )
 
     p_create = sub.add_parser("create-item", help="Create an item in the local database")
     p_create.add_argument("--config", default="server.toml")
@@ -635,6 +660,18 @@ def main(argv: list[str] | None = None) -> int:
         return asyncio.run(_cmd_seed_demo(
             Path(args.config), args.project_key, args.force_reset,
         ))
+    if args.cmd == "list-project-templates":
+        return _cmd_list_project_templates(Path(args.config), output_format=args.format)
+    if args.cmd == "create-project":
+        return _cmd_create_project(
+            Path(args.config),
+            args.key,
+            name=args.name,
+            description=args.description,
+            template_key=args.template,
+            dry_run=args.dry_run,
+            output_format=args.format,
+        )
     if args.cmd == "create-item":
         return asyncio.run(_cmd_create_item(
             Path(args.config),
@@ -1208,6 +1245,132 @@ async def _cmd_seed_demo(
             )
     finally:
         await engine.dispose()
+    return 0
+
+
+def _cmd_list_project_templates(config_path: Path, *, output_format: str) -> int:
+    from issuedeck.core.config import load_server_config
+    from issuedeck.features.dashboard.i18n import make_translator
+    from issuedeck.features.projects.project_templates import list_project_templates
+
+    server_cfg = load_server_config(config_path)
+    templates = list_project_templates(server_cfg.project_templates_dir)
+    t = make_translator("en")
+    payload = [
+        {
+            "key": template.key,
+            "name": t(template.name_i18n),
+            "description": t(template.description_i18n),
+            "kinds": [kind.key for kind in template.kinds],
+            "statuses": [status.key for status in template.statuses],
+            "branches": [branch.key for branch in template.branches],
+            "custom_fields": list(template.custom_fields.keys()),
+        }
+        for template in templates
+    ]
+    if output_format == "json":
+        print(json.dumps({"templates": payload}, ensure_ascii=False, indent=2))
+        return 0
+
+    rows = [
+        [
+            item["key"],
+            item["name"],
+            ", ".join(item["kinds"]),
+            ", ".join(item["statuses"]),
+            ", ".join(item["custom_fields"]),
+        ]
+        for item in payload
+    ]
+    _print_table(["Key", "Name", "Kinds", "Statuses", "Custom fields"], rows)
+    return 0
+
+
+def _cmd_create_project(
+    config_path: Path,
+    key: str,
+    *,
+    name: str,
+    description: str,
+    template_key: str | None,
+    dry_run: bool,
+    output_format: str,
+) -> int:
+    from issuedeck.core.config import load_project_config, load_server_config
+    from issuedeck.core.errors import ConfigError
+    from issuedeck.features.projects.project_templates import (
+        DEFAULT_PROJECT_TEMPLATE_KEY,
+        get_project_template,
+        render_project_toml,
+    )
+
+    project_key = key.strip().lower()
+    project_name = name.strip()
+    project_description = description.strip()
+    selected_template = (template_key or DEFAULT_PROJECT_TEMPLATE_KEY).strip()
+    try:
+        server_cfg = load_server_config(config_path)
+        if not _PROJECT_KEY_RE.fullmatch(project_key):
+            raise ValueError(
+                "project key must start with a lowercase letter and use "
+                "lowercase letters, numbers, - or _"
+            )
+        if not project_name:
+            raise ValueError("project name is required")
+        template = get_project_template(
+            selected_template,
+            server_cfg.project_templates_dir,
+        )
+        if template is None:
+            raise ValueError(f"unknown project template '{selected_template}'")
+        text = render_project_toml(
+            key=project_key,
+            name=project_name,
+            description=project_description,
+            template=template,
+        )
+        path = server_cfg.projects_dir / f"{project_key}.toml"
+        if path.exists() and not dry_run:
+            raise ValueError(f"project config already exists: {path}")
+    except (ConfigError, ValueError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if dry_run:
+        if output_format == "json":
+            print(json.dumps({
+                "key": project_key,
+                "name": project_name,
+                "description": project_description,
+                "template": selected_template,
+                "path": str(path),
+                "toml": text,
+            }, ensure_ascii=False, indent=2))
+        else:
+            print(text)
+        return 0
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    try:
+        project = load_project_config(path)
+    except ConfigError as exc:
+        path.unlink(missing_ok=True)
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if output_format == "json":
+        print(json.dumps({
+            "key": project.key,
+            "name": project.name,
+            "description": project.description,
+            "template": selected_template,
+            "path": str(path),
+        }, ensure_ascii=False, indent=2))
+        return 0
+
+    print(path)
+    print(f"[ok] created project {project.key}", file=sys.stderr)
     return 0
 
 

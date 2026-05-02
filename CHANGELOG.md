@@ -9,6 +9,8 @@ versioning once public releases begin.
 
 ### Added
 
+- Added `issuedeck list-project-templates` and `issuedeck create-project` for
+  template-based project config creation from the local CLI.
 - Added `issuedeck create-item` for local CLI item creation with tags,
   branches, custom fields, external links, body files, JSON output, and dry-run
   previews.
