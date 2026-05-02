@@ -3,7 +3,7 @@
 IssueDeck is starting small on purpose: a local-first issue deck, a dashboard,
 and MCP tools that make coding-agent workflows easier to track.
 
-Current public release: `v0.6.0`.
+Current public release: `v0.7.0`.
 
 The `main` branch may include unreleased contributor-experience improvements
 listed in `CHANGELOG.md`.

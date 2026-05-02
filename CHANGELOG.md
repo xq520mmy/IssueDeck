@@ -7,6 +7,8 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-02
+
 ### Added
 
 - Added range and presence filters for project custom fields in REST list
