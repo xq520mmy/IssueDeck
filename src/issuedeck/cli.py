@@ -128,6 +128,52 @@ def main(argv: list[str] | None = None) -> int:
     p_seed.add_argument("--project-key", default="example")
     p_seed.add_argument("--force-reset", action="store_true")
 
+    p_create = sub.add_parser("create-item", help="Create an item in the local database")
+    p_create.add_argument("--config", default="server.toml")
+    p_create.add_argument("--project-key", required=True)
+    p_create.add_argument(
+        "--kind",
+        default=None,
+        help="IssueDeck kind to create; defaults to the first kind in the project config",
+    )
+    p_create.add_argument("--title", required=True)
+    body_group = p_create.add_mutually_exclusive_group()
+    body_group.add_argument("--body", default=None, help="Item body text")
+    body_group.add_argument(
+        "--body-file",
+        default=None,
+        help="Read item body from a UTF-8 file, or '-' for stdin",
+    )
+    p_create.add_argument("--tag", action="append", default=[], help="Add a tag")
+    p_create.add_argument(
+        "--applies-to",
+        action="append",
+        default=None,
+        metavar="BRANCH",
+        help="Target branch; repeat for multiple branches",
+    )
+    p_create.add_argument(
+        "--custom-field",
+        action="append",
+        default=[],
+        metavar="FIELD=VALUE",
+        help="Set a project custom field; repeat for multiple fields",
+    )
+    p_create.add_argument(
+        "--external-link",
+        action="append",
+        default=[],
+        metavar="LINK",
+        help="Attach an external link; accepts URL or 'Label | URL'",
+    )
+    p_create.add_argument("--dry-run", action="store_true", help="Print the create payload only")
+    p_create.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format after creation",
+    )
+
     p_list = sub.add_parser("list-items", help="List project items from the local database")
     p_list.add_argument("--config", default="server.toml")
     p_list.add_argument("--project-key", required=True)
@@ -422,6 +468,26 @@ def main(argv: list[str] | None = None) -> int:
         return asyncio.run(_cmd_seed_demo(
             Path(args.config), args.project_key, args.force_reset,
         ))
+    if args.cmd == "create-item":
+        body_file = (
+            Path(args.body_file)
+            if args.body_file and args.body_file != "-"
+            else args.body_file
+        )
+        return asyncio.run(_cmd_create_item(
+            Path(args.config),
+            args.project_key,
+            kind=args.kind,
+            title=args.title,
+            body=args.body,
+            body_file=body_file,
+            tags=args.tag,
+            applies_to=args.applies_to,
+            custom_field_options=args.custom_field,
+            external_link_options=args.external_link,
+            dry_run=args.dry_run,
+            output_format=args.format,
+        ))
     if args.cmd == "list-items":
         return asyncio.run(_cmd_list_items(
             Path(args.config),
@@ -703,6 +769,47 @@ def _format_custom_fields(values: dict[str, object]) -> str:
     return ", ".join(parts)
 
 
+def _parse_key_value_options(options: list[str] | None, label: str) -> dict[str, object]:
+    values: dict[str, object] = {}
+    for option in options or []:
+        if "=" not in option:
+            raise ValueError(f"invalid {label} '{option}'; expected FIELD=VALUE")
+        key, value = option.split("=", 1)
+        key = key.strip()
+        if not key:
+            raise ValueError(f"invalid {label} '{option}'; expected FIELD=VALUE")
+        values[key] = value.strip()
+    return values
+
+
+def _parse_external_link_options(options: list[str] | None) -> list[dict[str, str | None]]:
+    links: list[dict[str, str | None]] = []
+    for option in options or []:
+        raw = option.strip()
+        if not raw:
+            continue
+        label: str | None = None
+        url = raw
+        if "|" in raw:
+            label_part, url_part = raw.split("|", 1)
+            label = label_part.strip() or None
+            url = url_part.strip()
+        if not url:
+            raise ValueError(f"invalid external link '{option}'; expected URL or 'Label | URL'")
+        links.append({"url": url, "label": label})
+    return links
+
+
+def _read_body_value(body: str | None, body_file: Path | str | None) -> str:
+    if body_file is None:
+        return body or ""
+    if body is not None:
+        raise ValueError("body and body_file are mutually exclusive")
+    if body_file == "-":
+        return sys.stdin.read()
+    return Path(body_file).read_text(encoding="utf-8")
+
+
 def _print_table(headers: list[str], rows: list[list[str]]) -> None:
     widths = [
         max(len(header), *(len(str(row[index])) for row in rows))
@@ -831,6 +938,83 @@ async def _cmd_seed_demo(
             )
     finally:
         await engine.dispose()
+    return 0
+
+
+async def _cmd_create_item(
+    config_path: Path,
+    project_key: str,
+    *,
+    kind: str | None,
+    title: str,
+    body: str | None,
+    body_file: Path | str | None,
+    tags: list[str],
+    applies_to: list[str] | None,
+    custom_field_options: list[str],
+    external_link_options: list[str],
+    dry_run: bool,
+    output_format: str,
+) -> int:
+    from pydantic import ValidationError
+
+    from issuedeck.core.db import make_engine, make_session_factory
+    from issuedeck.core.errors import IssueDeckError
+    from issuedeck.features.items.custom_fields import normalize_custom_fields
+    from issuedeck.features.items.repo import ItemRepo
+    from issuedeck.features.items.schemas import CreateItemRequest
+    from issuedeck.features.items.service import ItemService
+
+    try:
+        registry = _build_registry(config_path)
+        project = registry.project(project_key)
+        item_kind = kind or next(iter(project.kinds.keys()))
+        registry.validate_kind(project_key, item_kind)
+        if applies_to is not None:
+            for branch in applies_to:
+                registry.validate_branch(project_key, branch)
+        body_value = _read_body_value(body, body_file)
+        custom_fields = _parse_key_value_options(custom_field_options, "custom field")
+        external_links = _parse_external_link_options(external_link_options)
+        normalized_custom_fields = normalize_custom_fields(project, custom_fields)
+        req = CreateItemRequest(
+            kind=item_kind,
+            title=title,
+            body=body_value,
+            tags=tags,
+            applies_to=applies_to,
+            custom_fields=normalized_custom_fields,
+            external_links=external_links,
+        )
+    except (ValidationError, ValueError, IssueDeckError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if dry_run:
+        print(req.model_dump_json(indent=2))
+        return 0
+
+    _upgrade_database(config_path)
+    db_path = registry.server.data_dir / "tracker.db"
+    engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_factory = make_session_factory(engine)
+    try:
+        async with session_factory() as session:
+            service = ItemService(ItemRepo(session), registry, session)
+            item = await service.create(project_key, req)
+    except IssueDeckError as exc:
+        print(f"{exc.code}: {exc.message}", file=sys.stderr)
+        return 2
+    finally:
+        await engine.dispose()
+
+    payload = item.model_dump(mode="json")
+    if output_format == "json":
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print(item.local_id)
+    print(f"[ok] created {item.local_id}", file=sys.stderr)
     return 0
 
 

@@ -152,7 +152,23 @@ uv run issuedeck seed-demo --config server.toml --project-key example
 如果目标项目已经有事项，命令会拒绝覆盖。确认要替换该项目事项时再加
 `--force-reset`。
 
-## CLI 事项列表
+## CLI 事项工作流
+
+不启动 Dashboard 也可以直接创建本地事项：
+
+```bash
+uv run issuedeck create-item \
+  --config server.toml \
+  --project-key example \
+  --kind feature \
+  --title "Add release checklist" \
+  --tag ops \
+  --custom-field priority=high \
+  --external-link "Spec | https://example.com/spec"
+```
+
+短内容可以用 `--body`，较长 Markdown 可以用 `--body-file notes.md`，写入前可用
+`--dry-run` 预览 payload。
 
 不启动 Dashboard 也可以直接查看本地事项：
 

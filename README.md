@@ -249,7 +249,23 @@ To intentionally replace that project's items, add `--force-reset`.
 For the full first-run flow, prefer `uv run issuedeck demo`; it creates config,
 runs migrations, seeds fake data, and starts the dashboard.
 
-## CLI Item Listing
+## CLI Item Workflow
+
+Create a local item without starting the dashboard:
+
+```bash
+uv run issuedeck create-item \
+  --config server.toml \
+  --project-key example \
+  --kind feature \
+  --title "Add release checklist" \
+  --tag ops \
+  --custom-field priority=high \
+  --external-link "Spec | https://example.com/spec"
+```
+
+Use `--body` for short notes, `--body-file notes.md` for longer Markdown, and
+`--dry-run` to preview the payload before writing.
 
 List local items without starting the dashboard:
 

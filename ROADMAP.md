@@ -59,6 +59,8 @@ listed in `CHANGELOG.md`.
   agent-assisted, and software-team workflows.
 - MCP tools can create, update, and filter items with custom fields.
 - MCP bulk update support for agent-driven post-import triage.
+- Local CLI item creation with tags, branches, custom fields, external links,
+  body files, JSON output, and dry-run previews.
 - Local CLI item listing with REST-aligned filters and JSON output.
 - Local CLI item detail output for terminal-first triage.
 

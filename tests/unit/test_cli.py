@@ -9,6 +9,7 @@ import pytest
 
 from issuedeck.cli import (
     _build_registry,
+    _cmd_create_item,
     _cmd_demo,
     _cmd_export_audit_bundle,
     _cmd_get_item,
@@ -40,6 +41,7 @@ def test_issuedeck_help_lists_subcommands():
         "export",
         "export-audit-bundle",
         "seed-demo",
+        "create-item",
         "list-items",
         "get-item",
         "import-github-url",
@@ -156,6 +158,97 @@ def test_seed_demo_runs_migrations_for_empty_database(tmp_path):
         ).fetchone()
     assert item_count == 8
     assert external_link_table == ("item_external_links",)
+
+
+def test_create_item_cli_creates_local_item_with_metadata(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+    project_path = tmp_path / "projects" / "example.toml"
+    project_path.write_text(
+        project_path.read_text(encoding="utf-8") + "\n".join([
+            "",
+            "[custom_fields.priority]",
+            'label = "Priority"',
+            'type = "select"',
+            'options = ["low", "high"]',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    rc = asyncio.run(_cmd_create_item(
+        cfg_path,
+        "example",
+        kind="bug",
+        title="Fix CLI create",
+        body="Created from the terminal.",
+        body_file=None,
+        tags=["cli", "triage"],
+        applies_to=["main"],
+        custom_field_options=["priority=high"],
+        external_link_options=["Spec | https://example.com/spec"],
+        dry_run=False,
+        output_format="json",
+    ))
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["local_id"].startswith("BUG-")
+    assert payload["kind"] == "bug"
+    assert payload["title"] == "Fix CLI create"
+    assert payload["tags"] == ["cli", "triage"]
+    assert payload["applies_to"] == ["main"]
+    assert payload["custom_fields"] == {"priority": "high"}
+    assert payload["external_links"][0]["label"] == "Spec"
+    assert payload["external_links"][0]["url"] == "https://example.com/spec"
+
+
+def test_create_item_cli_dry_run_reads_body_file_without_writing(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+    body_path = tmp_path / "body.md"
+    body_path.write_text("Body from file.", encoding="utf-8")
+
+    rc = asyncio.run(_cmd_create_item(
+        cfg_path,
+        "example",
+        kind=None,
+        title="Plan terminal workflow",
+        body=None,
+        body_file=body_path,
+        tags=[],
+        applies_to=None,
+        custom_field_options=[],
+        external_link_options=[],
+        dry_run=True,
+        output_format="json",
+    ))
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["kind"] == "feature"
+    assert payload["body"] == "Body from file."
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        item_count = conn.execute(
+            "select count(*) from items where project_key = 'example'"
+        ).fetchone()[0]
+    assert item_count == 8
 
 
 def test_list_items_cli_prints_filtered_table(tmp_path, capsys):
