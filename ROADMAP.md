@@ -51,6 +51,7 @@ listed in `CHANGELOG.md`.
 - Project-defined custom fields for item metadata, dashboard forms, exports,
   and API payloads.
 - Custom-field list filters and CSV/JSON import mappings.
+- Custom-field bulk updates for post-import triage.
 
 ## Near Term
 

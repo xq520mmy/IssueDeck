@@ -69,6 +69,7 @@ class BulkUpdateItemsRequest(BaseModel):
     applies_to: list[str] | None = None
     tags: list[str] | None = None
     tag_mode: Literal["add", "remove", "replace"] = "add"
+    custom_fields: dict[str, Any] | None = None
     reason: str = Field(default="", max_length=500)
 
     @model_validator(mode="after")
@@ -82,13 +83,21 @@ class BulkUpdateItemsRequest(BaseModel):
                 raise ValueError("applies_to cannot be empty — must target at least one branch")
         if self.tags is not None:
             self.tags = _dedupe_clean(self.tags)
+        if self.custom_fields is not None and not self.custom_fields:
+            self.custom_fields = None
         if self.status == "done":
             raise ValueError(
                 "cannot set status=done via update; use ship to bind a version"
             )
         if self.action == "update" and not any(
             value is not None
-            for value in (self.kind, self.status, self.applies_to, self.tags)
+            for value in (
+                self.kind,
+                self.status,
+                self.applies_to,
+                self.tags,
+                self.custom_fields,
+            )
         ):
             raise ValueError("bulk update requires at least one field to change")
         return self

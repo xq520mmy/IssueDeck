@@ -1756,9 +1756,12 @@ async def bulk_update_items_dashboard(
         )
 
     try:
+        project = request.app.state.registry.project(project_key)
+        form_data = await request.form()
         action = bulk_action if bulk_action in {"update", "delete", "restore"} else "update"
         applies = bulk_applies_to if bulk_branch_mode == "replace" else None
         tags = _split_form_tokens(bulk_tags) if bulk_tags.strip() else None
+        custom_fields = _custom_field_filters_from_form(project, form_data)
         payload = BulkUpdateItemsRequest(
             local_ids=local_ids,
             action=action,
@@ -1767,6 +1770,7 @@ async def bulk_update_items_dashboard(
             tags=tags,
             tag_mode=bulk_tag_mode if bulk_tag_mode in {"add", "remove", "replace"} else "add",
             applies_to=applies,
+            custom_fields=custom_fields or None,
             reason="bulk triage",
         )
         svc, session = _item_svc(request)

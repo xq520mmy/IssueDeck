@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from issuedeck.core.config import (
     BranchConfig,
     ConfigRegistry,
+    CustomFieldConfig,
     KindConfig,
     ProjectConfig,
     ServerConfig,
@@ -38,6 +39,13 @@ def _registry():
                 BranchConfig(key="main", label="Main"),
                 BranchConfig(key="next", label="Next"),
             ],
+            custom_fields={
+                "priority": CustomFieldConfig(
+                    label="Priority",
+                    type="select",
+                    options=["low", "high"],
+                ),
+            },
         )},
     )
 
@@ -76,6 +84,8 @@ async def test_list_page_renders_bulk_triage_controls(dashboard_client):
     assert "Bulk" not in response.text
     assert "Select all visible items" in response.text
     assert "Keep status" in response.text
+    assert "Priority" in response.text
+    assert "Leave unchanged" in response.text
     assert "FEAT-0001" in response.text
     assert "bulk.action" not in response.text
     assert "nav.import_history" not in response.text
@@ -97,6 +107,7 @@ async def test_dashboard_bulk_update_preserves_current_list_url(dashboard_client
             "bulk_tags": "triaged",
             "bulk_branch_mode": "replace",
             "bulk_applies_to": "next",
+            "custom_field__priority": "high",
         },
         follow_redirects=False,
     )
@@ -112,9 +123,12 @@ async def test_dashboard_bulk_update_preserves_current_list_url(dashboard_client
         one = await svc.get("test", "FEAT-0001")
         two = await svc.get("test", "FEAT-0002")
 
-    assert [(item.kind, item.status, item.tags, item.applies_to) for item in [one, two]] == [
-        ("bug", "in_progress", ["triaged"], ["next"]),
-        ("bug", "in_progress", ["triaged"], ["next"]),
+    assert [
+        (item.kind, item.status, item.tags, item.applies_to, item.custom_fields)
+        for item in [one, two]
+    ] == [
+        ("bug", "in_progress", ["triaged"], ["next"], {"priority": "high"}),
+        ("bug", "in_progress", ["triaged"], ["next"], {"priority": "high"}),
     ]
 
 

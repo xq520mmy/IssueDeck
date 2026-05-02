@@ -99,6 +99,8 @@ def _bulk_changed_fields(req: BulkUpdateItemsRequest) -> list[str]:
         fields.append("tags")
     if req.applies_to is not None:
         fields.append("applies_to")
+    if req.custom_fields is not None:
+        fields.append("custom_fields")
     return fields
 
 
@@ -241,7 +243,7 @@ class ItemService:
         project_key: str,
         req: BulkUpdateItemsRequest,
     ) -> BulkUpdateItemsResponse:
-        self._registry.project(project_key)
+        project_cfg = self._registry.project(project_key)
 
         if req.action == "update":
             if req.kind is not None:
@@ -256,6 +258,8 @@ class ItemService:
             if req.applies_to is not None:
                 for branch in req.applies_to:
                     self._registry.validate_branch(project_key, branch)
+            if req.custom_fields is not None:
+                normalize_custom_field_filters(project_cfg, req.custom_fields)
 
         include_deleted = req.action == "restore"
         rows = await self._repo.list_by_local_ids(
@@ -327,12 +331,22 @@ class ItemService:
                         req.tags,
                         req.tag_mode,
                     )
+                custom_fields_json = None
+                if req.custom_fields is not None:
+                    custom_fields_json = custom_fields_to_json(
+                        normalize_custom_fields(
+                            project_cfg,
+                            req.custom_fields,
+                            existing=custom_fields_from_json(item.custom_fields_json),
+                        )
+                    )
                 await self._repo.update_item_fields(
                     item,
                     kind=req.kind,
                     status=req.status,
                     tags=tags,
                     applies_to=req.applies_to,
+                    custom_fields_json=custom_fields_json,
                 )
                 await self._record_event(
                     item,

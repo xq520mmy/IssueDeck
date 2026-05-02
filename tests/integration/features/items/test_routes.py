@@ -190,6 +190,19 @@ async def test_bulk_update_route(client):
         ["triaged"],
     ]
 
+    r = await client.post(
+        "/api/v1/projects/test/items/bulk",
+        json={
+            "local_ids": ["FEAT-0001", "FEAT-0002"],
+            "custom_fields": {"priority": "high"},
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert [item["custom_fields"] for item in r.json()["items"]] == [
+        {"priority": "high"},
+        {"priority": "high"},
+    ]
+
 
 async def test_list_only_deleted_route(client):
     await client.post("/api/v1/projects/test/items",

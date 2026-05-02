@@ -58,6 +58,18 @@ type = "url"
 
 未知字段、非法 select 选项、非数字 number 值都会返回 `invalid_custom_field`。
 
+批量更新可以一次为多个事项设置自定义字段：
+
+```json
+{
+  "local_ids": ["FEAT-0001", "FEAT-0002"],
+  "custom_fields": {
+    "priority": "high",
+    "customer_impact": true
+  }
+}
+```
+
 列表 API 可以通过重复的 `custom_field=FIELD=VALUE` 查询参数筛选自定义字段：
 
 ```bash
@@ -70,7 +82,8 @@ curl \
 
 事项创建/编辑表单会自动渲染配置好的自定义字段，提交后的值会展示在事项详情页。
 列表筛选面板也会渲染配置好的自定义字段，因此保存筛选可以包含 `priority=high`
-或 `customer_impact=true` 这类条件。
+或 `customer_impact=true` 这类条件。列表批量操作区也可以为所有选中事项设置
+自定义字段；留空表示保持原值不变。
 
 ## 导入
 

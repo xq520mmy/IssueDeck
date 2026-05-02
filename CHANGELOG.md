@@ -16,6 +16,7 @@ versioning once public releases begin.
   and audit-bundle support.
 - Added custom-field support to local project-template packs.
 - Added dashboard/API custom-field list filters and CSV/JSON import mappings.
+- Added custom-field support to REST and dashboard bulk updates.
 
 ## [0.5.0] - 2026-05-02
 

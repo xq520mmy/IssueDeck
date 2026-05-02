@@ -326,6 +326,51 @@ async def test_bulk_update_adds_and_removes_tags(service):
     assert removed.items[0].tags == ["triaged"]
 
 
+async def test_bulk_update_merges_custom_fields(custom_field_service):
+    await custom_field_service.create(
+        "test",
+        CreateItemRequest(
+            kind="feature",
+            title="one",
+            custom_fields={"priority": "low", "estimate": 1},
+        ),
+    )
+    await custom_field_service.create(
+        "test",
+        CreateItemRequest(
+            kind="feature",
+            title="two",
+            custom_fields={"priority": "low"},
+        ),
+    )
+
+    result = await custom_field_service.bulk_update(
+        "test",
+        BulkUpdateItemsRequest(
+            local_ids=["FEAT-0001", "FEAT-0002"],
+            custom_fields={"priority": "high", "customer_impact": True},
+        ),
+    )
+
+    assert result.updated_count == 2
+    assert [item.custom_fields["priority"] for item in result.items] == [
+        "high",
+        "high",
+    ]
+    one = await custom_field_service.get("test", "FEAT-0001")
+    two = await custom_field_service.get("test", "FEAT-0002")
+    assert one.custom_fields == {
+        "priority": "high",
+        "estimate": 1,
+        "customer_impact": True,
+    }
+    assert two.custom_fields == {
+        "priority": "high",
+        "customer_impact": True,
+    }
+    assert one.events[0].metadata["fields"] == ["custom_fields"]
+
+
 async def test_add_event_appends_comment(service):
     await service.create("test", CreateItemRequest(kind="feature", title="t"))
     event = await service.add_event(

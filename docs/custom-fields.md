@@ -62,6 +62,18 @@ Create or update items with `custom_fields`:
 Unknown fields, invalid select options, and non-numeric number values are
 rejected with `invalid_custom_field`.
 
+Bulk updates can set custom field values across selected items:
+
+```json
+{
+  "local_ids": ["FEAT-0001", "FEAT-0002"],
+  "custom_fields": {
+    "priority": "high",
+    "customer_impact": true
+  }
+}
+```
+
 Filter REST list responses with repeated `custom_field=FIELD=VALUE` query
 parameters:
 
@@ -76,7 +88,9 @@ curl \
 The item create/edit form renders configured custom fields automatically.
 Submitted values appear on the item detail page. The list filter panel also
 renders configured custom fields, so saved dashboard filters can include values
-such as `priority=high` or `customer_impact=true`.
+such as `priority=high` or `customer_impact=true`. The list bulk-action panel
+can set configured custom fields on all selected items; blank controls leave
+existing values unchanged.
 
 ## Imports
 
