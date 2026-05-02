@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 
-from sqlalchemy import Float, Integer, delete, func, or_, select, update
+from sqlalchemy import Float, Integer, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -115,10 +115,16 @@ class ItemRepo:
             for b in applies_to:
                 item.applies_to.append(ItemApplyTo(item_pk=item.pk, branch_key=b))
         if external_links is not None:
-            await self._s.execute(
-                delete(ItemExternalLink).where(ItemExternalLink.item_pk == item.pk)
-            )
-            self._add_external_links(item.pk, external_links)
+            timestamp = _iso_now()
+            item.external_links.clear()
+            for link in external_links:
+                item.external_links.append(ItemExternalLink(
+                    item_pk=item.pk,
+                    link_type=str(link["link_type"]),
+                    label=link.get("label") or None,
+                    url=str(link["url"]),
+                    created_at=timestamp,
+                ))
         item.updated_at = _iso_now()
         await self._s.flush()
 

@@ -21,6 +21,7 @@ from issuedeck.cli import (
     _cmd_list_items,
     _cmd_seed_demo,
     _cmd_serve,
+    _cmd_update_item,
     _ensure_demo_config,
     _ensure_demo_project_config,
 )
@@ -42,6 +43,7 @@ def test_issuedeck_help_lists_subcommands():
         "export-audit-bundle",
         "seed-demo",
         "create-item",
+        "update-item",
         "list-items",
         "get-item",
         "import-github-url",
@@ -249,6 +251,113 @@ def test_create_item_cli_dry_run_reads_body_file_without_writing(tmp_path, capsy
             "select count(*) from items where project_key = 'example'"
         ).fetchone()[0]
     assert item_count == 8
+
+
+def test_update_item_cli_updates_local_item_with_metadata(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+    project_path = tmp_path / "projects" / "example.toml"
+    project_path.write_text(
+        project_path.read_text(encoding="utf-8") + "\n".join([
+            "",
+            "[custom_fields.priority]",
+            'label = "Priority"',
+            'type = "select"',
+            'options = ["low", "high"]',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    rc = asyncio.run(_cmd_update_item(
+        cfg_path,
+        "example",
+        "FEAT-0001",
+        title="Updated from CLI",
+        status="in_progress",
+        body="Replacement body.",
+        body_file=None,
+        append_body=None,
+        append_body_file=None,
+        tags=["cli", "updated"],
+        applies_to=["main"],
+        custom_field_options=["priority=high"],
+        external_link_options=["https://example.com/update"],
+        clear_external_links=False,
+        dry_run=False,
+        output_format="json",
+    ))
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["local_id"] == "FEAT-0001"
+    assert payload["title"] == "Updated from CLI"
+    assert payload["status"] == "in_progress"
+    assert payload["tags"] == ["cli", "updated"]
+    assert payload["custom_fields"] == {"priority": "high"}
+    assert payload["external_links"][0]["url"] == "https://example.com/update"
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        body = conn.execute(
+            """
+            select body from items
+            where project_key = 'example' and local_id = 'FEAT-0001'
+            """
+        ).fetchone()[0]
+    assert body == "Replacement body."
+
+
+def test_update_item_cli_dry_run_reads_append_body_file_without_writing(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _cmd_demo(
+        cfg_path,
+        "example",
+        host=None,
+        port=None,
+        force_reset_demo_data=False,
+        open_browser=False,
+        serve=False,
+    )
+    body_path = tmp_path / "append.md"
+    body_path.write_text("Append from file.", encoding="utf-8")
+
+    rc = asyncio.run(_cmd_update_item(
+        cfg_path,
+        "example",
+        "FEAT-0001",
+        title=None,
+        status=None,
+        body=None,
+        body_file=None,
+        append_body=None,
+        append_body_file=body_path,
+        tags=None,
+        applies_to=None,
+        custom_field_options=[],
+        external_link_options=None,
+        clear_external_links=False,
+        dry_run=True,
+        output_format="json",
+    ))
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == {"append_body": "Append from file."}
+    with sqlite3.connect(tmp_path / "data" / "tracker.db") as conn:
+        title = conn.execute(
+            """
+            select title from items
+            where project_key = 'example' and local_id = 'FEAT-0001'
+            """
+        ).fetchone()[0]
+    assert title != "Updated from CLI"
 
 
 def test_list_items_cli_prints_filtered_table(tmp_path, capsys):

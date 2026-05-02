@@ -174,6 +174,69 @@ def main(argv: list[str] | None = None) -> int:
         help="Output format after creation",
     )
 
+    p_update = sub.add_parser("update-item", help="Update an item in the local database")
+    p_update.add_argument("local_id", help="Item local ID, for example FEAT-0001")
+    p_update.add_argument("--config", default="server.toml")
+    p_update.add_argument("--project-key", required=True)
+    p_update.add_argument("--title", default=None)
+    p_update.add_argument("--status", default=None)
+    update_body_group = p_update.add_mutually_exclusive_group()
+    update_body_group.add_argument("--body", default=None, help="Replace item body text")
+    update_body_group.add_argument(
+        "--body-file",
+        default=None,
+        help="Replace item body from a UTF-8 file, or '-' for stdin",
+    )
+    update_body_group.add_argument(
+        "--append-body",
+        default=None,
+        help="Append text to the current item body",
+    )
+    update_body_group.add_argument(
+        "--append-body-file",
+        default=None,
+        help="Append text from a UTF-8 file, or '-' for stdin",
+    )
+    p_update.add_argument(
+        "--tag",
+        action="append",
+        default=None,
+        help="Replace tags; repeat for multiple tags",
+    )
+    p_update.add_argument(
+        "--applies-to",
+        action="append",
+        default=None,
+        metavar="BRANCH",
+        help="Replace target branches; repeat for multiple branches",
+    )
+    p_update.add_argument(
+        "--custom-field",
+        action="append",
+        default=[],
+        metavar="FIELD=VALUE",
+        help="Set or clear a project custom field; use FIELD= to clear",
+    )
+    p_update.add_argument(
+        "--external-link",
+        action="append",
+        default=None,
+        metavar="LINK",
+        help="Replace external links; accepts URL or 'Label | URL'",
+    )
+    p_update.add_argument(
+        "--clear-external-links",
+        action="store_true",
+        help="Remove all external links from the item",
+    )
+    p_update.add_argument("--dry-run", action="store_true", help="Print the update payload only")
+    p_update.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format after update",
+    )
+
     p_list = sub.add_parser("list-items", help="List project items from the local database")
     p_list.add_argument("--config", default="server.toml")
     p_list.add_argument("--project-key", required=True)
@@ -469,22 +532,36 @@ def main(argv: list[str] | None = None) -> int:
             Path(args.config), args.project_key, args.force_reset,
         ))
     if args.cmd == "create-item":
-        body_file = (
-            Path(args.body_file)
-            if args.body_file and args.body_file != "-"
-            else args.body_file
-        )
         return asyncio.run(_cmd_create_item(
             Path(args.config),
             args.project_key,
             kind=args.kind,
             title=args.title,
             body=args.body,
-            body_file=body_file,
+            body_file=_path_or_stdin(args.body_file),
             tags=args.tag,
             applies_to=args.applies_to,
             custom_field_options=args.custom_field,
             external_link_options=args.external_link,
+            dry_run=args.dry_run,
+            output_format=args.format,
+        ))
+    if args.cmd == "update-item":
+        return asyncio.run(_cmd_update_item(
+            Path(args.config),
+            args.project_key,
+            args.local_id,
+            title=args.title,
+            status=args.status,
+            body=args.body,
+            body_file=_path_or_stdin(args.body_file),
+            append_body=args.append_body,
+            append_body_file=_path_or_stdin(args.append_body_file),
+            tags=args.tag,
+            applies_to=args.applies_to,
+            custom_field_options=args.custom_field,
+            external_link_options=args.external_link,
+            clear_external_links=args.clear_external_links,
             dry_run=args.dry_run,
             output_format=args.format,
         ))
@@ -782,6 +859,46 @@ def _parse_key_value_options(options: list[str] | None, label: str) -> dict[str,
     return values
 
 
+def _path_or_stdin(value: str | None) -> Path | str | None:
+    if value and value != "-":
+        return Path(value)
+    return value
+
+
+def _parse_custom_field_assignments(
+    project,
+    options: list[str] | None,
+    *,
+    require_required: bool,
+) -> dict[str, object]:
+    from issuedeck.core.errors import InvalidCustomField
+    from issuedeck.features.items.custom_fields import (
+        normalize_custom_field_value,
+        normalize_custom_fields,
+    )
+
+    raw_values = _parse_key_value_options(options, "custom field")
+    if require_required:
+        return normalize_custom_fields(project, raw_values)
+
+    unknown = sorted(set(raw_values) - set(project.custom_fields))
+    if unknown:
+        raise InvalidCustomField(
+            f"unknown custom field(s): {', '.join(unknown)}",
+            details={"project_key": project.key, "fields": unknown},
+        )
+
+    normalized: dict[str, object] = {}
+    for key, value in raw_values.items():
+        normalized[key] = normalize_custom_field_value(
+            project.key,
+            key,
+            project.custom_fields[key],
+            value,
+        )
+    return normalized
+
+
 def _parse_external_link_options(options: list[str] | None) -> list[dict[str, str | None]]:
     links: list[dict[str, str | None]] = []
     for option in options or []:
@@ -801,13 +918,21 @@ def _parse_external_link_options(options: list[str] | None) -> list[dict[str, st
 
 
 def _read_body_value(body: str | None, body_file: Path | str | None) -> str:
-    if body_file is None:
-        return body or ""
-    if body is not None:
-        raise ValueError("body and body_file are mutually exclusive")
-    if body_file == "-":
+    return _read_optional_text_value(body, body_file, "body") or ""
+
+
+def _read_optional_text_value(
+    value: str | None,
+    file_value: Path | str | None,
+    label: str,
+) -> str | None:
+    if file_value is None:
+        return value
+    if value is not None:
+        raise ValueError(f"{label} and {label}_file are mutually exclusive")
+    if file_value == "-":
         return sys.stdin.read()
-    return Path(body_file).read_text(encoding="utf-8")
+    return Path(file_value).read_text(encoding="utf-8")
 
 
 def _print_table(headers: list[str], rows: list[list[str]]) -> None:
@@ -960,7 +1085,6 @@ async def _cmd_create_item(
 
     from issuedeck.core.db import make_engine, make_session_factory
     from issuedeck.core.errors import IssueDeckError
-    from issuedeck.features.items.custom_fields import normalize_custom_fields
     from issuedeck.features.items.repo import ItemRepo
     from issuedeck.features.items.schemas import CreateItemRequest
     from issuedeck.features.items.service import ItemService
@@ -974,16 +1098,19 @@ async def _cmd_create_item(
             for branch in applies_to:
                 registry.validate_branch(project_key, branch)
         body_value = _read_body_value(body, body_file)
-        custom_fields = _parse_key_value_options(custom_field_options, "custom field")
+        custom_fields = _parse_custom_field_assignments(
+            project,
+            custom_field_options,
+            require_required=True,
+        )
         external_links = _parse_external_link_options(external_link_options)
-        normalized_custom_fields = normalize_custom_fields(project, custom_fields)
         req = CreateItemRequest(
             kind=item_kind,
             title=title,
             body=body_value,
             tags=tags,
             applies_to=applies_to,
-            custom_fields=normalized_custom_fields,
+            custom_fields=custom_fields,
             external_links=external_links,
         )
     except (ValidationError, ValueError, IssueDeckError) as exc:
@@ -1015,6 +1142,121 @@ async def _cmd_create_item(
 
     print(item.local_id)
     print(f"[ok] created {item.local_id}", file=sys.stderr)
+    return 0
+
+
+async def _cmd_update_item(
+    config_path: Path,
+    project_key: str,
+    local_id: str,
+    *,
+    title: str | None,
+    status: str | None,
+    body: str | None,
+    body_file: Path | str | None,
+    append_body: str | None,
+    append_body_file: Path | str | None,
+    tags: list[str] | None,
+    applies_to: list[str] | None,
+    custom_field_options: list[str],
+    external_link_options: list[str] | None,
+    clear_external_links: bool,
+    dry_run: bool,
+    output_format: str,
+) -> int:
+    from pydantic import ValidationError
+
+    from issuedeck.core.db import make_engine, make_session_factory
+    from issuedeck.core.errors import IssueDeckError
+    from issuedeck.features.items.repo import ItemRepo
+    from issuedeck.features.items.schemas import UpdateItemRequest
+    from issuedeck.features.items.service import ItemService
+
+    try:
+        registry = _build_registry(config_path)
+        project = registry.project(project_key)
+        if status is not None:
+            registry.validate_status(project_key, status)
+        if applies_to is not None:
+            for branch in applies_to:
+                registry.validate_branch(project_key, branch)
+        body_value = _read_optional_text_value(body, body_file, "body")
+        append_body_value = _read_optional_text_value(
+            append_body,
+            append_body_file,
+            "append_body",
+        )
+        custom_fields = (
+            _parse_custom_field_assignments(
+                project,
+                custom_field_options,
+                require_required=False,
+            )
+            if custom_field_options
+            else None
+        )
+        if clear_external_links and external_link_options:
+            raise ValueError("clear_external_links cannot be combined with external_link")
+        external_links = None
+        if clear_external_links:
+            external_links = []
+        elif external_link_options is not None:
+            external_links = _parse_external_link_options(external_link_options)
+
+        if not any(
+            value is not None
+            for value in (
+                title,
+                status,
+                body_value,
+                append_body_value,
+                tags,
+                applies_to,
+                custom_fields,
+                external_links,
+            )
+        ):
+            raise ValueError("update requires at least one field to change")
+
+        req = UpdateItemRequest(
+            title=title,
+            status=status,
+            body=body_value,
+            append_body=append_body_value,
+            tags=tags,
+            applies_to=applies_to,
+            custom_fields=custom_fields,
+            external_links=external_links,
+        )
+    except (ValidationError, ValueError, IssueDeckError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if dry_run:
+        print(req.model_dump_json(indent=2, exclude_none=True))
+        return 0
+
+    _upgrade_database(config_path)
+    db_path = registry.server.data_dir / "tracker.db"
+    engine = make_engine(f"sqlite+aiosqlite:///{db_path}")
+    session_factory = make_session_factory(engine)
+    try:
+        async with session_factory() as session:
+            service = ItemService(ItemRepo(session), registry, session)
+            item = await service.update(project_key, local_id, req)
+    except IssueDeckError as exc:
+        print(f"{exc.code}: {exc.message}", file=sys.stderr)
+        return 2
+    finally:
+        await engine.dispose()
+
+    payload = item.model_dump(mode="json")
+    if output_format == "json":
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print(item.local_id)
+    print(f"[ok] updated {item.local_id}", file=sys.stderr)
     return 0
 
 

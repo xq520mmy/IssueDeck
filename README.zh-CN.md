@@ -170,6 +170,20 @@ uv run issuedeck create-item \
 短内容可以用 `--body`，较长 Markdown 可以用 `--body-file notes.md`，写入前可用
 `--dry-run` 预览 payload。
 
+同一套终端流程也可以更新已有事项：
+
+```bash
+uv run issuedeck update-item FEAT-0001 \
+  --config server.toml \
+  --project-key example \
+  --status in_progress \
+  --append-body-file notes.md \
+  --custom-field estimate=5
+```
+
+`update-item` 可替换标题、状态、正文、标签、分支、自定义字段和外部链接。
+需要移除全部外部链接时使用 `--clear-external-links`。
+
 不启动 Dashboard 也可以直接查看本地事项：
 
 ```bash

@@ -267,6 +267,21 @@ uv run issuedeck create-item \
 Use `--body` for short notes, `--body-file notes.md` for longer Markdown, and
 `--dry-run` to preview the payload before writing.
 
+Update an existing item from the same terminal flow:
+
+```bash
+uv run issuedeck update-item FEAT-0001 \
+  --config server.toml \
+  --project-key example \
+  --status in_progress \
+  --append-body-file notes.md \
+  --custom-field estimate=5
+```
+
+`update-item` can replace title, status, body, tags, branches, custom fields,
+and external links. Use `--clear-external-links` when a link set should be
+removed.
+
 List local items without starting the dashboard:
 
 ```bash

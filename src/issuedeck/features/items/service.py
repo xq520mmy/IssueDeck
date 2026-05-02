@@ -187,7 +187,12 @@ class ItemService:
     async def update(
         self, project_key: str, local_id: str, req: UpdateItemRequest,
     ) -> ItemSummary:
-        item = await self._load_or_404(project_key, local_id)
+        item = await self._load_eager(project_key, local_id)
+        if item is None:
+            raise ItemNotFound(
+                f"item {local_id} not found in project '{project_key}'",
+                details={"project_key": project_key, "local_id": local_id},
+            )
 
         if req.status is not None:
             self._registry.validate_status(project_key, req.status)

@@ -278,6 +278,57 @@ async def test_update_item_replaces_external_links(service):
     assert full.events[0].metadata["fields"] == ["external_links"]
 
 
+async def test_update_item_replaces_loaded_relationships_after_reload():
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    Session = async_sessionmaker(engine, expire_on_commit=False)
+    registry = _make_registry()
+
+    async with Session() as s:
+        service = ItemService(ItemRepo(s), registry, s)
+        await service.create(
+            "test",
+            CreateItemRequest(
+                kind="feature",
+                title="t",
+                tags=["old"],
+                external_links=[
+                    {
+                        "link_type": "github_issue",
+                        "label": "Issue #1",
+                        "url": "https://github.com/example/repo/issues/1",
+                    }
+                ],
+            ),
+        )
+
+    async with Session() as s:
+        service = ItemService(ItemRepo(s), registry, s)
+        await service.update(
+            "test",
+            "FEAT-0001",
+            UpdateItemRequest(
+                tags=["new"],
+                external_links=[
+                    {
+                        "link_type": "github_commit",
+                        "label": "abc123",
+                        "url": "https://github.com/example/repo/commit/abc123",
+                    }
+                ],
+            ),
+        )
+
+    async with Session() as s:
+        service = ItemService(ItemRepo(s), registry, s)
+        full = await service.get("test", "FEAT-0001")
+
+    assert full.tags == ["new"]
+    assert [link.link_type for link in full.external_links] == ["github_commit"]
+    await engine.dispose()
+
+
 async def test_bulk_update_changes_status_kind_tags_and_branches(service):
     await service.create("test", CreateItemRequest(kind="feature", title="one", tags=["old"]))
     await service.create("test", CreateItemRequest(kind="feature", title="two", tags=["old"]))
