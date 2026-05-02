@@ -56,6 +56,7 @@ class ItemRepo:
     async def insert_item(
         self, *, project_key: str, local_id: str, kind: str, status: str,
         title: str, body: str, tags: list[str], applies_to: list[str],
+        custom_fields_json: str = "{}",
         external_links: list[dict[str, str | None]] | None = None,
         created_at: str | None = None, updated_at: str | None = None,
     ) -> Item:
@@ -63,6 +64,7 @@ class ItemRepo:
         item = Item(
             project_key=project_key, local_id=local_id,
             kind=kind, status=status, title=title, body=body,
+            custom_fields_json=custom_fields_json,
             created_at=now, updated_at=updated_at or now,
         )
         self._s.add(item)
@@ -89,6 +91,7 @@ class ItemRepo:
         self, item: Item, *, title: str | None = None, body: str | None = None,
         kind: str | None = None, status: str | None = None, tags: list[str] | None = None,
         applies_to: list[str] | None = None,
+        custom_fields_json: str | None = None,
         external_links: list[dict[str, str | None]] | None = None,
     ) -> None:
         if title is not None:
@@ -99,6 +102,8 @@ class ItemRepo:
             item.kind = kind
         if status is not None:
             item.status = status
+        if custom_fields_json is not None:
+            item.custom_fields_json = custom_fields_json
         if tags is not None:
             item.tags.clear()
             for t in tags:

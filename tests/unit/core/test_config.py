@@ -5,8 +5,10 @@ from pydantic import ValidationError
 
 from issuedeck.core.config import (
     ConfigRegistry,
+    CustomFieldConfig,
     EmailNotificationConfig,
     NotificationConfig,
+    ProjectConfig,
     ServerConfig,
     WebhookConfig,
     load_project_config,
@@ -261,6 +263,43 @@ def test_load_project_config_ok():
     assert set(pc.kinds.keys()) == {"feature", "bug"}
     assert pc.kinds["feature"].prefix == "FEAT"
     assert {b.key for b in pc.branches} == {"v2", "v3"}
+
+
+def test_project_config_supports_custom_fields():
+    pc = ProjectConfig(
+        key="sample",
+        name="Sample",
+        kinds={"feature": {"label": "Feature", "prefix": "FEAT"}},
+        statuses={"proposed": {"label": "Proposed"}},
+        custom_fields={
+            "priority": CustomFieldConfig(
+                label="Priority",
+                type="select",
+                required=True,
+                options=["low", "high"],
+            ),
+            "estimate": CustomFieldConfig(label="Estimate", type="number"),
+        },
+    )
+
+    assert pc.custom_fields["priority"].options == ["low", "high"]
+    assert pc.custom_fields["estimate"].type == "number"
+
+
+def test_project_config_rejects_invalid_custom_field_key():
+    with pytest.raises(ValidationError, match="custom field keys"):
+        ProjectConfig(
+            key="sample",
+            name="Sample",
+            kinds={"feature": {"label": "Feature", "prefix": "FEAT"}},
+            statuses={"proposed": {"label": "Proposed"}},
+            custom_fields={"Bad Key": {"label": "Bad"}},
+        )
+
+
+def test_project_config_rejects_select_field_without_options():
+    with pytest.raises(ValidationError, match="select custom fields require options"):
+        CustomFieldConfig(label="Priority", type="select")
 
 
 def test_project_config_rejects_lowercase_prefix():

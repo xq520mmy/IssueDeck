@@ -268,6 +268,17 @@ def _external_links_from_form(raw: str) -> list[dict[str, str]]:
     return links
 
 
+def _custom_fields_from_form(project: ProjectConfig, form_data) -> dict[str, object]:
+    values: dict[str, object] = {}
+    for key, cfg in project.custom_fields.items():
+        form_key = f"custom_field__{key}"
+        if cfg.type == "checkbox":
+            values[key] = form_key in form_data
+        else:
+            values[key] = str(form_data.get(form_key, ""))
+    return values
+
+
 def _split_form_tokens(raw: str) -> list[str]:
     parts = re.split(r"[\n,;]+", raw)
     values: list[str] = []
@@ -1907,6 +1918,8 @@ async def create_item_submit(
     external_links: str = Form(""),
     applies_to: list[str] = APPLIES_TO_FORM,
 ):
+    project = request.app.state.registry.project(project_key)
+    form_data = await request.form()
     tag_list = [t.strip() for t in tags.split(",") if t.strip()]
     branch_list = applies_to if applies_to else None
 
@@ -1918,6 +1931,7 @@ async def create_item_submit(
                 kind=kind, title=title, body=body,
                 tags=tag_list, applies_to=branch_list,
                 external_links=_external_links_from_form(external_links),
+                custom_fields=_custom_fields_from_form(project, form_data),
             ),
         )
     finally:
@@ -1960,6 +1974,8 @@ async def edit_item_submit(
     external_links: str = Form(""),
     applies_to: list[str] = APPLIES_TO_FORM,
 ):
+    project = request.app.state.registry.project(project_key)
+    form_data = await request.form()
     tag_list = [t.strip() for t in tags.split(",") if t.strip()]
     branch_list = applies_to if applies_to else None
 
@@ -1975,6 +1991,7 @@ async def edit_item_submit(
                 title=title, body=body, status=status,
                 tags=tag_list, applies_to=branch_list,
                 external_links=_external_links_from_form(external_links),
+                custom_fields=_custom_fields_from_form(project, form_data),
             ),
         )
     finally:

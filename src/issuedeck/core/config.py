@@ -9,6 +9,7 @@ construction.
 from __future__ import annotations
 
 import os
+import re
 import tomllib
 from pathlib import Path
 from typing import Any, Literal
@@ -22,6 +23,8 @@ from issuedeck.core.errors import (
     InvalidStatus,
     ProjectNotFound,
 )
+
+_CUSTOM_FIELD_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
 
 
 class SqliteConfig(BaseModel):
@@ -240,6 +243,26 @@ class ShipRules(BaseModel):
     ship_exempt_kinds: list[str] = []
 
 
+CustomFieldType = Literal["text", "number", "checkbox", "select", "url"]
+
+
+class CustomFieldConfig(BaseModel):
+    label: str = Field(min_length=1, max_length=128)
+    type: CustomFieldType = "text"
+    required: bool = False
+    options: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _validate_options(self) -> CustomFieldConfig:
+        if self.type == "select" and not self.options:
+            raise ValueError("select custom fields require options")
+        if self.type != "select" and self.options:
+            raise ValueError("only select custom fields may define options")
+        if len(set(self.options)) != len(self.options):
+            raise ValueError("custom field options must be unique")
+        return self
+
+
 class ProjectConfig(BaseModel):
     key: str
     name: str
@@ -249,6 +272,7 @@ class ProjectConfig(BaseModel):
     branches: list[BranchConfig] = []
     id_format: IdFormat = IdFormat()
     ship_rules: ShipRules = ShipRules()
+    custom_fields: dict[str, CustomFieldConfig] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _cross_field_checks(self) -> ProjectConfig:
@@ -273,6 +297,13 @@ class ProjectConfig(BaseModel):
         bkeys = [b.key for b in self.branches]
         if len(set(bkeys)) != len(bkeys):
             raise ValueError(f"duplicate branch keys: {bkeys}")
+
+        for field_key in self.custom_fields:
+            if not _CUSTOM_FIELD_KEY_RE.fullmatch(field_key):
+                raise ValueError(
+                    "custom field keys must start with a letter and use "
+                    "lowercase letters, numbers, - or _"
+                )
 
         return self
 

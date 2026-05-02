@@ -181,6 +181,69 @@
         <p class="mt-1.5 text-xs text-gray-400 dark:text-gray-500">{{ t("form.external_links_help") }}</p>
       </div>
 
+      {% if project.custom_fields %}
+        <div>
+          <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            {{ t("form.custom_fields") }}
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% for field_key, field_cfg in project.custom_fields.items() %}
+              {% set field_value = item.custom_fields.get(field_key) if item and item.custom_fields else '' %}
+              <div>
+                <label for="custom-field-{{ field_key }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  {{ field_cfg.label }}
+                  {% if field_cfg.required %}
+                    <span class="text-red-500">*</span>
+                  {% endif %}
+                </label>
+                {% if field_cfg.type == 'select' %}
+                  <select id="custom-field-{{ field_key }}"
+                          name="custom_field__{{ field_key }}"
+                          {% if field_cfg.required %}required{% endif %}
+                          class="w-full px-3 py-2 rounded-lg text-sm
+                                 bg-white dark:bg-gray-800
+                                 border border-gray-300 dark:border-gray-600
+                                 text-gray-900 dark:text-gray-100
+                                 focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                                 transition-colors">
+                    {% if not field_cfg.required %}
+                      <option value=""></option>
+                    {% endif %}
+                    {% for option in field_cfg.options %}
+                      <option value="{{ option }}" {% if field_value == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                  </select>
+                {% elif field_cfg.type == 'checkbox' %}
+                  <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input id="custom-field-{{ field_key }}"
+                           type="checkbox"
+                           name="custom_field__{{ field_key }}"
+                           value="true"
+                           {% if field_value %}checked{% endif %}
+                           class="rounded border-gray-300 dark:border-gray-600
+                                  text-primary-600 focus:ring-primary-500 focus:ring-offset-0">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">{{ t("common.yes") }}</span>
+                  </label>
+                {% else %}
+                  <input id="custom-field-{{ field_key }}"
+                         name="custom_field__{{ field_key }}"
+                         type="{% if field_cfg.type == 'number' %}number{% elif field_cfg.type == 'url' %}url{% else %}text{% endif %}"
+                         value="{{ field_value if field_value is not none else '' }}"
+                         {% if field_cfg.required %}required{% endif %}
+                         class="w-full px-3 py-2 rounded-lg text-sm
+                                bg-white dark:bg-gray-800
+                                border border-gray-300 dark:border-gray-600
+                                text-gray-900 dark:text-gray-100
+                                placeholder-gray-400 dark:placeholder-gray-500
+                                focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                                transition-colors">
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
       {# ── Branches (checkboxes) ── #}
       {% if project.branches %}
         <div>

@@ -55,6 +55,11 @@ class InvalidBranch(IssueDeckError):
     http_status = 422
 
 
+class InvalidCustomField(IssueDeckError):
+    code = "invalid_custom_field"
+    http_status = 422
+
+
 class InvalidTransition(IssueDeckError):
     code = "invalid_transition"
     http_status = 422

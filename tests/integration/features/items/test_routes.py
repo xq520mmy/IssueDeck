@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from issuedeck.core.config import (
     BranchConfig,
     ConfigRegistry,
+    CustomFieldConfig,
     KindConfig,
     ProjectConfig,
     ServerConfig,
@@ -27,6 +28,13 @@ def _registry():
                 "done": StatusConfig(label="D", terminal=True, requires_ship=True),
             },
             branches=[BranchConfig(key="main", label="Main")],
+            custom_fields={
+                "priority": CustomFieldConfig(
+                    label="Priority",
+                    type="select",
+                    options=["low", "high"],
+                ),
+            },
         )},
     )
 
@@ -56,6 +64,7 @@ async def test_create_get_list_roundtrip(client):
         json={
             "kind": "feature",
             "title": "Hello",
+            "custom_fields": {"priority": "high"},
             "external_links": [
                 {
                     "url": "https://github.com/example/repo/issues/42?from=api",
@@ -65,12 +74,14 @@ async def test_create_get_list_roundtrip(client):
     )
     assert r.status_code == 201, r.text
     assert r.json()["local_id"] == "FEAT-0001"
+    assert r.json()["custom_fields"] == {"priority": "high"}
     assert r.json()["external_links"][0]["label"] == "Issue #42"
     assert r.json()["external_links"][0]["url"] == "https://github.com/example/repo/issues/42"
 
     r = await client.get("/api/v1/projects/test/items/FEAT-0001")
     assert r.status_code == 200
     assert r.json()["title"] == "Hello"
+    assert r.json()["custom_fields"] == {"priority": "high"}
     assert r.json()["external_links"][0]["link_type"] == "github_issue"
 
     r = await client.get("/api/v1/projects/test/items")

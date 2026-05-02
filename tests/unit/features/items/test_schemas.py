@@ -18,6 +18,7 @@ def test_create_item_request_minimal():
     assert r.body == ""
     assert r.tags == []
     assert r.applies_to is None
+    assert r.custom_fields == {}
 
 
 def test_create_item_request_empty_title_rejected():
@@ -72,10 +73,12 @@ def test_item_summary_roundtrip():
         "project_key": "p", "local_id": "FEAT-0001", "kind": "feature",
         "status": "proposed", "title": "Hello", "body_preview": "hi",
         "tags": ["a"], "applies_to": ["v3"],
+        "custom_fields": {"priority": "high"},
         "created_at": "t", "updated_at": "t", "deleted_at": None,
     }
     s = ItemSummary(**data)
     assert s.model_dump()["local_id"] == "FEAT-0001"
+    assert s.custom_fields["priority"] == "high"
 
 
 def test_item_detail_has_body_and_ship_records():

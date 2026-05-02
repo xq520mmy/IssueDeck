@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from issuedeck.core.config import (
     BranchConfig,
     ConfigRegistry,
+    CustomFieldConfig,
     KindConfig,
     ProjectConfig,
     ServerConfig,
@@ -42,6 +43,13 @@ def _registry(tmp_path):
                 "done": StatusConfig(label="D", terminal=True, requires_ship=True),
             },
             branches=[BranchConfig(key="main", label="Main")],
+            custom_fields={
+                "priority": CustomFieldConfig(
+                    label="Priority",
+                    type="select",
+                    options=["low", "high"],
+                ),
+            },
         )},
     )
 
@@ -63,6 +71,7 @@ async def session_and_registry(tmp_path):
                 title="First",
                 body="Body one",
                 tags=["hot"],
+                custom_fields={"priority": "high"},
                 external_links=[{
                     "url": "https://github.com/example/repo/issues/1",
                     "label": "Issue 1",
@@ -152,6 +161,7 @@ async def test_audit_bundle_writes_project_snapshot(tmp_path, session_and_regist
         items = json.loads(bundle.read("items.json"))
         first = next(item for item in items if item["local_id"] == "FEAT-0001")
         assert first["tags"] == ["hot"]
+        assert first["custom_fields"] == {"priority": "high"}
         assert first["external_links"][0]["link_type"] == "github_issue"
         assert first["events"][0]["event_type"] == "created"
 

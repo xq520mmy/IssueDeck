@@ -48,11 +48,13 @@ listed in `CHANGELOG.md`.
 - Slack, Discord, and email lifecycle notifications for team-visible item updates.
 - Local project-template packs for custom starter workflows without source
   changes.
+- Project-defined custom fields for item metadata, dashboard forms, exports,
+  and API payloads.
 
 ## Near Term
 
-- Explore a lightweight plugin surface for custom item fields and richer
-  third-party extensions.
+- Add list filters and import mappings for custom fields.
+- Explore richer third-party extension points beyond project templates.
 
 ## Later
 

@@ -4,12 +4,13 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from issuedeck.core.config import (
     BranchConfig,
     ConfigRegistry,
+    CustomFieldConfig,
     KindConfig,
     ProjectConfig,
     ServerConfig,
     StatusConfig,
 )
-from issuedeck.core.errors import InvalidKind, ItemNotFound
+from issuedeck.core.errors import InvalidCustomField, InvalidKind, ItemNotFound
 from issuedeck.features.items.models import Base
 from issuedeck.features.items.repo import ItemRepo
 from issuedeck.features.items.schemas import (
@@ -43,6 +44,21 @@ def _make_registry() -> ConfigRegistry:
     )
 
 
+def _make_custom_field_registry() -> ConfigRegistry:
+    registry = _make_registry()
+    registry._projects["test"].custom_fields = {
+        "priority": CustomFieldConfig(
+            label="Priority",
+            type="select",
+            required=True,
+            options=["low", "high"],
+        ),
+        "estimate": CustomFieldConfig(label="Estimate", type="number"),
+        "customer_impact": CustomFieldConfig(label="Customer impact", type="checkbox"),
+    }
+    return registry
+
+
 @pytest.fixture
 async def service():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
@@ -51,6 +67,17 @@ async def service():
     Session = async_sessionmaker(engine, expire_on_commit=False)
     async with Session() as s:
         yield ItemService(ItemRepo(s), _make_registry(), s)
+    await engine.dispose()
+
+
+@pytest.fixture
+async def custom_field_service():
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    Session = async_sessionmaker(engine, expire_on_commit=False)
+    async with Session() as s:
+        yield ItemService(ItemRepo(s), _make_custom_field_registry(), s)
     await engine.dispose()
 
 
@@ -112,6 +139,82 @@ async def test_create_item_persists_external_links(service):
     assert detail.external_links[0].link_type == "github_pr"
     assert detail.external_links[0].label == "PR #12"
     assert detail.external_links[0].url == "https://github.com/example/repo/pull/12"
+
+
+async def test_create_item_persists_custom_fields(custom_field_service):
+    summary = await custom_field_service.create(
+        "test",
+        CreateItemRequest(
+            kind="feature",
+            title="Custom fields",
+            custom_fields={
+                "priority": "high",
+                "estimate": "3",
+                "customer_impact": "on",
+            },
+        ),
+    )
+
+    assert summary.custom_fields == {
+        "priority": "high",
+        "estimate": 3,
+        "customer_impact": True,
+    }
+    detail = await custom_field_service.get("test", "FEAT-0001")
+    assert detail.custom_fields["priority"] == "high"
+
+
+async def test_update_item_merges_custom_fields(custom_field_service):
+    await custom_field_service.create(
+        "test",
+        CreateItemRequest(
+            kind="feature",
+            title="Custom fields",
+            custom_fields={"priority": "low", "estimate": "1"},
+        ),
+    )
+
+    await custom_field_service.update(
+        "test",
+        "FEAT-0001",
+        UpdateItemRequest(custom_fields={"estimate": "5"}),
+    )
+
+    detail = await custom_field_service.get("test", "FEAT-0001")
+    assert detail.custom_fields == {
+        "priority": "low",
+        "estimate": 5,
+        "customer_impact": False,
+    }
+    assert detail.events[0].metadata["fields"] == ["custom_fields"]
+
+
+async def test_custom_fields_reject_unknown_or_invalid_values(custom_field_service):
+    with pytest.raises(InvalidCustomField, match="missing required"):
+        await custom_field_service.create(
+            "test",
+            CreateItemRequest(kind="feature", title="Missing custom field"),
+        )
+
+    with pytest.raises(InvalidCustomField, match="unknown custom field"):
+        await custom_field_service.create(
+            "test",
+            CreateItemRequest(
+                kind="feature",
+                title="Unknown custom field",
+                custom_fields={"priority": "high", "severity": "critical"},
+            ),
+        )
+
+    with pytest.raises(InvalidCustomField, match="must be one of"):
+        await custom_field_service.create(
+            "test",
+            CreateItemRequest(
+                kind="feature",
+                title="Bad select",
+                custom_fields={"priority": "urgent"},
+            ),
+        )
 
 
 async def test_create_item_rejects_unknown_kind(service):

@@ -200,6 +200,38 @@
     </div>
   </div>
 
+  {% if project.custom_fields and item.custom_fields %}
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800
+              bg-white dark:bg-gray-900 shadow-sm">
+    <div class="px-5 py-3 border-b border-gray-200 dark:border-gray-800">
+      <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t("form.custom_fields") }}</h2>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 px-5 py-4">
+      {% for field_key, field_cfg in project.custom_fields.items() %}
+        {% if field_key in item.custom_fields %}
+          {% set field_value = item.custom_fields.get(field_key) %}
+          <div>
+            <div class="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              {{ field_cfg.label }}
+            </div>
+            <div class="mt-1 text-sm text-gray-800 dark:text-gray-200 break-words">
+              {% if field_cfg.type == 'checkbox' %}
+                {{ t("common.yes") if field_value else t("common.no_value") }}
+              {% elif field_cfg.type == 'url' %}
+                <a href="{{ field_value }}" target="_blank" rel="noreferrer" class="text-primary-700 dark:text-primary-300 hover:underline">
+                  {{ field_value }}
+                </a>
+              {% else %}
+                {{ field_value }}
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   {# External links section #}
   {% if item.external_links %}
   <div class="rounded-lg border border-gray-200 dark:border-gray-800

@@ -59,6 +59,7 @@ Bulk cleanup after imports is covered in
 [Dashboard Bulk Triage](docs/dashboard-bulk-triage.md).
 Starter configs for new workspaces are covered in
 [Project Templates](docs/project-templates.md).
+Project-specific metadata is covered in [Custom Fields](docs/custom-fields.md).
 Project snapshots are covered in
 [Audit Bundles](docs/audit-bundles.md).
 
@@ -71,6 +72,8 @@ Project snapshots are covered in
 - Multi-project: one SQLite DB holds items for any number of projects, keyed by
   `project_key`. Each project has its own `kinds`, `statuses`, `branches`,
   and numeric ID prefix (e.g. `FEAT-0001`, `BUG-0003`).
+- Project-defined custom fields for extra item metadata such as priority,
+  estimate, customer impact, and source URL.
 - Full-text search via SQLite FTS5.
 - Bidirectional relationships (`blocks`/`blocked_by`, `related_to`).
 - External links for GitHub issues, pull requests, commits, and other review context.

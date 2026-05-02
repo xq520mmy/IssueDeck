@@ -16,6 +16,7 @@ from sqlalchemy.orm import selectinload
 
 from issuedeck.core.config import ConfigRegistry, WebhookEvent
 from issuedeck.core.errors import (
+    InvalidCustomField,
     InvalidTransition,
     ItemNotFound,
     ShipRequiresBranchConfig,
@@ -64,6 +65,18 @@ def _metadata_json(metadata: dict | None) -> str:
     return json.dumps(metadata or {}, ensure_ascii=False, sort_keys=True)
 
 
+def _custom_fields(raw: str) -> dict[str, object]:
+    try:
+        values = json.loads(raw or "{}")
+    except json.JSONDecodeError:
+        return {}
+    return values if isinstance(values, dict) else {}
+
+
+def _custom_fields_json(values: dict[str, object]) -> str:
+    return json.dumps(values, ensure_ascii=False, sort_keys=True)
+
+
 def _changed_fields(req: UpdateItemRequest) -> list[str]:
     fields: list[str] = []
     if req.title is not None:
@@ -78,6 +91,8 @@ def _changed_fields(req: UpdateItemRequest) -> list[str]:
         fields.append("applies_to")
     if req.external_links is not None:
         fields.append("external_links")
+    if req.custom_fields is not None:
+        fields.append("custom_fields")
     return fields
 
 
@@ -122,6 +137,92 @@ def _link_payloads(links: list[ExternalLinkInput]) -> list[dict[str, str | None]
     return payloads
 
 
+def _normalize_custom_fields(
+    project_cfg,
+    incoming: dict[str, object],
+    *,
+    existing: dict[str, object] | None = None,
+) -> dict[str, object]:
+    fields = project_cfg.custom_fields
+    unknown = sorted(set(incoming) - set(fields))
+    if unknown:
+        raise InvalidCustomField(
+            f"unknown custom field(s): {', '.join(unknown)}",
+            details={"project_key": project_cfg.key, "fields": unknown},
+        )
+
+    result = {
+        key: value
+        for key, value in (existing or {}).items()
+        if key in fields
+    }
+    for key, cfg in fields.items():
+        if key not in incoming:
+            if existing is None and cfg.type == "checkbox":
+                result[key] = False
+            continue
+        value = _normalize_custom_field_value(project_cfg.key, key, cfg, incoming[key])
+        if value is None:
+            result.pop(key, None)
+        else:
+            result[key] = value
+
+    missing = [
+        key
+        for key, cfg in fields.items()
+        if cfg.required and not _has_custom_field_value(result.get(key))
+    ]
+    if missing:
+        raise InvalidCustomField(
+            f"missing required custom field(s): {', '.join(missing)}",
+            details={"project_key": project_cfg.key, "fields": missing},
+        )
+    return result
+
+
+def _normalize_custom_field_value(
+    project_key: str,
+    key: str,
+    cfg,
+    raw: object,
+) -> object | None:
+    if cfg.type == "checkbox":
+        return _coerce_bool(raw)
+    if raw is None:
+        return None
+    value = str(raw).strip()
+    if not value:
+        return None
+    if cfg.type == "number":
+        try:
+            return float(value) if "." in value else int(value)
+        except ValueError as exc:
+            raise InvalidCustomField(
+                f"custom field '{key}' must be a number",
+                details={"project_key": project_key, "field": key},
+            ) from exc
+    if cfg.type == "select" and value not in cfg.options:
+        raise InvalidCustomField(
+            f"custom field '{key}' must be one of: {', '.join(cfg.options)}",
+            details={"project_key": project_key, "field": key, "options": cfg.options},
+        )
+    return value
+
+
+def _coerce_bool(raw: object) -> bool:
+    if isinstance(raw, bool):
+        return raw
+    if isinstance(raw, int | float):
+        return bool(raw)
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _has_custom_field_value(value: object | None) -> bool:
+    if isinstance(value, bool):
+        return value
+    return value is not None and value != ""
+
+
 class ItemService:
     def __init__(
         self,
@@ -149,6 +250,7 @@ class ItemService:
             self._registry.validate_branch(project_key, b)
 
         status = next(iter(project_cfg.statuses.keys()))
+        custom_fields = _normalize_custom_fields(project_cfg, req.custom_fields)
 
         local_id = await self._repo.next_local_id(
             project_key, kind=req.kind,
@@ -158,6 +260,7 @@ class ItemService:
             project_key=project_key, local_id=local_id,
             kind=req.kind, status=status, title=req.title, body=req.body,
             tags=req.tags, applies_to=applies,
+            custom_fields_json=_custom_fields_json(custom_fields),
             external_links=_link_payloads(req.external_links),
         )
         await self._record_event(
@@ -189,11 +292,23 @@ class ItemService:
             for b in req.applies_to:
                 self._registry.validate_branch(project_key, b)
 
+        custom_fields_json = None
+        if req.custom_fields is not None:
+            project_cfg = self._registry.project(project_key)
+            custom_fields_json = _custom_fields_json(
+                _normalize_custom_fields(
+                    project_cfg,
+                    req.custom_fields,
+                    existing=_custom_fields(item.custom_fields_json),
+                )
+            )
+
         changed_fields = _changed_fields(req)
         await self._repo.update_item_fields(
             item,
             title=req.title, body=body, status=req.status,
             tags=req.tags, applies_to=req.applies_to,
+            custom_fields_json=custom_fields_json,
             external_links=(
                 _link_payloads(req.external_links)
                 if req.external_links is not None
@@ -580,6 +695,7 @@ class ItemService:
             body_preview=_preview(item.body or ""),
             tags=[t.tag for t in item.tags],
             applies_to=[a.branch_key for a in item.applies_to],
+            custom_fields=_custom_fields(item.custom_fields_json),
             external_links=[self._to_external_link(link) for link in item.external_links],
             created_at=item.created_at, updated_at=item.updated_at,
             deleted_at=item.deleted_at,
@@ -620,6 +736,7 @@ class ItemService:
             body=item.body or "",
             tags=[t.tag for t in item.tags],
             applies_to=[a.branch_key for a in item.applies_to],
+            custom_fields=_custom_fields(item.custom_fields_json),
             external_links=[self._to_external_link(link) for link in item.external_links],
             created_at=item.created_at, updated_at=item.updated_at,
             deleted_at=item.deleted_at,

@@ -35,6 +35,7 @@ class CreateItemRequest(BaseModel):
     applies_to: list[str] | None = None
     tags: list[str] = []
     external_links: list[ExternalLinkInput] = []
+    custom_fields: dict[str, Any] = Field(default_factory=dict)
 
 
 class UpdateItemRequest(BaseModel):
@@ -45,6 +46,7 @@ class UpdateItemRequest(BaseModel):
     applies_to: list[str] | None = None
     tags: list[str] | None = None
     external_links: list[ExternalLinkInput] | None = None
+    custom_fields: dict[str, Any] | None = None
 
     @model_validator(mode="after")
     def _checks(self) -> UpdateItemRequest:
@@ -151,6 +153,7 @@ class ItemSummary(BaseModel):
     body_preview: str
     tags: list[str]
     applies_to: list[str]
+    custom_fields: dict[str, Any] = Field(default_factory=dict)
     external_links: list[ExternalLinkOut] = []
     created_at: str
     updated_at: str
@@ -166,6 +169,7 @@ class ItemDetail(BaseModel):
     body: str
     tags: list[str]
     applies_to: list[str]
+    custom_fields: dict[str, Any] = Field(default_factory=dict)
     external_links: list[ExternalLinkOut] = []
     created_at: str
     updated_at: str

@@ -25,6 +25,8 @@ def test_upgrade_head_creates_all_tables(tmp_path):
         "items_fts", "alembic_version",
     }
     assert expected.issubset(names)
+    item_columns = {column["name"] for column in inspect(engine).get_columns("items")}
+    assert "custom_fields_json" in item_columns
 
 
 def test_fts5_triggers_sync_on_insert(tmp_path):
@@ -34,9 +36,9 @@ def test_fts5_triggers_sync_on_insert(tmp_path):
     with engine.begin() as conn:
         conn.execute(text(
             "INSERT INTO items (project_key, local_id, kind, status, title, "
-            "body, created_at, updated_at) VALUES "
+            "body, custom_fields_json, created_at, updated_at) VALUES "
             "('p', 'FEAT-0001', 'feature', 'proposed', 'hello world',"
-            " 'some body text', 't', 't')"
+            " 'some body text', '{}', 't', 't')"
         ))
         hits = conn.execute(text(
             "SELECT rowid FROM items_fts WHERE items_fts MATCH 'hello'"

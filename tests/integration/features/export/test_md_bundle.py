@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from issuedeck.core.config import (
     BranchConfig,
     ConfigRegistry,
+    CustomFieldConfig,
     KindConfig,
     ProjectConfig,
     ServerConfig,
@@ -28,6 +29,14 @@ def _registry():
                 "done": StatusConfig(label="D", terminal=True, requires_ship=True),
             },
             branches=[BranchConfig(key="main", label="Main")],
+            custom_fields={
+                "priority": CustomFieldConfig(
+                    label="Priority",
+                    type="select",
+                    options=["low", "high"],
+                ),
+                "estimate": CustomFieldConfig(label="Estimate", type="number"),
+            },
         )},
     )
 
@@ -43,6 +52,7 @@ async def session_and_registry():
         svc = ItemService(ItemRepo(s), reg, s)
         await svc.create("p", CreateItemRequest(
             kind="feature", title="First", body="Body one", tags=["hot"],
+            custom_fields={"priority": "high", "estimate": "2"},
         ))
         await svc.create("p", CreateItemRequest(
             kind="feature", title="Second", body="Body two",
@@ -68,6 +78,9 @@ async def test_md_bundle_writes_one_file_per_item(tmp_path, session_and_registry
     assert content1.startswith("---")
     assert "id: FEAT-0001" in content1
     assert "title: First" in content1
+    assert "custom_fields:" in content1
+    assert "priority: high" in content1
+    assert "estimate: 2" in content1
     assert "Body one" in content1
 
     content2 = files[1].read_text(encoding="utf-8")

@@ -190,6 +190,11 @@ def _render_item_md(item: Item) -> str:
     if item.applies_to:
         applies = ", ".join(a.branch_key for a in item.applies_to)
         lines.append(f"applies_to: [{applies}]")
+    custom_fields = _metadata(item.custom_fields_json)
+    if custom_fields:
+        lines.append("custom_fields:")
+        for key, value in sorted(custom_fields.items()):
+            lines.append(f"  {key}: {_yaml_value(value)}")
     for sr in item.ship_records:
         lines.append(f"shipped_in_{sr.branch_key}: {sr.version}")
         if sr.commits:
@@ -208,6 +213,14 @@ def _yaml_quote(s: str) -> str:
     if any(c in s for c in ":#\"'\n"):
         return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
     return s
+
+
+def _yaml_value(value: Any) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int | float):
+        return str(value)
+    return _yaml_quote(str(value))
 
 
 def _audit_bundle_path(out_path: Path, project_key: str) -> Path:
@@ -233,6 +246,7 @@ def _item_to_dict(item: Item) -> dict[str, Any]:
         "body": item.body,
         "tags": sorted(tag.tag for tag in item.tags),
         "applies_to": sorted(branch.branch_key for branch in item.applies_to),
+        "custom_fields": _metadata(item.custom_fields_json),
         "external_links": [
             {
                 "id": link.id,

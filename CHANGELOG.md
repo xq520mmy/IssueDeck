@@ -12,6 +12,8 @@ versioning once public releases begin.
 - Added optional Slack, Discord, and email lifecycle notifications.
 - Added local project-template packs through `project_templates_dir` so new
   dashboard projects can start from custom TOML templates without code changes.
+- Added project-defined custom fields with REST, dashboard, Markdown export,
+  and audit-bundle support.
 
 ## [0.5.0] - 2026-05-02
 

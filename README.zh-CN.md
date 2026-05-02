@@ -52,6 +52,7 @@ Dashboard CSV、JSON 和 Markdown 上传见
 [Dashboard 导入历史](docs/dashboard-import-history.zh-CN.md)。
 导入后的批量整理见 [Dashboard 批量分诊](docs/dashboard-bulk-triage.zh-CN.md)。
 新工作区起步配置见[项目模板](docs/project-templates.zh-CN.md)。
+项目级额外元数据见[自定义字段](docs/custom-fields.zh-CN.md)。
 项目快照归档见[审计导出包](docs/audit-bundles.zh-CN.md)。
 
 ## 功能
@@ -59,6 +60,7 @@ Dashboard CSV、JSON 和 Markdown 上传见
 - 面向 Agent：MCP tools 可创建、更新、搜索、关联和发布事项。
 - Agent 工作会话：记录哪个 agent 正在处理哪个事项、目标、进展和最终结果。
 - 多项目：每个项目独立配置事项类型、状态、分支和 ID 前缀。
+- 项目自定义字段：为事项补充 priority、estimate、客户影响、来源 URL 等元数据。
 - SQLite FTS5 全文搜索。
 - 双向关系：`blocks`、`blocked_by`、`related_to`。
 - 外部链接：关联 GitHub issue、PR、commit 和其他审查上下文。
