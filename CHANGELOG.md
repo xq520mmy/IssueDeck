@@ -7,6 +7,8 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-05-02
+
 ### Added
 
 - Added optional Slack, Discord, and email lifecycle notifications.

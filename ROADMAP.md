@@ -3,7 +3,7 @@
 IssueDeck is starting small on purpose: a local-first issue deck, a dashboard,
 and MCP tools that make coding-agent workflows easier to track.
 
-Current public release: `v0.5.0`.
+Current public release: `v0.6.0`.
 
 The `main` branch may include unreleased contributor-experience improvements
 listed in `CHANGELOG.md`.
@@ -52,6 +52,7 @@ listed in `CHANGELOG.md`.
   and API payloads.
 - Custom-field list filters and CSV/JSON import mappings.
 - Custom-field bulk updates for post-import triage.
+- Custom-field chips in list, mobile, and kanban item summaries.
 
 ## Near Term
 
