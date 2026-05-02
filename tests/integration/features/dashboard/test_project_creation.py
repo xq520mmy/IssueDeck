@@ -16,7 +16,11 @@ async def dashboard_client(tmp_path):
         await conn.run_sync(Base.metadata.create_all)
     Session = async_sessionmaker(engine, expire_on_commit=False)
     registry = ConfigRegistry(
-        server=ServerConfig(api_token="t", projects_dir=tmp_path),
+        server=ServerConfig(
+            api_token="t",
+            projects_dir=tmp_path,
+            project_templates_dir=tmp_path / "project-templates",
+        ),
         projects={},
     )
 
@@ -71,6 +75,75 @@ async def test_project_creation_uses_selected_template(dashboard_client):
     assert "ready_to_ship" in project.statuses
 
 
+async def test_project_creation_supports_local_template_pack(dashboard_client):
+    client, registry, projects_dir = dashboard_client
+    templates_dir = registry.server.project_templates_dir
+    templates_dir.mkdir()
+    (templates_dir / "support.toml").write_text(
+        "\n".join([
+            'key = "support"',
+            'name = "Support queue"',
+            'description = "Customer support triage with escalation states."',
+            'ship_exempt_kinds = ["question"]',
+            "",
+            "[[kinds]]",
+            'key = "question"',
+            'label = "Question"',
+            'prefix = "QST"',
+            "",
+            "[[kinds]]",
+            'key = "incident"',
+            'label = "Incident"',
+            'prefix = "INC"',
+            "",
+            "[[statuses]]",
+            'key = "new"',
+            'label = "New"',
+            "",
+            "[[statuses]]",
+            'key = "investigating"',
+            'label = "Investigating"',
+            "",
+            "[[statuses]]",
+            'key = "resolved"',
+            'label = "Resolved"',
+            "terminal = true",
+            "",
+            "[[branches]]",
+            'key = "support"',
+            'label = "Support"',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    form_response = await client.get("/dashboard/projects-new")
+
+    assert form_response.status_code == 200
+    assert "Support queue" in form_response.text
+    assert "Customer support triage" in form_response.text
+
+    response = await client.post(
+        "/dashboard/projects-new",
+        data={
+            "key": "support-desk",
+            "name": "Support Desk",
+            "template_key": "support",
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    written = (projects_dir / "support-desk.toml").read_text(encoding="utf-8")
+    assert "[kinds.incident]" in written
+    assert "[statuses.investigating]" in written
+    assert 'ship_exempt_kinds = ["question"]' in written
+
+    project = registry.project("support-desk")
+    assert "incident" in project.kinds
+    assert "investigating" in project.statuses
+
+
 async def test_project_creation_rejects_unknown_template(dashboard_client):
     client, _registry, projects_dir = dashboard_client
 
@@ -85,5 +158,5 @@ async def test_project_creation_rejects_unknown_template(dashboard_client):
     )
 
     assert response.status_code == 422
-    assert "Choose one of the built-in project templates." in response.text
+    assert "Choose one of the available project templates." in response.text
     assert not (projects_dir / "bad-template.toml").exists()

@@ -25,6 +25,10 @@ data/*
 projects/*.toml
 !projects/example.toml
 
+# Local project-template packs can encode private workflows; publish examples deliberately
+project-templates/*.toml
+!project-templates/.gitkeep
+
 # Server config is per-deploy
 server.toml
 

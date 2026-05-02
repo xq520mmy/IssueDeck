@@ -6,6 +6,55 @@ IssueDeck 可以在 Dashboard 里基于起步模板创建新项目配置。打�
 模板会写入普通的 `projects/<key>.toml` 文件。创建之后，你仍然可以直接编辑
 TOML 来重命名类型、添加状态、修改 ID 前缀，或添加发布分支。
 
+## 本地模板包
+
+如果想在不修改 IssueDeck 源码的情况下增加模板，可以把 TOML 文件放进
+`server.toml` 里的 `project_templates_dir`：
+
+```toml
+project_templates_dir = "./project-templates"
+```
+
+每个 `*.toml` 文件描述一个起步模板：
+
+```toml
+key = "support"
+name = "Support queue"
+description = "Customer support triage with escalation states."
+ship_exempt_kinds = ["question"]
+
+[[kinds]]
+key = "question"
+label = "Question"
+prefix = "QST"
+
+[[kinds]]
+key = "incident"
+label = "Incident"
+prefix = "INC"
+
+[[statuses]]
+key = "new"
+label = "New"
+
+[[statuses]]
+key = "investigating"
+label = "Investigating"
+
+[[statuses]]
+key = "resolved"
+label = "Resolved"
+terminal = true
+
+[[branches]]
+key = "support"
+label = "Support"
+```
+
+自定义模板 key 不能和内置模板重复。如果某个状态设置了 `requires_ship = true`，
+模板必须至少定义一个分支。本地模板包可能包含团队私有流程名称，因此默认
+`.gitignore` 会忽略 `project-templates/*.toml`，只有你明确准备公开的示例才需要提交。
+
 ## 内置模板
 
 | 模板 | 适合场景 | 包含内容 |

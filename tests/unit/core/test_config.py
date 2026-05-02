@@ -37,9 +37,11 @@ def test_load_server_config_accepts_utf8_bom(tmp_path):
 def test_server_env_override(monkeypatch):
     monkeypatch.setenv("ISSUEDECK_API_TOKEN", "env-token")
     monkeypatch.setenv("ISSUEDECK_PORT", "9000")
+    monkeypatch.setenv("ISSUEDECK_PROJECT_TEMPLATES_DIR", "./custom-templates")
     cfg = load_server_config(FIX / "server_ok.toml")
     assert cfg.api_token.get_secret_value() == "env-token"
     assert cfg.port == 9000
+    assert cfg.project_templates_dir == Path("./custom-templates")
 
 
 def test_server_config_supports_scoped_tokens(tmp_path):

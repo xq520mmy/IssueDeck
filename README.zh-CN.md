@@ -175,7 +175,8 @@ coding agent；`admin` token 拥有完整 API 权限，也可以登录 Dashboard
 
 项目配置位于 `projects/*.toml`。Dashboard 也提供轻量的新建项目入口，可以从
 Basic issue deck、Agent workflow、Software team 等起步模板生成项目配置。
-高级配置仍建议直接编辑 TOML。
+高级配置仍建议直接编辑 TOML。也可以通过 `project_templates_dir` 增加本地模板包；
+详见[项目模板](docs/project-templates.zh-CN.md)。
 
 ## Webhooks
 

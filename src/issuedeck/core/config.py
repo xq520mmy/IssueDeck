@@ -104,6 +104,7 @@ class ServerConfig(BaseModel):
     tokens: list[TokenConfig] = Field(default_factory=list)
     data_dir: Path = Path("./data")
     projects_dir: Path = Path("./projects")
+    project_templates_dir: Path = Path("./project-templates")
     log_level: Literal["debug", "info", "warning", "error"] = "info"
     sqlite: SqliteConfig = SqliteConfig()
     webhooks: list[WebhookConfig] = Field(default_factory=list)
@@ -124,6 +125,8 @@ class ServerConfig(BaseModel):
             data["data_dir"] = d
         if pd := os.environ.get("ISSUEDECK_PROJECTS_DIR"):
             data["projects_dir"] = pd
+        if td := os.environ.get("ISSUEDECK_PROJECT_TEMPLATES_DIR"):
+            data["project_templates_dir"] = td
         return data
 
     @model_validator(mode="after")

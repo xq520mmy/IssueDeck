@@ -299,7 +299,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
             "Project key must start with a letter and use lowercase letters, "
             "numbers, - or _."
         ),
-        "project_form.error.invalid_template": "Choose one of the built-in project templates.",
+        "project_form.error.invalid_template": "Choose one of the available project templates.",
         "project_form.error.name_required": "Project name is required.",
         "project_form.help": (
             "Create a project config from a starter template. You can tune kinds, statuses, "
@@ -648,7 +648,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "project_form.error.exists": "项目 '{key}' 已存在。",
         "project_form.error.exists_on_disk": "{name} 已存在于磁盘。",
         "project_form.error.invalid_key": "项目键必须以字母开头，只能使用小写字母、数字、- 或 _。",
-        "project_form.error.invalid_template": "请选择一个内置项目模板。",
+        "project_form.error.invalid_template": "请选择一个可用项目模板。",
         "project_form.error.name_required": "项目名称不能为空。",
         "project_form.help": (
             "基于起步模板创建项目配置。之后可以在 TOML 中调整类型、状态、分支和发布规则。"

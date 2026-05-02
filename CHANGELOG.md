@@ -11,6 +11,8 @@ versioning once public releases begin.
 
 - Added optional Slack and Discord lifecycle notifications through incoming
   webhook URLs.
+- Added local project-template packs through `project_templates_dir` so new
+  dashboard projects can start from custom TOML templates without code changes.
 
 ## [0.5.0] - 2026-05-02
 

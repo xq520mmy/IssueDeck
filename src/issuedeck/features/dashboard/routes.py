@@ -674,6 +674,7 @@ def _work_queue_nav(project_key: str, active_view: str) -> list[dict[str, str | 
 
 def _project_form_context(
     *,
+    registry,
     error: str | None = None,
     form: dict[str, object] | None = None,
     status_code: int = 200,
@@ -682,7 +683,9 @@ def _project_form_context(
         "active_page": "new_project",
         "error": error,
         "form": form or {"template_key": DEFAULT_PROJECT_TEMPLATE_KEY},
-        "project_templates": list_project_templates(),
+        "project_templates": list_project_templates(
+            registry.server.project_templates_dir
+        ),
         "default_template_key": DEFAULT_PROJECT_TEMPLATE_KEY,
         "status_code": status_code,
     }
@@ -787,10 +790,11 @@ async def dashboard_home(request: Request):
 
 @router.get("/projects-new")
 async def create_project_form(request: Request):
+    registry = request.app.state.registry
     return render(
         "pages/project_form.html", request,
         **_ctx(request),
-        **_project_form_context(),
+        **_project_form_context(registry=registry),
     )
 
 
@@ -807,7 +811,10 @@ async def create_project_submit(
     name = name.strip()
     description = description.strip()
     template_key = template_key.strip()
-    template = get_project_template(template_key)
+    template = get_project_template(
+        template_key,
+        registry.server.project_templates_dir,
+    )
     t = make_translator(language_from_request(request))
     form = {
         "key": key,
@@ -830,7 +837,12 @@ async def create_project_submit(
         return render(
             "pages/project_form.html", request,
             **_ctx(request),
-            **_project_form_context(error=error, form=form, status_code=422),
+            **_project_form_context(
+                registry=registry,
+                error=error,
+                form=form,
+                status_code=422,
+            ),
         )
 
     path = registry.server.projects_dir / f"{key}.toml"
@@ -840,6 +852,7 @@ async def create_project_submit(
             "pages/project_form.html", request,
             **_ctx(request),
             **_project_form_context(
+                registry=registry,
                 error=t("project_form.error.exists_on_disk", name=path.name),
                 form=form,
                 status_code=409,
@@ -866,7 +879,12 @@ async def create_project_submit(
         return render(
             "pages/project_form.html", request,
             **_ctx(request),
-            **_project_form_context(error=str(exc), form=form, status_code=422),
+            **_project_form_context(
+                registry=registry,
+                error=str(exc),
+                form=form,
+                status_code=422,
+            ),
         )
 
     return RedirectResponse(url=f"/dashboard/{key}", status_code=303)

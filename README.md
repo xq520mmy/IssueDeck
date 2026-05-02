@@ -208,7 +208,9 @@ full API access and can sign in to the dashboard.
 
 Project configs live in `projects/*.toml`. The dashboard can create new
 projects from Basic issue deck, Agent workflow, and Software team starter
-templates; edit TOML directly for advanced customizations.
+templates; edit TOML directly for advanced customizations. Local template packs
+can be added through `project_templates_dir`; see
+[Project Templates](docs/project-templates.md).
 
 Optional signed lifecycle webhooks can notify downstream automation when items
 are created, updated, shipped, deleted, or restored; see

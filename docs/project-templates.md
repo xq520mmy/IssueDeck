@@ -8,6 +8,57 @@ Templates write a normal `projects/<key>.toml` file. After creation, you can
 edit that TOML to rename kinds, add statuses, change prefixes, or add release
 branches.
 
+## Local Template Packs
+
+To add templates without changing IssueDeck source code, place TOML files in
+`project_templates_dir` from `server.toml`:
+
+```toml
+project_templates_dir = "./project-templates"
+```
+
+Each `*.toml` file describes one starter template:
+
+```toml
+key = "support"
+name = "Support queue"
+description = "Customer support triage with escalation states."
+ship_exempt_kinds = ["question"]
+
+[[kinds]]
+key = "question"
+label = "Question"
+prefix = "QST"
+
+[[kinds]]
+key = "incident"
+label = "Incident"
+prefix = "INC"
+
+[[statuses]]
+key = "new"
+label = "New"
+
+[[statuses]]
+key = "investigating"
+label = "Investigating"
+
+[[statuses]]
+key = "resolved"
+label = "Resolved"
+terminal = true
+
+[[branches]]
+key = "support"
+label = "Support"
+```
+
+Custom template keys cannot duplicate built-in keys. If a status uses
+`requires_ship = true`, the template must define at least one branch. Local
+template packs often encode team-specific workflow names, so the default
+`.gitignore` keeps `project-templates/*.toml` private unless you explicitly
+publish an example.
+
 ## Built-In Templates
 
 | Template | Best for | Includes |

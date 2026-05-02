@@ -3,6 +3,7 @@ port = 8765
 api_token = "change-me-in-production"
 data_dir = "./data"
 projects_dir = "./projects"
+project_templates_dir = "./project-templates"
 log_level = "info"
 
 # Optional extra tokens. The legacy api_token above is always treated as admin.
