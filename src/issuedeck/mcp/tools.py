@@ -27,6 +27,7 @@ async def create_item(
     body: str = "",
     tags: list[str] | None = None,
     applies_to: list[str] | None = None,
+    custom_fields: dict[str, Any] | None = None,
     external_links: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Create a new tracker item. Returns the full item with its local_id."""
@@ -36,6 +37,7 @@ async def create_item(
         "body": body,
         "tags": tags,
         "applies_to": applies_to,
+        "custom_fields": custom_fields,
         "external_links": external_links,
     })
     return await get_client().create_item(project_key, payload)
@@ -50,6 +52,7 @@ async def update_item(
     status: str | None = None,
     tags: list[str] | None = None,
     applies_to: list[str] | None = None,
+    custom_fields: dict[str, Any] | None = None,
     external_links: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Partial update of an item. Pass body OR append_body, not both."""
@@ -60,6 +63,7 @@ async def update_item(
         "status": status,
         "tags": tags,
         "applies_to": applies_to,
+        "custom_fields": custom_fields,
         "external_links": external_links,
     })
     return await get_client().update_item(project_key, local_id, payload)
@@ -118,6 +122,7 @@ async def list_items(
     tag: list[str] | None = None,
     applies_to: str | None = None,
     relation_type: str | None = None,
+    custom_field: list[str] | None = None,
     shipped_in_branch: str | None = None,
     since: str | None = None,
     include_deleted: bool = False,
@@ -125,7 +130,10 @@ async def list_items(
     after: str | None = None,
     limit: int = 50,
 ) -> dict[str, Any]:
-    """List items with filters. Returns a page with next_cursor."""
+    """List items with filters.
+
+    custom_field entries use FIELD=VALUE, FIELD>=VALUE, or FIELD:missing syntax.
+    """
     params: dict[str, Any] = _drop_none({
         "status": status,
         "kind": kind,
@@ -142,6 +150,8 @@ async def list_items(
         params["only_deleted"] = "true"
     if tag:
         params["tag"] = tag
+    if custom_field:
+        params["custom_field"] = custom_field
     return await get_client().list_items(project_key, params)
 
 

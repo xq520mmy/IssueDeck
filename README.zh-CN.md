@@ -57,7 +57,7 @@ Dashboard CSV、JSON 和 Markdown 上传见
 
 ## 功能
 
-- 面向 Agent：MCP tools 可创建、更新、搜索、关联和发布事项。
+- 面向 Agent：MCP tools 可创建、更新、筛选、关联和发布事项，并支持自定义字段。
 - Agent 工作会话：记录哪个 agent 正在处理哪个事项、目标、进展和最终结果。
 - 多项目：每个项目独立配置事项类型、状态、分支和 ID 前缀。
 - 项目自定义字段：为事项补充 priority、estimate、客户影响、来源 URL 等元数据，
@@ -280,7 +280,9 @@ GitHub Issues、Linear、Jira 和通用表格的导出方式见
 
 客户端配置示例见 [MCP 客户端接入](docs/mcp-clients.zh-CN.md)。
 
-MCP 进程通过 REST API 与 IssueDeck 通信，不直接访问 SQLite。环境变量：
+MCP 进程通过 REST API 与 IssueDeck 通信，不直接访问 SQLite。`create_item` 和
+`update_item` 可写入 `custom_fields`，`list_items` 可使用重复的 `custom_field`
+筛选条件。环境变量：
 
 ```bash
 ISSUEDECK_BASE_URL=http://127.0.0.1:8765

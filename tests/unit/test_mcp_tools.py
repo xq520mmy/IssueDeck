@@ -86,6 +86,7 @@ async def test_create_item_builds_body(fake_client):
     await tools.create_item(
         project_key="demo", kind="feature", title="Add search",
         body="", tags=["ui"], applies_to=["web"],
+        custom_fields={"priority": "high", "estimate": 3},
         external_links=[
             {
                 "link_type": "github_pr",
@@ -103,6 +104,7 @@ async def test_create_item_builds_body(fake_client):
         "body": "",
         "tags": ["ui"],
         "applies_to": ["web"],
+        "custom_fields": {"priority": "high", "estimate": 3},
         "external_links": [
             {
                 "link_type": "github_pr",
@@ -117,7 +119,7 @@ async def test_update_item_omits_unset(fake_client):
     await tools.update_item(
         project_key="demo", local_id="FEAT-1",
         title="Renamed", append_body=None, status=None, tags=None,
-        applies_to=None, body=None,
+        applies_to=None, body=None, custom_fields={"priority": "low"},
         external_links=[
             {
                 "link_type": "github_issue",
@@ -128,6 +130,7 @@ async def test_update_item_omits_unset(fake_client):
     _, _, kwargs = fake_client.calls[0]
     assert kwargs["body"] == {
         "title": "Renamed",
+        "custom_fields": {"priority": "low"},
         "external_links": [
             {
                 "link_type": "github_issue",
@@ -176,6 +179,7 @@ async def test_list_items_builds_params(fake_client):
     await tools.list_items(
         project_key="demo", status="active", kind="feature",
         tag=["ui", "p1"], applies_to="web", relation_type="blocked_by",
+        custom_field=["priority=high", "estimate>=3", "source_url:present"],
         shipped_in_branch=None, since=None, include_deleted=False,
         only_deleted=True, after=None, limit=20,
     )
@@ -186,6 +190,11 @@ async def test_list_items_builds_params(fake_client):
     assert params["tag"] == ["ui", "p1"]
     assert params["applies_to"] == "web"
     assert params["relation_type"] == "blocked_by"
+    assert params["custom_field"] == [
+        "priority=high",
+        "estimate>=3",
+        "source_url:present",
+    ]
     assert params["limit"] == 20
     assert params["only_deleted"] == "true"
     assert "shipped_in_branch" not in params

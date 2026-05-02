@@ -12,6 +12,7 @@ versioning once public releases begin.
 - Added range and presence filters for project custom fields in REST list
   queries, dashboard filters, saved filters, and pagination links.
 - Added built-in custom-field presets to project templates.
+- Added MCP create/update/list support for item custom fields.
 
 ## [0.6.0] - 2026-05-02
 

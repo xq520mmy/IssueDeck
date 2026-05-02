@@ -65,8 +65,8 @@ Project snapshots are covered in
 
 ## Features
 
-- Agent-ready: MCP tools let coding agents create, update, search, relate, and
-  ship tracked work without scraping Markdown.
+- Agent-ready: MCP tools let coding agents create, update, filter, relate, and
+  ship tracked work, including custom fields, without scraping Markdown.
 - Agent Work Sessions track which agent is working on which item, the goal,
   progress updates, and the final outcome.
 - Multi-project: one SQLite DB holds items for any number of projects, keyed by
@@ -410,9 +410,12 @@ Generic stdio config:
 > `ISSUEDECK_API_TOKEN`. They may hold the same value but the env var names
 > differ by design (client/server are separate processes).
 
-12 tools: `list_projects`, `get_project_config`, `create_item`, `update_item`,
+17 tools: `list_projects`, `get_project_config`, `create_item`, `update_item`,
 `ship_item`, `append_item_event`, `delete_item`, `get_item`, `list_items`,
-`search_items`, `add_relationship`, `remove_relationship`.
+`search_items`, `add_relationship`, `remove_relationship`,
+`start_work_session`, `list_work_sessions`, `get_work_session`,
+`update_work_session`, `finish_work_session`. `create_item` and `update_item`
+accept `custom_fields`; `list_items` accepts repeated `custom_field` filters.
 
 The MCP process reads `ISSUEDECK_BASE_URL` and `ISSUEDECK_TOKEN`, then talks to
 the REST server over HTTP. It does not access SQLite directly.
