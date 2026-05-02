@@ -23,6 +23,11 @@ name = "Support queue"
 description = "Customer support triage with escalation states."
 ship_exempt_kinds = ["question"]
 
+[custom_fields.priority]
+label = "Priority"
+type = "select"
+options = ["low", "high"]
+
 [[kinds]]
 key = "question"
 label = "Question"
@@ -52,8 +57,9 @@ label = "Support"
 ```
 
 自定义模板 key 不能和内置模板重复。如果某个状态设置了 `requires_ship = true`，
-模板必须至少定义一个分支。本地模板包可能包含团队私有流程名称，因此默认
-`.gitignore` 会忽略 `project-templates/*.toml`，只有你明确准备公开的示例才需要提交。
+模板必须至少定义一个分支。本地模板包也可以包含项目 `custom_fields`。这些模板
+可能包含团队私有流程名称，因此默认 `.gitignore` 会忽略
+`project-templates/*.toml`，只有你明确准备公开的示例才需要提交。
 
 ## 内置模板
 

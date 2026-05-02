@@ -25,6 +25,11 @@ name = "Support queue"
 description = "Customer support triage with escalation states."
 ship_exempt_kinds = ["question"]
 
+[custom_fields.priority]
+label = "Priority"
+type = "select"
+options = ["low", "high"]
+
 [[kinds]]
 key = "question"
 label = "Question"
@@ -55,9 +60,9 @@ label = "Support"
 
 Custom template keys cannot duplicate built-in keys. If a status uses
 `requires_ship = true`, the template must define at least one branch. Local
-template packs often encode team-specific workflow names, so the default
-`.gitignore` keeps `project-templates/*.toml` private unless you explicitly
-publish an example.
+template packs can also include project `custom_fields`. They often encode
+team-specific workflow names, so the default `.gitignore` keeps
+`project-templates/*.toml` private unless you explicitly publish an example.
 
 ## Built-In Templates
 

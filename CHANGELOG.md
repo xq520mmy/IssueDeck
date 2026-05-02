@@ -14,6 +14,7 @@ versioning once public releases begin.
   dashboard projects can start from custom TOML templates without code changes.
 - Added project-defined custom fields with REST, dashboard, Markdown export,
   and audit-bundle support.
+- Added custom-field support to local project-template packs.
 
 ## [0.5.0] - 2026-05-02
 

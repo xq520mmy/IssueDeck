@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+import re
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
+from issuedeck.core.config import CustomFieldConfig
 from issuedeck.core.errors import ConfigError
 
 
@@ -42,6 +44,7 @@ class ProjectTemplate:
     statuses: tuple[StatusTemplate, ...]
     branches: tuple[BranchTemplate, ...]
     ship_exempt_kinds: tuple[str, ...] = ()
+    custom_fields: dict[str, CustomFieldConfig] = field(default_factory=dict)
 
     @property
     def kind_labels(self) -> tuple[str, ...]:
@@ -124,6 +127,7 @@ PROJECT_TEMPLATES: tuple[ProjectTemplate, ...] = (
 )
 
 _PROJECT_TEMPLATE_MAP = {template.key: template for template in PROJECT_TEMPLATES}
+_CUSTOM_FIELD_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
 
 
 def _ensure_unique(values: list[str], label: str) -> None:
@@ -160,6 +164,7 @@ class ProjectTemplateFile(BaseModel):
     statuses: list[TemplateStatusFile] = Field(min_length=1)
     branches: list[TemplateBranchFile] = Field(default_factory=list)
     ship_exempt_kinds: list[str] = Field(default_factory=list)
+    custom_fields: dict[str, CustomFieldConfig] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _cross_field_checks(self) -> ProjectTemplateFile:
@@ -167,6 +172,12 @@ class ProjectTemplateFile(BaseModel):
         _ensure_unique([kind.prefix for kind in self.kinds], "kind prefix")
         _ensure_unique([status.key for status in self.statuses], "status")
         _ensure_unique([branch.key for branch in self.branches], "branch")
+        for field_key in self.custom_fields:
+            if not _CUSTOM_FIELD_KEY_RE.fullmatch(field_key):
+                raise ValueError(
+                    "custom field keys must start with a lowercase letter and "
+                    "use lowercase letters, numbers, - or _"
+                )
 
         kind_keys = {kind.key for kind in self.kinds}
         for kind in self.ship_exempt_kinds:
@@ -199,6 +210,7 @@ class ProjectTemplateFile(BaseModel):
                 for branch in self.branches
             ),
             ship_exempt_kinds=tuple(self.ship_exempt_kinds),
+            custom_fields=self.custom_fields,
         )
 
 
@@ -302,6 +314,19 @@ def render_project_toml(
         f"ship_exempt_kinds = {_toml_array(template.ship_exempt_kinds)}",
         "",
     ])
+
+    for field_key, cfg in template.custom_fields.items():
+        lines.extend([
+            f"[custom_fields.{field_key}]",
+            f"label = {_toml_string(cfg.label)}",
+            f"type = {_toml_string(cfg.type)}",
+        ])
+        if cfg.required:
+            lines.append("required = true")
+        if cfg.options:
+            lines.append(f"options = {_toml_array(tuple(cfg.options))}")
+        lines.append("")
+
     return "\n".join(lines)
 
 

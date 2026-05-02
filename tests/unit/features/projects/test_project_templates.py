@@ -52,6 +52,12 @@ def test_loaded_template_renders_valid_project_toml(tmp_path):
             'name = "Delivery board"',
             'description = "Feature delivery with releases."',
             "",
+            "[custom_fields.priority]",
+            'label = "Priority"',
+            'type = "select"',
+            'options = ["low", "high"]',
+            "required = true",
+            "",
             "[[kinds]]",
             'key = "feature"',
             'label = "Feature"',
@@ -87,6 +93,8 @@ def test_loaded_template_renders_valid_project_toml(tmp_path):
     assert "[statuses.done]" in rendered
     assert "requires_ship = true" in rendered
     assert "[[branches]]" in rendered
+    assert "[custom_fields.priority]" in rendered
+    assert 'options = ["low", "high"]' in rendered
 
 
 def test_load_project_templates_rejects_builtin_key_collision(tmp_path):

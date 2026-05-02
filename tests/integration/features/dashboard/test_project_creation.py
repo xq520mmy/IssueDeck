@@ -86,6 +86,11 @@ async def test_project_creation_supports_local_template_pack(dashboard_client):
             'description = "Customer support triage with escalation states."',
             'ship_exempt_kinds = ["question"]',
             "",
+            "[custom_fields.priority]",
+            'label = "Priority"',
+            'type = "select"',
+            'options = ["low", "high"]',
+            "",
             "[[kinds]]",
             'key = "question"',
             'label = "Question"',
@@ -137,11 +142,13 @@ async def test_project_creation_supports_local_template_pack(dashboard_client):
     written = (projects_dir / "support-desk.toml").read_text(encoding="utf-8")
     assert "[kinds.incident]" in written
     assert "[statuses.investigating]" in written
+    assert "[custom_fields.priority]" in written
     assert 'ship_exempt_kinds = ["question"]' in written
 
     project = registry.project("support-desk")
     assert "incident" in project.kinds
     assert "investigating" in project.statuses
+    assert "priority" in project.custom_fields
 
 
 async def test_project_creation_rejects_unknown_template(dashboard_client):
