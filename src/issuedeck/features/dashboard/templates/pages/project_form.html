@@ -105,6 +105,11 @@
               <span class="block text-xs text-gray-500 dark:text-gray-400">
                 {{ t("project_form.template_branches") }}: {{ template.branch_labels | join(", ") }}
               </span>
+              {% if template.custom_field_labels %}
+                <span class="block text-xs text-gray-500 dark:text-gray-400">
+                  {{ t("project_form.template_custom_fields") }}: {{ template.custom_field_labels | join(", ") }}
+                </span>
+              {% endif %}
             </span>
           </label>
         {% endfor %}

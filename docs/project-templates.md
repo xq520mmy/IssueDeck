@@ -66,11 +66,11 @@ team-specific workflow names, so the default `.gitignore` keeps
 
 ## Built-In Templates
 
-| Template | Best for | Includes |
-| --- | --- | --- |
-| Basic issue deck | Demos and lightweight personal backlogs | Feature, Bug, Improvement; Proposed, In Progress, Done, Won't Fix; Main branch |
-| Agent workflow | Human plus AI coding-agent triage | Feature, Bug, Improvement, Task; Proposed, In Progress, Blocked, Ready to Ship, Done, Won't Fix; Main branch |
-| Software team | Broader product delivery boards | Epic, Feature, Bug, Chore; Backlog, Ready, In Progress, Review, Done, Won't Fix; Main and Release branches |
+| Template | Best for | Includes | Custom fields |
+| --- | --- | --- | --- |
+| Basic issue deck | Demos and lightweight personal backlogs | Feature, Bug, Improvement; Proposed, In Progress, Done, Won't Fix; Main branch | Priority, Source URL |
+| Agent workflow | Human plus AI coding-agent triage | Feature, Bug, Improvement, Task; Proposed, In Progress, Blocked, Ready to Ship, Done, Won't Fix; Main branch | Priority, Estimate, Customer impact, Source URL |
+| Software team | Broader product delivery boards | Epic, Feature, Bug, Chore; Backlog, Ready, In Progress, Review, Done, Won't Fix; Main and Release branches | Priority, Estimate, Component, Source URL |
 
 ## Notes
 

@@ -45,6 +45,7 @@ async def test_project_form_renders_template_options(dashboard_client):
     assert "Basic issue deck" in response.text
     assert "Agent workflow" in response.text
     assert "Software team" in response.text
+    assert "Custom fields: Priority, Estimate, Customer impact, Source URL" in response.text
 
 
 async def test_project_creation_uses_selected_template(dashboard_client):
@@ -68,11 +69,17 @@ async def test_project_creation_uses_selected_template(dashboard_client):
     assert "[kinds.task]" in written
     assert "[statuses.blocked]" in written
     assert "[statuses.ready_to_ship]" in written
+    assert "[custom_fields.priority]" in written
+    assert "[custom_fields.estimate]" in written
+    assert "[custom_fields.customer_impact]" in written
+    assert "[custom_fields.source_url]" in written
 
     project = registry.project("agent-lab")
     assert "task" in project.kinds
     assert "blocked" in project.statuses
     assert "ready_to_ship" in project.statuses
+    assert "estimate" in project.custom_fields
+    assert project.custom_fields["priority"].options == ["low", "medium", "high"]
 
 
 async def test_project_creation_supports_local_template_pack(dashboard_client):

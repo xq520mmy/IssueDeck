@@ -63,11 +63,11 @@ label = "Support"
 
 ## 内置模板
 
-| 模板 | 适合场景 | 包含内容 |
-| --- | --- | --- |
-| 基础事项看板 | Demo 和轻量个人 backlog | Feature、Bug、Improvement；Proposed、In Progress、Done、Won't Fix；Main 分支 |
-| Agent 工作流 | 人和 AI coding agent 协同分诊 | Feature、Bug、Improvement、Task；Proposed、In Progress、Blocked、Ready to Ship、Done、Won't Fix；Main 分支 |
-| 软件团队 | 更完整的产品交付看板 | Epic、Feature、Bug、Chore；Backlog、Ready、In Progress、Review、Done、Won't Fix；Main 和 Release 分支 |
+| 模板 | 适合场景 | 包含内容 | 自定义字段 |
+| --- | --- | --- | --- |
+| 基础事项看板 | Demo 和轻量个人 backlog | Feature、Bug、Improvement；Proposed、In Progress、Done、Won't Fix；Main 分支 | Priority、Source URL |
+| Agent 工作流 | 人和 AI coding agent 协同分诊 | Feature、Bug、Improvement、Task；Proposed、In Progress、Blocked、Ready to Ship、Done、Won't Fix；Main 分支 | Priority、Estimate、Customer impact、Source URL |
+| 软件团队 | 更完整的产品交付看板 | Epic、Feature、Bug、Chore；Backlog、Ready、In Progress、Review、Done、Won't Fix；Main 和 Release 分支 | Priority、Estimate、Component、Source URL |
 
 ## 注意事项
 

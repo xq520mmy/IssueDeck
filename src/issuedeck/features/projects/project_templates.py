@@ -58,8 +58,34 @@ class ProjectTemplate:
     def branch_labels(self) -> tuple[str, ...]:
         return tuple(branch.label for branch in self.branches)
 
+    @property
+    def custom_field_labels(self) -> tuple[str, ...]:
+        return tuple(field.label for field in self.custom_fields.values())
+
 
 DEFAULT_PROJECT_TEMPLATE_KEY = "basic"
+
+
+def _custom_fields(*keys: str) -> dict[str, CustomFieldConfig]:
+    field_defs = {
+        "priority": CustomFieldConfig(
+            label="Priority",
+            type="select",
+            options=["low", "medium", "high"],
+        ),
+        "estimate": CustomFieldConfig(label="Estimate", type="number"),
+        "customer_impact": CustomFieldConfig(
+            label="Customer impact",
+            type="checkbox",
+        ),
+        "source_url": CustomFieldConfig(label="Source URL", type="url"),
+        "component": CustomFieldConfig(
+            label="Component",
+            type="select",
+            options=["frontend", "backend", "api", "docs", "infra"],
+        ),
+    }
+    return {key: field_defs[key] for key in keys}
 
 
 PROJECT_TEMPLATES: tuple[ProjectTemplate, ...] = (
@@ -79,6 +105,7 @@ PROJECT_TEMPLATES: tuple[ProjectTemplate, ...] = (
             StatusTemplate("wontfix", "Won't Fix", terminal=True),
         ),
         branches=(BranchTemplate("main", "Main"),),
+        custom_fields=_custom_fields("priority", "source_url"),
     ),
     ProjectTemplate(
         key="agent",
@@ -99,6 +126,12 @@ PROJECT_TEMPLATES: tuple[ProjectTemplate, ...] = (
             StatusTemplate("wontfix", "Won't Fix", terminal=True),
         ),
         branches=(BranchTemplate("main", "Main"),),
+        custom_fields=_custom_fields(
+            "priority",
+            "estimate",
+            "customer_impact",
+            "source_url",
+        ),
     ),
     ProjectTemplate(
         key="software",
@@ -123,6 +156,12 @@ PROJECT_TEMPLATES: tuple[ProjectTemplate, ...] = (
             BranchTemplate("release", "Release"),
         ),
         ship_exempt_kinds=("chore",),
+        custom_fields=_custom_fields(
+            "priority",
+            "estimate",
+            "component",
+            "source_url",
+        ),
     ),
 )
 

@@ -55,11 +55,13 @@ listed in `CHANGELOG.md`.
 - Custom-field chips in list, mobile, and kanban item summaries.
 - Custom-field range and presence filters for REST, dashboard, saved filters,
   and pagination.
+- Built-in project templates with custom-field presets for lightweight,
+  agent-assisted, and software-team workflows.
 
 ## Near Term
 
 - Explore richer third-party extension points beyond project templates.
-- Expand custom-field presets and examples as user workflows emerge.
+- Add more local template pack examples as real workflow patterns emerge.
 
 ## Later
 

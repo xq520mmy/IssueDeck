@@ -2,6 +2,7 @@ import pytest
 
 from issuedeck.core.errors import ConfigError
 from issuedeck.features.projects.project_templates import (
+    list_project_templates,
     load_project_templates,
     render_project_toml,
 )
@@ -95,6 +96,25 @@ def test_loaded_template_renders_valid_project_toml(tmp_path):
     assert "[[branches]]" in rendered
     assert "[custom_fields.priority]" in rendered
     assert 'options = ["low", "high"]' in rendered
+
+
+def test_builtin_templates_include_custom_field_presets():
+    templates = {template.key: template for template in list_project_templates()}
+
+    assert templates["basic"].custom_field_labels == ("Priority", "Source URL")
+    assert templates["agent"].custom_field_labels == (
+        "Priority",
+        "Estimate",
+        "Customer impact",
+        "Source URL",
+    )
+    assert templates["software"].custom_fields["component"].options == [
+        "frontend",
+        "backend",
+        "api",
+        "docs",
+        "infra",
+    ]
 
 
 def test_load_project_templates_rejects_builtin_key_collision(tmp_path):
