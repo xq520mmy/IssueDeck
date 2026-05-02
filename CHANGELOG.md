@@ -7,6 +7,11 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+### Added
+
+- Added range and presence filters for project custom fields in REST list
+  queries, dashboard filters, saved filters, and pagination links.
+
 ## [0.6.0] - 2026-05-02
 
 ### Added

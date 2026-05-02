@@ -3,7 +3,7 @@
    Variables: items, next_cursor, project_key, project,
               kind_color(), kind_label(), status_color(), status_label(),
               filter_kind, filter_status, filter_tag, filter_applies_to,
-              filter_custom_fields, filter_include_deleted
+              filter_custom_field_query, filter_include_deleted
 #}
 
 {% for item in items %}
@@ -14,7 +14,7 @@
 {% if next_cursor %}
 <tr>
   <td colspan="8" class="text-center py-4">
-    <button hx-get="/dashboard/{{ project_key }}/list?view={{ active_view }}&after={{ next_cursor }}{% for k in filter_kind %}&kind={{ k }}{% endfor %}{% for s in filter_status %}&status={{ s }}{% endfor %}{% for t in filter_tag %}&tag={{ t }}{% endfor %}{% for a in filter_applies_to %}&applies_to={{ a }}{% endfor %}{% for r in filter_relation_type %}&relation_type={{ r }}{% endfor %}{% for field_key, field_value in filter_custom_fields.items() %}&custom_field__{{ field_key }}={{ field_value | urlencode }}{% endfor %}{% if filter_include_deleted %}&include_deleted=true{% endif %}"
+    <button hx-get="/dashboard/{{ project_key }}/list?view={{ active_view }}&after={{ next_cursor }}{% for k in filter_kind %}&kind={{ k }}{% endfor %}{% for s in filter_status %}&status={{ s }}{% endfor %}{% for t in filter_tag %}&tag={{ t }}{% endfor %}{% for a in filter_applies_to %}&applies_to={{ a }}{% endfor %}{% for r in filter_relation_type %}&relation_type={{ r }}{% endfor %}{% for field_filter in filter_custom_field_query %}&{{ field_filter.name }}={{ field_filter.value | urlencode }}{% endfor %}{% if filter_include_deleted %}&include_deleted=true{% endif %}"
             hx-target="#items-table-body"
             hx-swap="innerHTML"
             class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium

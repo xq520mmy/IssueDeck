@@ -67,7 +67,12 @@ def test_filter_params_from_form_normalizes_values():
         applies_to=["main"],
         relation_type=[],
         include_deleted=True,
-        custom_fields={"priority": " high ", "empty": ""},
+        custom_fields={
+            "priority": " high ",
+            "estimate__min": " 5 ",
+            "source_url__presence": "missing",
+            "empty": "",
+        },
     )
 
     assert params == {
@@ -75,7 +80,11 @@ def test_filter_params_from_form_normalizes_values():
         "kind": ["feature"],
         "status": ["proposed"],
         "applies_to": ["main"],
-        "custom_fields": {"priority": "high"},
+        "custom_fields": {
+            "priority": "high",
+            "estimate__min": "5",
+            "source_url__presence": "missing",
+        },
         "include_deleted": True,
     }
 

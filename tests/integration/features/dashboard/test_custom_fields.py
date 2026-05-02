@@ -152,3 +152,46 @@ async def test_dashboard_list_filters_by_custom_fields(dashboard_client):
     assert "Low priority" not in response.text
     assert 'name="custom_field__priority"' in response.text
     assert 'value="high"' in response.text
+
+
+async def test_dashboard_list_filters_by_custom_field_range_and_presence(
+    dashboard_client,
+):
+    client, _Session, _registry = dashboard_client
+    await client.post(
+        "/dashboard/test/items-new",
+        data={
+            "kind": "feature",
+            "title": "Sized work",
+            "custom_field__priority": "high",
+            "custom_field__estimate": "8",
+            "applies_to": "main",
+        },
+    )
+    await client.post(
+        "/dashboard/test/items-new",
+        data={
+            "kind": "feature",
+            "title": "Unestimated work",
+            "custom_field__priority": "low",
+            "applies_to": "main",
+        },
+    )
+
+    response = await client.get("/dashboard/test/list?custom_field_min__estimate=5")
+
+    assert response.status_code == 200
+    assert "Sized work" in response.text
+    assert "Unestimated work" not in response.text
+    assert 'name="custom_field_min__estimate"' in response.text
+    assert 'value="5"' in response.text
+
+    response = await client.get(
+        "/dashboard/test/list?custom_field_presence__estimate=missing"
+    )
+
+    assert response.status_code == 200
+    assert "Unestimated work" in response.text
+    assert "Sized work" not in response.text
+    assert 'name="custom_field_presence__estimate"' in response.text
+    assert 'value="missing" selected' in response.text

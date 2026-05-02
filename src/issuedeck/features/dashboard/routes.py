@@ -280,12 +280,22 @@ def _custom_fields_from_form(project: ProjectConfig, form_data) -> dict[str, obj
     return values
 
 
-def _custom_field_filters_from_form(project: ProjectConfig, form_data) -> dict[str, object]:
-    incoming: dict[str, object] = {}
+def _last_form_value(form_data, key: str) -> object | None:
+    if hasattr(form_data, "getlist"):
+        raw_values = form_data.getlist(key)
+        return raw_values[-1] if raw_values else None
+    if hasattr(form_data, "get"):
+        return form_data.get(key)
+    return None
+
+
+def _custom_field_updates_from_form(
+    project: ProjectConfig,
+    form_data,
+) -> dict[str, object]:
+    values: dict[str, object] = {}
     for key, cfg in project.custom_fields.items():
-        form_key = f"custom_field__{key}"
-        raw_values = form_data.getlist(form_key) if hasattr(form_data, "getlist") else []
-        raw_value = raw_values[-1] if raw_values else None
+        raw_value = _last_form_value(form_data, f"custom_field__{key}")
         if raw_value is None:
             continue
         text = str(raw_value).strip()
@@ -293,8 +303,79 @@ def _custom_field_filters_from_form(project: ProjectConfig, form_data) -> dict[s
             continue
         if cfg.type == "checkbox" and text == "any":
             continue
-        incoming[key] = text
-    return normalize_custom_field_filters(project, incoming)
+        values[key] = text
+    return values
+
+
+def _custom_field_filters_from_form(project: ProjectConfig, form_data) -> dict[str, object]:
+    incoming: dict[str, object] = {}
+    for key, cfg in project.custom_fields.items():
+        raw_value = _last_form_value(form_data, f"custom_field__{key}")
+        if raw_value is not None:
+            text = str(raw_value).strip()
+            if text and not (cfg.type == "checkbox" and text == "any"):
+                incoming[key] = text
+
+        for suffix, form_prefix in (
+            ("__min", "custom_field_min__"),
+            ("__max", "custom_field_max__"),
+            ("__gt", "custom_field_gt__"),
+            ("__lt", "custom_field_lt__"),
+            ("__presence", "custom_field_presence__"),
+        ):
+            raw_value = _last_form_value(form_data, f"{form_prefix}{key}")
+            if raw_value is None:
+                continue
+            text = str(raw_value).strip()
+            if text and text != "any":
+                incoming[f"{key}{suffix}"] = text
+    normalize_custom_field_filters(project, incoming)
+    return incoming
+
+
+def _custom_field_filter_controls(
+    project: ProjectConfig,
+    filters: dict[str, object],
+) -> dict[str, dict[str, object]]:
+    controls: dict[str, dict[str, object]] = {}
+    for key, cfg in project.custom_fields.items():
+        exact = filters.get(key, "")
+        min_value = filters.get(f"{key}__min", "")
+        max_value = filters.get(f"{key}__max", "")
+        if cfg.type == "number" and exact not in ("", None):
+            min_value = min_value or exact
+            max_value = max_value or exact
+        controls[key] = {
+            "exact": exact,
+            "min": min_value,
+            "max": max_value,
+            "presence": filters.get(f"{key}__presence", ""),
+        }
+    return controls
+
+
+def _custom_field_filter_query(
+    project: ProjectConfig,
+    filters: dict[str, object],
+) -> list[dict[str, object]]:
+    query: list[dict[str, object]] = []
+    for raw_key, value in filters.items():
+        key = raw_key
+        name = f"custom_field__{raw_key}"
+        if raw_key not in project.custom_fields:
+            for suffix, form_prefix in (
+                ("__min", "custom_field_min__"),
+                ("__max", "custom_field_max__"),
+                ("__gt", "custom_field_gt__"),
+                ("__lt", "custom_field_lt__"),
+                ("__presence", "custom_field_presence__"),
+            ):
+                if raw_key.endswith(suffix):
+                    key = raw_key[:-len(suffix)]
+                    name = f"{form_prefix}{key}"
+                    break
+        query.append({"name": name, "value": value})
+    return query
 
 
 def _split_form_tokens(raw: str) -> list[str]:
@@ -1687,6 +1768,7 @@ async def list_view(
         await session2.close()
 
     is_htmx = request.headers.get("HX-Request") == "true"
+    custom_field_query = _custom_field_filter_query(project, custom_field_filters)
 
     return render(
         "pages/list.html", request,
@@ -1715,6 +1797,11 @@ async def list_view(
         filter_applies_to=applies_to or [],
         filter_relation_type=relation_type or [],
         filter_custom_fields=custom_field_filters,
+        filter_custom_field_controls=_custom_field_filter_controls(
+            project,
+            custom_field_filters,
+        ),
+        filter_custom_field_query=custom_field_query,
         filter_include_deleted=effective_include_deleted,
         current_list_url=_current_dashboard_url(
             request,
@@ -1761,7 +1848,7 @@ async def bulk_update_items_dashboard(
         action = bulk_action if bulk_action in {"update", "delete", "restore"} else "update"
         applies = bulk_applies_to if bulk_branch_mode == "replace" else None
         tags = _split_form_tokens(bulk_tags) if bulk_tags.strip() else None
-        custom_fields = _custom_field_filters_from_form(project, form_data)
+        custom_fields = _custom_field_updates_from_form(project, form_data)
         payload = BulkUpdateItemsRequest(
             local_ids=local_ids,
             action=action,

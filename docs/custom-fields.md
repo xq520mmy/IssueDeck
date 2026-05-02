@@ -74,8 +74,7 @@ Bulk updates can set custom field values across selected items:
 }
 ```
 
-Filter REST list responses with repeated `custom_field=FIELD=VALUE` query
-parameters:
+Filter REST list responses with repeated `custom_field` query parameters:
 
 ```bash
 curl \
@@ -83,14 +82,19 @@ curl \
   "http://127.0.0.1:8775/api/v1/projects/example/items?custom_field=priority=high"
 ```
 
+Exact filters use `FIELD=VALUE`. Number fields also support ranges such as
+`estimate>=3` and `estimate<=8`. Text, URL, and number fields support presence
+checks with `FIELD:*`, `FIELD:present`, or `FIELD:missing`.
+
 ## Dashboard
 
 The item create/edit form renders configured custom fields automatically.
 Submitted values appear in list summaries and on the item detail page. The list
 filter panel also renders configured custom fields, so saved dashboard filters
-can include values such as `priority=high` or `customer_impact=true`. The list
-bulk-action panel can set configured custom fields on all selected items; blank
-controls leave existing values unchanged.
+can include exact values such as `priority=high` or `customer_impact=true`,
+numeric min/max ranges such as `estimate >= 3`, and presence checks such as
+`source_url` has a value. The list bulk-action panel can set configured custom
+fields on all selected items; blank controls leave existing values unchanged.
 
 ## Imports
 

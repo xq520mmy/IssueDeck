@@ -138,10 +138,10 @@
       {% for t in filter_tag %}<input type="hidden" name="tag" value="{{ t }}">{% endfor %}
       {% for a in filter_applies_to %}<input type="hidden" name="applies_to" value="{{ a }}">{% endfor %}
       {% for r in filter_relation_type %}<input type="hidden" name="relation_type" value="{{ r }}">{% endfor %}
-      {% for field_key, field_value in filter_custom_fields.items() %}
+      {% for field_filter in filter_custom_field_query %}
         <input type="hidden"
-               name="custom_field__{{ field_key }}"
-               value="{% if field_value is sameas true %}true{% elif field_value is sameas false %}false{% else %}{{ field_value }}{% endif %}">
+               name="{{ field_filter.name }}"
+               value="{% if field_filter.value is sameas true %}true{% elif field_filter.value is sameas false %}false{% else %}{{ field_filter.value }}{% endif %}">
       {% endfor %}
       {% if filter_include_deleted %}<input type="hidden" name="include_deleted" value="true">{% endif %}
 
@@ -294,7 +294,8 @@
           </legend>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {% for field_key, field_cfg in project.custom_fields.items() %}
-              <label class="block">
+              {% set field_controls = filter_custom_field_controls[field_key] %}
+              <div class="block">
                 <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
                   {{ field_cfg.label }}
                 </span>
@@ -304,7 +305,7 @@
                     <option value="">{{ t("common.any") }}</option>
                     {% for option in field_cfg.options %}
                       <option value="{{ option }}"
-                              {% if filter_custom_fields.get(field_key) == option %}selected{% endif %}>
+                              {% if field_controls.exact == option %}selected{% endif %}>
                         {{ option }}
                       </option>
                     {% endfor %}
@@ -314,22 +315,49 @@
                           class="w-full rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-primary-500">
                     <option value="any">{{ t("common.any") }}</option>
                     <option value="true"
-                            {% if filter_custom_fields.get(field_key) is sameas true %}selected{% endif %}>
+                            {% if field_controls.exact is sameas true or field_controls.exact == "true" %}selected{% endif %}>
                       {{ t("custom_fields.true") }}
                     </option>
                     <option value="false"
-                            {% if filter_custom_fields.get(field_key) is sameas false %}selected{% endif %}>
+                            {% if field_controls.exact is sameas false or field_controls.exact == "false" %}selected{% endif %}>
                       {{ t("custom_fields.false") }}
                     </option>
                   </select>
+                {% elif field_cfg.type == "number" %}
+                  <div class="grid grid-cols-2 gap-2">
+                    <input name="custom_field_min__{{ field_key }}"
+                           type="number"
+                           step="any"
+                           value="{{ field_controls.min }}"
+                           placeholder="{{ t('custom_fields.min') }}"
+                           class="min-w-0 rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:ring-primary-500">
+                    <input name="custom_field_max__{{ field_key }}"
+                           type="number"
+                           step="any"
+                           value="{{ field_controls.max }}"
+                           placeholder="{{ t('custom_fields.max') }}"
+                           class="min-w-0 rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-primary-500 focus:ring-primary-500">
+                  </div>
                 {% else %}
                   <input name="custom_field__{{ field_key }}"
-                         type="{% if field_cfg.type == 'number' %}number{% elif field_cfg.type == 'url' %}url{% else %}text{% endif %}"
-                         {% if field_cfg.type == "number" %}step="any"{% endif %}
-                         value="{{ filter_custom_fields.get(field_key, '') }}"
+                         type="{% if field_cfg.type == 'url' %}url{% else %}text{% endif %}"
+                         value="{{ field_controls.exact }}"
                          class="w-full rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-primary-500">
                 {% endif %}
-              </label>
+                {% if field_cfg.type in ["text", "url", "number"] %}
+                  <select name="custom_field_presence__{{ field_key }}"
+                          aria-label="{{ field_cfg.label }} {{ t('custom_fields.presence') }}"
+                          class="mt-2 w-full rounded-md border-ledger-line dark:border-ledger-darkLine bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 focus:border-primary-500 focus:ring-primary-500">
+                    <option value="any">{{ t("common.any") }}</option>
+                    <option value="present" {% if field_controls.presence == "present" %}selected{% endif %}>
+                      {{ t("custom_fields.present") }}
+                    </option>
+                    <option value="missing" {% if field_controls.presence == "missing" %}selected{% endif %}>
+                      {{ t("custom_fields.missing") }}
+                    </option>
+                  </select>
+                {% endif %}
+              </div>
             {% endfor %}
           </div>
         </fieldset>

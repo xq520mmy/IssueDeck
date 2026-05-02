@@ -10,10 +10,11 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 
-from sqlalchemy import Integer, delete, func, select, update
+from sqlalchemy import Float, Integer, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from issuedeck.features.items.custom_fields import CustomFieldFilter
 from issuedeck.features.items.models import (
     Item,
     ItemApplyTo,
@@ -243,7 +244,7 @@ class ItemRepo:
         shipped_in_version: str | None = None,
         tags: list[str] | None = None,
         relationship_types: list[str] | None = None,
-        custom_fields: dict[str, object] | None = None,
+        custom_fields: list[CustomFieldFilter] | None = None,
         since: str | None = None,
         include_deleted: bool = False,
         only_deleted: bool = False,
@@ -270,11 +271,8 @@ class ItemRepo:
                     Item.pk.in_(select(ItemTag.item_pk).where(ItemTag.tag == t))
                 )
         if custom_fields:
-            for key, value in custom_fields.items():
-                stmt = stmt.where(
-                    func.json_extract(Item.custom_fields_json, _json_path(key))
-                    == _json_value(value)
-                )
+            for field_filter in custom_fields:
+                stmt = stmt.where(_custom_field_where(field_filter))
         if applies_to:
             stmt = stmt.where(
                 Item.pk.in_(select(ItemApplyTo.item_pk).where(
@@ -331,3 +329,22 @@ def _json_value(value: object) -> object:
     if isinstance(value, bool):
         return 1 if value else 0
     return value
+
+
+def _custom_field_where(field_filter: CustomFieldFilter):
+    path = _json_path(field_filter.key)
+    value = func.json_extract(Item.custom_fields_json, path)
+    value_type = func.json_type(Item.custom_fields_json, path)
+    if field_filter.op == "eq":
+        return value == _json_value(field_filter.value)
+    if field_filter.op == "gt":
+        return func.cast(value, Float) > field_filter.value
+    if field_filter.op == "gte":
+        return func.cast(value, Float) >= field_filter.value
+    if field_filter.op == "lt":
+        return func.cast(value, Float) < field_filter.value
+    if field_filter.op == "lte":
+        return func.cast(value, Float) <= field_filter.value
+    if field_filter.op == "present":
+        return value_type.is_not(None)
+    return or_(value_type.is_(None), value == "")

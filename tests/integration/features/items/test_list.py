@@ -39,6 +39,8 @@ def _registry():
                     label="Customer impact",
                     type="checkbox",
                 ),
+                "estimate": CustomFieldConfig(label="Estimate", type="number"),
+                "source_url": CustomFieldConfig(label="Source URL", type="url"),
             },
         )},
     )
@@ -57,9 +59,15 @@ async def service():
                 kind="feature" if i % 2 == 0 else "bug",
                 title=f"t{i}", tags=["hot"] if i == 0 else [],
                 custom_fields=(
-                    {"priority": "high", "customer_impact": True}
+                    {
+                        "priority": "high",
+                        "customer_impact": True,
+                        "estimate": 8,
+                        "source_url": "https://example.test/spec",
+                    }
                     if i == 0
-                    else {"priority": "low"} if i == 1 else {}
+                    else {"priority": "low", "estimate": 3} if i == 1
+                    else {"estimate": 13} if i == 2 else {}
                 ),
             ))
         yield svc
@@ -92,6 +100,26 @@ async def test_list_filters_by_custom_field(service):
         custom_fields={"customer_impact": True},
     )
     assert [item.title for item in impacted.items] == ["t0"]
+
+
+async def test_list_filters_by_custom_field_range_and_presence(service):
+    mid_size = await service.list_items(
+        "test",
+        custom_fields={"estimate__min": 5, "estimate__max": 10},
+    )
+    assert [item.title for item in mid_size.items] == ["t0"]
+
+    has_source = await service.list_items(
+        "test",
+        custom_fields={"source_url__presence": "present"},
+    )
+    assert [item.title for item in has_source.items] == ["t0"]
+
+    missing_source = await service.list_items(
+        "test",
+        custom_fields={"source_url__presence": "missing"},
+    )
+    assert {item.title for item in missing_source.items} == {"t1", "t2", "t3", "t4"}
 
 
 async def test_list_pagination_cursor_roundtrip(service):

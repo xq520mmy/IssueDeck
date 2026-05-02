@@ -78,6 +78,10 @@ curl \
   "http://127.0.0.1:8775/api/v1/projects/example/items?custom_field=priority=high"
 ```
 
+精确筛选使用 `FIELD=VALUE`。数字字段还支持 `estimate>=3`、`estimate<=8`
+这类范围筛选；文本、URL 和数字字段支持 `FIELD:*`、`FIELD:present`、
+`FIELD:missing` 这类有值/缺失筛选。Dashboard 列表筛选和保存筛选也支持这些条件。
+
 ## Dashboard
 
 事项创建/编辑表单会自动渲染配置好的自定义字段，提交后的值会展示在列表摘要和

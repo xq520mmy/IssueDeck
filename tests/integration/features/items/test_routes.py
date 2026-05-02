@@ -34,6 +34,8 @@ def _registry():
                     type="select",
                     options=["low", "high"],
                 ),
+                "estimate": CustomFieldConfig(label="Estimate", type="number"),
+                "source_url": CustomFieldConfig(label="Source URL", type="url"),
             },
         )},
     )
@@ -101,6 +103,49 @@ async def test_create_get_list_roundtrip(client):
     r = await client.get("/api/v1/projects/test/items?custom_field=priority%3Dhigh")
     assert r.status_code == 200, r.text
     assert [item["title"] for item in r.json()["items"]] == ["Hello"]
+
+
+async def test_list_route_filters_by_custom_field_range_and_presence(client):
+    await client.post(
+        "/api/v1/projects/test/items",
+        json={
+            "kind": "feature",
+            "title": "Linked item",
+            "custom_fields": {
+                "estimate": 2,
+                "source_url": "https://example.test/spec",
+            },
+        },
+    )
+    await client.post(
+        "/api/v1/projects/test/items",
+        json={
+            "kind": "feature",
+            "title": "Large item",
+            "custom_fields": {"estimate": 8},
+        },
+    )
+
+    r = await client.get(
+        "/api/v1/projects/test/items",
+        params=[("custom_field", "estimate>=5")],
+    )
+    assert r.status_code == 200, r.text
+    assert [item["title"] for item in r.json()["items"]] == ["Large item"]
+
+    r = await client.get(
+        "/api/v1/projects/test/items",
+        params=[("custom_field", "source_url:*")],
+    )
+    assert r.status_code == 200, r.text
+    assert [item["title"] for item in r.json()["items"]] == ["Linked item"]
+
+    r = await client.get(
+        "/api/v1/projects/test/items",
+        params=[("custom_field", "source_url:missing")],
+    )
+    assert r.status_code == 200, r.text
+    assert [item["title"] for item in r.json()["items"]] == ["Large item"]
 
 
 async def test_ship_item(client):

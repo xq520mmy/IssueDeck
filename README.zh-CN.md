@@ -61,7 +61,8 @@ Dashboard CSV、JSON 和 Markdown 上传见
 - Agent 工作会话：记录哪个 agent 正在处理哪个事项、目标、进展和最终结果。
 - 多项目：每个项目独立配置事项类型、状态、分支和 ID 前缀。
 - 项目自定义字段：为事项补充 priority、estimate、客户影响、来源 URL 等元数据，
-  并支持列表摘要展示、Dashboard/API 筛选、批量更新和 CSV/JSON 导入映射。
+  并支持列表摘要展示、Dashboard/API 精确/范围/有值筛选、批量更新和 CSV/JSON
+  导入映射。
 - SQLite FTS5 全文搜索。
 - 双向关系：`blocks`、`blocked_by`、`related_to`。
 - 外部链接：关联 GitHub issue、PR、commit 和其他审查上下文。

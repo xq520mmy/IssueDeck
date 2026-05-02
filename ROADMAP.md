@@ -53,12 +53,13 @@ listed in `CHANGELOG.md`.
 - Custom-field list filters and CSV/JSON import mappings.
 - Custom-field bulk updates for post-import triage.
 - Custom-field chips in list, mobile, and kanban item summaries.
+- Custom-field range and presence filters for REST, dashboard, saved filters,
+  and pagination.
 
 ## Near Term
 
 - Explore richer third-party extension points beyond project templates.
-- Add range and presence filters for numeric/text custom fields if real users
-  need more than exact-match filters.
+- Expand custom-field presets and examples as user workflows emerge.
 
 ## Later
 

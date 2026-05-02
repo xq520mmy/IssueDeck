@@ -74,7 +74,8 @@ Project snapshots are covered in
   and numeric ID prefix (e.g. `FEAT-0001`, `BUG-0003`).
 - Project-defined custom fields for extra item metadata such as priority,
   estimate, customer impact, and source URL, with list summaries,
-  dashboard/API filtering, bulk updates, and CSV/JSON import mappings.
+  exact/range/presence dashboard and API filtering, bulk updates, and CSV/JSON
+  import mappings.
 - Full-text search via SQLite FTS5.
 - Bidirectional relationships (`blocks`/`blocked_by`, `related_to`).
 - External links for GitHub issues, pull requests, commits, and other review context.
