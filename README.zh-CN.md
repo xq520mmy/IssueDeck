@@ -40,7 +40,7 @@ uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
 - 人用 Dashboard，agent 用 MCP tools，避免维护两套互相脱节的流程。
 - 开源演示默认使用假数据，准备好后再接入真实项目配置。
 
-![IssueDeck dashboard demo](docs/assets/issuedeck-demo.gif)
+![IssueDeck dashboard 和 CLI 演示](docs/assets/issuedeck-v0.8-demo.gif)
 
 更多界面见[截图画廊](docs/gallery.zh-CN.md)，包括列表、看板、详情、搜索和新建项目。
 日常分诊快捷键见[键盘快捷键](docs/keyboard-shortcuts.zh-CN.md)。

@@ -26,7 +26,7 @@ docs/assets/issuedeck-social-preview.png
 Primary demo asset:
 
 ```text
-docs/assets/issuedeck-demo.gif
+docs/assets/issuedeck-v0.8-demo.gif
 ```
 
 ## Short Pitch
@@ -120,7 +120,7 @@ To test unreleased changes from `main`, use `uvx --from git+...`.
 - PyPI: https://pypi.org/project/issuedeck/
 - Latest release: https://github.com/xq520mmy/IssueDeck/releases/latest
 - Screenshot gallery: https://github.com/xq520mmy/IssueDeck/blob/main/docs/gallery.md
-- Demo GIF: https://github.com/xq520mmy/IssueDeck/blob/main/docs/assets/issuedeck-demo.gif
+- Demo GIF: https://github.com/xq520mmy/IssueDeck/blob/main/docs/assets/issuedeck-v0.8-demo.gif
 - Roadmap: https://github.com/xq520mmy/IssueDeck/blob/main/ROADMAP.md
 - Starter issues: https://github.com/xq520mmy/IssueDeck/blob/main/docs/launch-issues.md
 - CSV import: https://github.com/xq520mmy/IssueDeck/blob/main/docs/csv-import.md

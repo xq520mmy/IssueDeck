@@ -26,7 +26,7 @@ docs/assets/issuedeck-social-preview.png
 主要 demo 动图：
 
 ```text
-docs/assets/issuedeck-demo.gif
+docs/assets/issuedeck-v0.8-demo.gif
 ```
 
 ## 一句话介绍
@@ -119,7 +119,7 @@ uvx issuedeck demo --open
 - PyPI：https://pypi.org/project/issuedeck/
 - 最新 release：https://github.com/xq520mmy/IssueDeck/releases/latest
 - 截图画廊：https://github.com/xq520mmy/IssueDeck/blob/main/docs/gallery.zh-CN.md
-- Demo 动图：https://github.com/xq520mmy/IssueDeck/blob/main/docs/assets/issuedeck-demo.gif
+- Demo 动图：https://github.com/xq520mmy/IssueDeck/blob/main/docs/assets/issuedeck-v0.8-demo.gif
 - 路线图：https://github.com/xq520mmy/IssueDeck/blob/main/ROADMAP.md
 - 新贡献者任务：https://github.com/xq520mmy/IssueDeck/blob/main/docs/launch-issues.md
 - CSV 导入：https://github.com/xq520mmy/IssueDeck/blob/main/docs/csv-import.zh-CN.md

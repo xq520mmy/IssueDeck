@@ -41,7 +41,7 @@ uvx --from git+https://github.com/xq520mmy/IssueDeck issuedeck demo --open
   dashboard in one place and agent instructions in another.
 - Start safely with demo data, then add real project configs when you are ready.
 
-![IssueDeck dashboard demo](docs/assets/issuedeck-demo.gif)
+![IssueDeck dashboard and CLI demo](docs/assets/issuedeck-v0.8-demo.gif)
 
 See the [screenshot gallery](docs/gallery.md) for list, kanban, detail,
 search, and project creation surfaces.
