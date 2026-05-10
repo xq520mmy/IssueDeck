@@ -142,6 +142,23 @@ def main(argv: list[str] | None = None) -> int:
         help="Output format",
     )
 
+    p_validate_templates = sub.add_parser(
+        "validate-project-templates",
+        help="Validate local project template TOML files",
+    )
+    p_validate_templates.add_argument(
+        "templates_dir",
+        nargs="?",
+        help="Template pack directory; defaults to project_templates_dir from config",
+    )
+    p_validate_templates.add_argument("--config", default="server.toml")
+    p_validate_templates.add_argument(
+        "--format",
+        choices=["table", "json"],
+        default="table",
+        help="Output format",
+    )
+
     p_project = sub.add_parser("create-project", help="Create a project config from a template")
     p_project.add_argument("key", help="Project key, for example myapp")
     p_project.add_argument("--config", default="server.toml")
@@ -665,6 +682,12 @@ def main(argv: list[str] | None = None) -> int:
         ))
     if args.cmd == "list-project-templates":
         return _cmd_list_project_templates(Path(args.config), output_format=args.format)
+    if args.cmd == "validate-project-templates":
+        return _cmd_validate_project_templates(
+            Path(args.config),
+            Path(args.templates_dir) if args.templates_dir else None,
+            output_format=args.format,
+        )
     if args.cmd == "create-project":
         return _cmd_create_project(
             Path(args.config),
@@ -1287,6 +1310,58 @@ def _cmd_list_project_templates(config_path: Path, *, output_format: str) -> int
     ]
     _print_table(["Key", "Name", "Kinds", "Statuses", "Custom fields"], rows)
     return 0
+
+
+def _cmd_validate_project_templates(
+    config_path: Path,
+    templates_dir: Path | None,
+    *,
+    output_format: str,
+) -> int:
+    from issuedeck.core.config import load_server_config
+    from issuedeck.core.errors import ConfigError
+    from issuedeck.features.projects.project_templates import validate_project_templates
+
+    try:
+        directory = templates_dir or load_server_config(config_path).project_templates_dir
+        results = validate_project_templates(directory)
+    except ConfigError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    valid = all(result.ok for result in results)
+    payload = {
+        "templates_dir": str(directory),
+        "valid": valid,
+        "templates": [
+            {
+                "path": str(result.path),
+                "key": result.key,
+                "valid": result.ok,
+                "errors": list(result.errors),
+            }
+            for result in results
+        ],
+    }
+    if output_format == "json":
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0 if valid else 2
+
+    if not results:
+        print(f"[ok] no local project templates found in {directory}")
+        return 0
+
+    rows = [
+        [
+            "ok" if result.ok else "error",
+            result.key or "-",
+            str(result.path),
+            "; ".join(result.errors),
+        ]
+        for result in results
+    ]
+    _print_table(["Status", "Key", "Path", "Errors"], rows)
+    return 0 if valid else 2
 
 
 def _cmd_create_project(

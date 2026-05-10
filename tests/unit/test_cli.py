@@ -27,6 +27,7 @@ from issuedeck.cli import (
     _cmd_serve,
     _cmd_ship_item,
     _cmd_update_item,
+    _cmd_validate_project_templates,
     _ensure_demo_config,
     _ensure_demo_project_config,
 )
@@ -48,6 +49,7 @@ def test_issuedeck_help_lists_subcommands():
         "export-audit-bundle",
         "seed-demo",
         "list-project-templates",
+        "validate-project-templates",
         "create-project",
         "create-item",
         "update-item",
@@ -196,6 +198,71 @@ def test_list_project_templates_cli_outputs_json(tmp_path, capsys):
         "software",
     ]
     assert payload["templates"][0]["name"] == "Basic issue deck"
+
+
+def test_validate_project_templates_cli_outputs_json(tmp_path, capsys):
+    templates_dir = tmp_path / "templates"
+    templates_dir.mkdir()
+    (templates_dir / "support.toml").write_text(
+        "\n".join([
+            'key = "support"',
+            'name = "Support queue"',
+            "",
+            "[[kinds]]",
+            'key = "question"',
+            'label = "Question"',
+            'prefix = "QST"',
+            "",
+            "[[statuses]]",
+            'key = "open"',
+            'label = "Open"',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    rc = _cmd_validate_project_templates(
+        tmp_path / "missing-server.toml",
+        templates_dir,
+        output_format="json",
+    )
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["valid"] is True
+    assert payload["templates"][0]["key"] == "support"
+
+
+def test_validate_project_templates_cli_returns_error_for_invalid_pack(
+    tmp_path,
+    capsys,
+):
+    templates_dir = tmp_path / "templates"
+    templates_dir.mkdir()
+    (templates_dir / "bad.toml").write_text(
+        "\n".join([
+            'key = "bad"',
+            'name = "Bad template"',
+            "",
+            "[[kinds]]",
+            'key = "task"',
+            'label = "Task"',
+            'prefix = "TASK"',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    rc = _cmd_validate_project_templates(
+        tmp_path / "missing-server.toml",
+        templates_dir,
+        output_format="json",
+    )
+
+    assert rc == 2
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["valid"] is False
+    assert "invalid project template" in payload["templates"][0]["errors"][0]
 
 
 def test_create_project_cli_writes_template_config(tmp_path, capsys):

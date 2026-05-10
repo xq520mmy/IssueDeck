@@ -5,6 +5,7 @@ from issuedeck.features.projects.project_templates import (
     list_project_templates,
     load_project_templates,
     render_project_toml,
+    validate_project_templates,
 )
 
 
@@ -167,3 +168,75 @@ def test_load_project_templates_rejects_requires_ship_without_branch(tmp_path):
 
     with pytest.raises(ConfigError, match="requires_ship"):
         load_project_templates(templates_dir)
+
+
+def test_validate_project_templates_reports_all_files(tmp_path):
+    templates_dir = tmp_path / "templates"
+    templates_dir.mkdir()
+    (templates_dir / "good.toml").write_text(
+        "\n".join([
+            'key = "support"',
+            'name = "Support queue"',
+            "",
+            "[[kinds]]",
+            'key = "question"',
+            'label = "Question"',
+            'prefix = "QST"',
+            "",
+            "[[statuses]]",
+            'key = "open"',
+            'label = "Open"',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+    (templates_dir / "bad.toml").write_text(
+        "\n".join([
+            'key = "broken"',
+            'name = "Broken"',
+            "",
+            "[[kinds]]",
+            'key = "task"',
+            'label = "Task"',
+            'prefix = "TASK"',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    results = validate_project_templates(templates_dir)
+
+    assert [result.path.name for result in results] == ["bad.toml", "good.toml"]
+    assert results[0].ok is False
+    assert "invalid project template" in results[0].errors[0]
+    assert results[1].ok is True
+    assert results[1].key == "support"
+
+
+def test_validate_project_templates_reports_duplicate_builtin_key(tmp_path):
+    templates_dir = tmp_path / "templates"
+    templates_dir.mkdir()
+    (templates_dir / "basic.toml").write_text(
+        "\n".join([
+            'key = "basic"',
+            'name = "Shadow basic"',
+            "",
+            "[[kinds]]",
+            'key = "task"',
+            'label = "Task"',
+            'prefix = "TASK"',
+            "",
+            "[[statuses]]",
+            'key = "open"',
+            'label = "Open"',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+
+    results = validate_project_templates(templates_dir)
+
+    assert len(results) == 1
+    assert results[0].ok is False
+    assert results[0].key == "basic"
+    assert results[0].errors == ("duplicate project template key 'basic'",)

@@ -63,6 +63,14 @@ class ProjectTemplate:
         return tuple(field.label for field in self.custom_fields.values())
 
 
+@dataclass(frozen=True)
+class ProjectTemplateValidationResult:
+    path: Path
+    ok: bool
+    key: str | None = None
+    errors: tuple[str, ...] = ()
+
+
 DEFAULT_PROJECT_TEMPLATE_KEY = "basic"
 
 
@@ -287,6 +295,53 @@ def load_project_templates(templates_dir: Path | str) -> tuple[ProjectTemplate, 
         seen.add(template.key)
         templates.append(template)
     return tuple(templates)
+
+
+def validate_project_templates(
+    templates_dir: Path | str,
+) -> tuple[ProjectTemplateValidationResult, ...]:
+    directory = Path(templates_dir)
+    if not directory.exists():
+        return ()
+    if not directory.is_dir():
+        return (
+            ProjectTemplateValidationResult(
+                path=directory,
+                ok=False,
+                errors=(f"project_templates_dir is not a directory: {directory}",),
+            ),
+        )
+
+    results: list[ProjectTemplateValidationResult] = []
+    seen = set(_PROJECT_TEMPLATE_MAP)
+    for path in sorted(directory.glob("*.toml")):
+        try:
+            template = load_project_template(path)
+        except ConfigError as exc:
+            results.append(
+                ProjectTemplateValidationResult(
+                    path=path,
+                    ok=False,
+                    errors=(str(exc),),
+                )
+            )
+            continue
+
+        errors: list[str] = []
+        if template.key in seen:
+            errors.append(f"duplicate project template key '{template.key}'")
+        else:
+            seen.add(template.key)
+
+        results.append(
+            ProjectTemplateValidationResult(
+                path=path,
+                key=template.key,
+                ok=not errors,
+                errors=tuple(errors),
+            )
+        )
+    return tuple(results)
 
 
 def load_project_template(path: Path | str) -> ProjectTemplate:

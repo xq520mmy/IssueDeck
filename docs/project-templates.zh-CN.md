@@ -61,6 +61,17 @@ label = "Support"
 可能包含团队私有流程名称，因此默认 `.gitignore` 会忽略
 `project-templates/*.toml`，只有你明确准备公开的示例才需要提交。
 
+公开或分享模板包之前，可以先本地校验：
+
+```bash
+issuedeck validate-project-templates ./project-templates
+issuedeck validate-project-templates ./project-templates --format json
+```
+
+这个命令会检查每个 `*.toml` 文件，并汇总所有错误，不会在第一个失败文件处停止。
+只要有模板需要修复，命令就会以退出码 `2` 结束。省略目录参数时，IssueDeck 会从
+`server.toml` 读取 `project_templates_dir`。
+
 ## 内置模板
 
 | 模板 | 适合场景 | 包含内容 | 自定义字段 |

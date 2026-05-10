@@ -64,6 +64,18 @@ template packs can also include project `custom_fields`. They often encode
 team-specific workflow names, so the default `.gitignore` keeps
 `project-templates/*.toml` private unless you explicitly publish an example.
 
+Validate a template pack before sharing it:
+
+```bash
+issuedeck validate-project-templates ./project-templates
+issuedeck validate-project-templates ./project-templates --format json
+```
+
+The command checks every `*.toml` file, reports invalid templates without
+stopping at the first failure, and exits with code `2` when any template needs
+fixing. If you omit the directory argument, IssueDeck reads
+`project_templates_dir` from `server.toml`.
+
 ## Built-In Templates
 
 | Template | Best for | Includes | Custom fields |

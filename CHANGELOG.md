@@ -7,6 +7,11 @@ versioning once public releases begin.
 
 ## [Unreleased]
 
+### Added
+
+- Added `issuedeck validate-project-templates` for local template-pack TOML
+  validation with table and JSON output.
+
 ## [0.8.0] - 2026-05-02
 
 ### Added
