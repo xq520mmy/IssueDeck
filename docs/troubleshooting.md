@@ -128,9 +128,9 @@ Common causes:
 The `demo`, `serve`, `seed-demo`, `create-item`, `update-item`,
 `bulk-update-items`, `ship-item`, `append-item-event`, `list-items`, `get-item`,
 and `import-github-url` commands run database migrations automatically.
-`create-project` and the project-template listing, validation, and example
-install commands only touch TOML and do not need migrations. If you call Alembic
-directly, use:
+`create-project`, `export-project-template`, and the project-template listing,
+validation, and example install commands only touch TOML and do not need
+migrations. If you call Alembic directly, use:
 
 ```bash
 uv run alembic upgrade head

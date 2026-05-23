@@ -74,6 +74,7 @@ listed in `CHANGELOG.md`.
 - Local CLI item detail output for terminal-first triage.
 - Installable local template-pack examples for support queues, content
   calendars, and research workflows.
+- Local CLI export from existing project configs into reusable template packs.
 
 ## Near Term
 

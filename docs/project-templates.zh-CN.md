@@ -101,6 +101,22 @@ issuedeck install-project-template-example research \
 `--force` 覆盖。安装完成后，这些示例会出现在
 `issuedeck list-project-templates` 和 Dashboard 的新建项目表单里。
 
+## 把项目导出为模板
+
+当你在 `projects/<key>.toml` 里调好一套工作流之后，可以把它导出成可复用的模板包：
+
+```bash
+issuedeck export-project-template myapp --config server.toml
+issuedeck export-project-template myapp \
+  --config server.toml \
+  --template-key team-delivery \
+  --name "Team delivery" \
+  --out ./project-templates/team-delivery.toml
+```
+
+这个命令会把项目的类型、状态、分支、发布豁免规则和自定义字段复制到本地模板包格式。
+可以用 `--dry-run` 预览 TOML，用 `--force` 覆盖已有输出文件。
+
 ## 内置模板
 
 | 模板 | 适合场景 | 包含内容 | 自定义字段 |

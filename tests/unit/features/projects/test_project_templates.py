@@ -5,7 +5,9 @@ from issuedeck.features.projects.project_templates import (
     install_project_template_pack_example,
     list_project_template_pack_examples,
     list_project_templates,
+    load_project_template_from_toml,
     load_project_templates,
+    render_project_template_pack_toml,
     render_project_toml,
     validate_project_templates,
 )
@@ -99,6 +101,61 @@ def test_loaded_template_renders_valid_project_toml(tmp_path):
     assert "[[branches]]" in rendered
     assert "[custom_fields.priority]" in rendered
     assert 'options = ["low", "high"]' in rendered
+
+
+def test_project_config_renders_valid_template_pack_toml(tmp_path):
+    from issuedeck.core.config import load_project_config
+
+    project_path = tmp_path / "project.toml"
+    project_path.write_text(
+        "\n".join([
+            'key = "example"',
+            'name = "Example"',
+            'description = "Reusable workflow."',
+            "",
+            "[kinds.feature]",
+            'label = "Feature"',
+            'prefix = "FEAT"',
+            "",
+            "[statuses.backlog]",
+            'label = "Backlog"',
+            "",
+            "[statuses.done]",
+            'label = "Done"',
+            "terminal = true",
+            "requires_ship = true",
+            "",
+            "[[branches]]",
+            'key = "main"',
+            'label = "Main"',
+            "",
+            "[ship_rules]",
+            'ship_exempt_kinds = ["feature"]',
+            "",
+            "[custom_fields.priority]",
+            'label = "Priority"',
+            'type = "select"',
+            'options = ["low", "high"]',
+            "",
+        ]),
+        encoding="utf-8",
+    )
+    project = load_project_config(project_path)
+
+    rendered = render_project_template_pack_toml(
+        key="exported",
+        name="Exported template",
+        description="A reusable workflow.",
+        project=project,
+    )
+    template = load_project_template_from_toml(rendered, source="test")
+
+    assert template.key == "exported"
+    assert template.kind_labels == ("Feature",)
+    assert template.status_labels == ("Backlog", "Done")
+    assert template.branch_labels == ("Main",)
+    assert template.ship_exempt_kinds == ("feature",)
+    assert template.custom_fields["priority"].options == ["low", "high"]
 
 
 def test_builtin_templates_include_custom_field_presets():

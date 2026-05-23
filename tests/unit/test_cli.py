@@ -15,6 +15,7 @@ from issuedeck.cli import (
     _cmd_create_project,
     _cmd_demo,
     _cmd_export_audit_bundle,
+    _cmd_export_project_template,
     _cmd_get_item,
     _cmd_import_csv,
     _cmd_import_github_issues,
@@ -55,6 +56,7 @@ def test_issuedeck_help_lists_subcommands():
         "list-project-template-examples",
         "install-project-template-example",
         "create-project",
+        "export-project-template",
         "create-item",
         "update-item",
         "bulk-update-items",
@@ -392,6 +394,86 @@ def test_create_project_cli_dry_run_does_not_write(tmp_path, capsys):
     assert payload["key"] == "dryrun"
     assert 'key = "dryrun"' in payload["toml"]
     assert not (tmp_path / "projects" / "dryrun.toml").exists()
+
+
+def test_export_project_template_cli_writes_template_pack(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _ensure_demo_config(cfg_path)
+    server_cfg = load_server_config(cfg_path)
+    _ensure_demo_project_config(server_cfg.projects_dir, "example")
+    out = tmp_path / "project-templates" / "shared.toml"
+
+    rc = _cmd_export_project_template(
+        cfg_path,
+        "example",
+        template_key="shared",
+        name="Shared workflow",
+        description="Reusable exported workflow.",
+        out=out,
+        dry_run=False,
+        force=False,
+        output_format="json",
+    )
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["written"] is True
+    assert payload["template_key"] == "shared"
+    text = out.read_text(encoding="utf-8")
+    assert 'key = "shared"' in text
+    assert "[[kinds]]" in text
+    assert "[[statuses]]" in text
+
+
+def test_export_project_template_cli_dry_run_does_not_write(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _ensure_demo_config(cfg_path)
+    server_cfg = load_server_config(cfg_path)
+    _ensure_demo_project_config(server_cfg.projects_dir, "example")
+    out = tmp_path / "project-templates" / "dry.toml"
+
+    rc = _cmd_export_project_template(
+        cfg_path,
+        "example",
+        template_key="dry",
+        name=None,
+        description=None,
+        out=out,
+        dry_run=True,
+        force=False,
+        output_format="json",
+    )
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["written"] is False
+    assert 'key = "dry"' in payload["toml"]
+    assert not out.exists()
+
+
+def test_export_project_template_cli_rejects_overwrite(tmp_path, capsys):
+    cfg_path = tmp_path / "server.toml"
+    _ensure_demo_config(cfg_path)
+    server_cfg = load_server_config(cfg_path)
+    _ensure_demo_project_config(server_cfg.projects_dir, "example")
+    out = tmp_path / "project-templates" / "shared.toml"
+    out.parent.mkdir()
+    out.write_text("# existing\n", encoding="utf-8")
+
+    rc = _cmd_export_project_template(
+        cfg_path,
+        "example",
+        template_key="shared",
+        name=None,
+        description=None,
+        out=out,
+        dry_run=False,
+        force=False,
+        output_format="text",
+    )
+
+    assert rc == 2
+    assert "already exists" in capsys.readouterr().err
 
 
 def test_create_item_cli_creates_local_item_with_metadata(tmp_path, capsys):

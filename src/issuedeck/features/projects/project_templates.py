@@ -10,7 +10,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
-from issuedeck.core.config import CustomFieldConfig
+from issuedeck.core.config import CustomFieldConfig, ProjectConfig
 from issuedeck.core.errors import ConfigError
 
 
@@ -705,6 +705,72 @@ def render_project_toml(
         lines.append("")
 
     return "\n".join(lines)
+
+
+def render_project_template_pack_toml(
+    *,
+    key: str,
+    name: str,
+    description: str,
+    project: ProjectConfig,
+) -> str:
+    lines = [
+        f"key = {_toml_string(key)}",
+        f"name = {_toml_string(name)}",
+        f"description = {_toml_string(description)}",
+        "",
+    ]
+
+    if project.ship_rules.ship_exempt_kinds:
+        lines.extend([
+            f"ship_exempt_kinds = {_toml_array(tuple(project.ship_rules.ship_exempt_kinds))}",
+            "",
+        ])
+
+    for field_key, cfg in project.custom_fields.items():
+        lines.extend([
+            f"[custom_fields.{field_key}]",
+            f"label = {_toml_string(cfg.label)}",
+            f"type = {_toml_string(cfg.type)}",
+        ])
+        if cfg.required:
+            lines.append("required = true")
+        if cfg.options:
+            lines.append(f"options = {_toml_array(tuple(cfg.options))}")
+        lines.append("")
+
+    for kind_key, cfg in project.kinds.items():
+        lines.extend([
+            "[[kinds]]",
+            f"key = {_toml_string(kind_key)}",
+            f"label = {_toml_string(cfg.label)}",
+            f"prefix = {_toml_string(cfg.prefix)}",
+            "",
+        ])
+
+    for status_key, cfg in project.statuses.items():
+        lines.extend([
+            "[[statuses]]",
+            f"key = {_toml_string(status_key)}",
+            f"label = {_toml_string(cfg.label)}",
+        ])
+        if cfg.terminal:
+            lines.append("terminal = true")
+        if cfg.requires_ship:
+            lines.append("requires_ship = true")
+        lines.append("")
+
+    for branch in project.branches:
+        lines.extend([
+            "[[branches]]",
+            f"key = {_toml_string(branch.key)}",
+            f"label = {_toml_string(branch.label)}",
+            "",
+        ])
+
+    text = "\n".join(lines)
+    load_project_template_from_toml(text, source=f"<project-template:{key}>")
+    return text
 
 
 def _toml_string(value: str) -> str:

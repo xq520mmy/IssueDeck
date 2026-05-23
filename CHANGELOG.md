@@ -14,6 +14,8 @@ versioning once public releases begin.
 - Added `issuedeck list-project-template-examples` and
   `issuedeck install-project-template-example` with support, content, and
   research template-pack examples.
+- Added `issuedeck export-project-template` for turning an existing project
+  config into a reusable local template pack.
 
 ## [0.8.0] - 2026-05-02
 

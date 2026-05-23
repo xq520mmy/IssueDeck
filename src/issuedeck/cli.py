@@ -212,6 +212,49 @@ def main(argv: list[str] | None = None) -> int:
         help="Output format after creation",
     )
 
+    p_export_project_template = sub.add_parser(
+        "export-project-template",
+        help="Export a project config as a reusable local template pack",
+    )
+    p_export_project_template.add_argument("project_key")
+    p_export_project_template.add_argument("--config", default="server.toml")
+    p_export_project_template.add_argument(
+        "--template-key",
+        default=None,
+        help="Template key to write; defaults to the project key",
+    )
+    p_export_project_template.add_argument(
+        "--name",
+        default=None,
+        help="Template display name; defaults to the project name",
+    )
+    p_export_project_template.add_argument(
+        "--description",
+        default=None,
+        help="Template description; defaults to the project description",
+    )
+    p_export_project_template.add_argument(
+        "--out",
+        default=None,
+        help="Output TOML file; defaults to project_templates_dir/<template-key>.toml",
+    )
+    p_export_project_template.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the template TOML without writing",
+    )
+    p_export_project_template.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite the output file if it already exists",
+    )
+    p_export_project_template.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format",
+    )
+
     p_create = sub.add_parser("create-item", help="Create an item in the local database")
     p_create.add_argument("--config", default="server.toml")
     p_create.add_argument("--project-key", required=True)
@@ -746,6 +789,18 @@ def main(argv: list[str] | None = None) -> int:
             description=args.description,
             template_key=args.template,
             dry_run=args.dry_run,
+            output_format=args.format,
+        )
+    if args.cmd == "export-project-template":
+        return _cmd_export_project_template(
+            Path(args.config),
+            args.project_key,
+            template_key=args.template_key,
+            name=args.name,
+            description=args.description,
+            out=Path(args.out) if args.out else None,
+            dry_run=args.dry_run,
+            force=args.force,
             output_format=args.format,
         )
     if args.cmd == "create-item":
@@ -1591,6 +1646,84 @@ def _cmd_create_project(
 
     print(path)
     print(f"[ok] created project {project.key}", file=sys.stderr)
+    return 0
+
+
+def _cmd_export_project_template(
+    config_path: Path,
+    project_key: str,
+    *,
+    template_key: str | None,
+    name: str | None,
+    description: str | None,
+    out: Path | None,
+    dry_run: bool,
+    force: bool,
+    output_format: str,
+) -> int:
+    from issuedeck.core.config import load_project_config, load_server_config
+    from issuedeck.core.errors import ConfigError
+    from issuedeck.features.projects.project_templates import (
+        render_project_template_pack_toml,
+    )
+
+    source_project_key = project_key.strip()
+    selected_template_key = (template_key or source_project_key).strip().lower()
+
+    try:
+        server_cfg = load_server_config(config_path)
+        project_path = server_cfg.projects_dir / f"{source_project_key}.toml"
+        project = load_project_config(project_path)
+        selected_name = (name if name is not None else project.name).strip()
+        selected_description = (
+            description if description is not None else project.description
+        ).strip()
+        if not selected_name:
+            raise ValueError("template name is required")
+        text = render_project_template_pack_toml(
+            key=selected_template_key,
+            name=selected_name,
+            description=selected_description,
+            project=project,
+        )
+        path = out or server_cfg.project_templates_dir / f"{selected_template_key}.toml"
+        if path.exists() and path.is_dir():
+            raise ValueError(f"output path is a directory: {path}")
+        if path.exists() and not dry_run and not force:
+            raise ValueError(f"project template file already exists: {path}")
+    except (ConfigError, ValueError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if dry_run:
+        if output_format == "json":
+            print(json.dumps({
+                "project_key": source_project_key,
+                "template_key": selected_template_key,
+                "name": selected_name,
+                "description": selected_description,
+                "path": str(path),
+                "written": False,
+                "toml": text,
+            }, ensure_ascii=False, indent=2))
+        else:
+            print(text)
+        return 0
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+    if output_format == "json":
+        print(json.dumps({
+            "project_key": source_project_key,
+            "template_key": selected_template_key,
+            "name": selected_name,
+            "description": selected_description,
+            "path": str(path),
+            "written": True,
+        }, ensure_ascii=False, indent=2))
+    else:
+        print(f"[ok] exported project '{source_project_key}' template to {path}")
     return 0
 
 

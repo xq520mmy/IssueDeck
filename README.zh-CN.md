@@ -277,6 +277,7 @@ Basic issue deck、Agent workflow、Software team 等起步模板生成项目配
 uv run issuedeck list-project-templates --config server.toml
 uv run issuedeck list-project-template-examples
 uv run issuedeck install-project-template-example support --config server.toml
+uv run issuedeck export-project-template myapp --config server.toml
 uv run issuedeck create-project myapp \
   --config server.toml \
   --name "My App" \

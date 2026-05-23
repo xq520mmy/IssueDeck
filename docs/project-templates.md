@@ -105,6 +105,24 @@ Use `--dry-run` to preview the TOML before writing it, and `--force` to replace
 an example file that already exists. After installing an example, it appears in
 `issuedeck list-project-templates` and in the dashboard project creation form.
 
+## Export A Project As A Template
+
+After you tune a project workflow in `projects/<key>.toml`, export it as a
+reusable template pack:
+
+```bash
+issuedeck export-project-template myapp --config server.toml
+issuedeck export-project-template myapp \
+  --config server.toml \
+  --template-key team-delivery \
+  --name "Team delivery" \
+  --out ./project-templates/team-delivery.toml
+```
+
+The command copies project kinds, statuses, branches, ship exemptions, and
+custom fields into the local template-pack format. Use `--dry-run` to preview
+the TOML and `--force` to replace an existing output file.
+
 ## Built-In Templates
 
 | Template | Best for | Includes | Custom fields |
