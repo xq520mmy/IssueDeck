@@ -75,6 +75,7 @@ listed in `CHANGELOG.md`.
 - Installable local template-pack examples for support queues, content
   calendars, and research workflows.
 - Local CLI export from existing project configs into reusable template packs.
+- Dashboard install controls for local template-pack examples.
 
 ## Near Term
 

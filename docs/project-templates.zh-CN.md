@@ -100,6 +100,7 @@ issuedeck install-project-template-example research \
 可以用 `--dry-run` 先预览将要写入的 TOML；如果示例文件已经存在，可以用
 `--force` 覆盖。安装完成后，这些示例会出现在
 `issuedeck list-project-templates` 和 Dashboard 的新建项目表单里。
+Dashboard 的新建项目页也可以直接安装这些示例。
 
 ## 把项目导出为模板
 

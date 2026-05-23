@@ -63,7 +63,7 @@ Dashboard CSV、JSON 和 Markdown 上传见
 - 项目自定义字段：为事项补充 priority、estimate、客户影响、来源 URL 等元数据，
   并支持列表摘要展示、Dashboard/API 精确/范围/有值筛选、批量更新和 CSV/JSON
   导入映射。
-- 起步项目模板和可安装的本地模板包示例，覆盖客服队列、内容日历和调研工作流。
+- 起步项目模板和可在 Dashboard/CLI 安装的本地模板包示例，覆盖客服队列、内容日历和调研工作流。
 - SQLite FTS5 全文搜索。
 - 双向关系：`blocks`、`blocked_by`、`related_to`。
 - 外部链接：关联 GitHub issue、PR、commit 和其他审查上下文。

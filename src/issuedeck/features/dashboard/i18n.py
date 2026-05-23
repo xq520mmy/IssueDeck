@@ -309,7 +309,7 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "page.search.title": "Search",
         "project_form.description": "Description",
         "project_form.description_placeholder": "Short context for this workspace",
-        "project_form.error.exists": "Project '{key}' already exists.",
+        "project_form.error.exists": "Project '{project_key}' already exists.",
         "project_form.error.exists_on_disk": "{name} already exists on disk.",
         "project_form.error.invalid_key": (
             "Project key must start with a letter and use lowercase letters, "
@@ -317,6 +317,11 @@ _MESSAGES: dict[str, dict[str, str]] = {
         ),
         "project_form.error.invalid_template": "Choose one of the available project templates.",
         "project_form.error.name_required": "Project name is required.",
+        "project_form.example_install": "Install",
+        "project_form.example_installed": "Installed template example '{example_key}'.",
+        "project_form.example_use": "Use",
+        "project_form.examples_help": "Install a local example, then select it below.",
+        "project_form.examples_title": "Example template packs",
         "project_form.help": (
             "Create a project config from a starter template. You can tune kinds, statuses, "
             "branches, and ship rules in TOML later."
@@ -680,11 +685,16 @@ _MESSAGES: dict[str, dict[str, str]] = {
         "page.search.title": "搜索",
         "project_form.description": "描述",
         "project_form.description_placeholder": "这个工作区的简短说明",
-        "project_form.error.exists": "项目 '{key}' 已存在。",
+        "project_form.error.exists": "项目 '{project_key}' 已存在。",
         "project_form.error.exists_on_disk": "{name} 已存在于磁盘。",
         "project_form.error.invalid_key": "项目键必须以字母开头，只能使用小写字母、数字、- 或 _。",
         "project_form.error.invalid_template": "请选择一个可用项目模板。",
         "project_form.error.name_required": "项目名称不能为空。",
+        "project_form.example_install": "安装",
+        "project_form.example_installed": "已安装模板示例 '{example_key}'。",
+        "project_form.example_use": "使用",
+        "project_form.examples_help": "先安装一个本地示例，然后在下面选择它。",
+        "project_form.examples_title": "示例模板包",
         "project_form.help": (
             "基于起步模板创建项目配置。之后可以在 TOML 中调整类型、状态、分支和发布规则。"
         ),

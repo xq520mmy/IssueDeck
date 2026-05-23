@@ -45,7 +45,59 @@ async def test_project_form_renders_template_options(dashboard_client):
     assert "Basic issue deck" in response.text
     assert "Agent workflow" in response.text
     assert "Software team" in response.text
+    assert "Example template packs" in response.text
+    assert "Support queue" in response.text
     assert "Custom fields: Priority, Estimate, Customer impact, Source URL" in response.text
+
+
+async def test_project_form_installs_template_example(dashboard_client):
+    client, registry, projects_dir = dashboard_client
+    templates_dir = registry.server.project_templates_dir
+
+    response = await client.post(
+        "/dashboard/project-template-examples/install",
+        data={"example_key": "support"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"] == (
+        "/dashboard/projects-new?template=support&installed=support"
+    )
+    assert (templates_dir / "support.toml").exists()
+
+    form_response = await client.get(response.headers["location"])
+    assert form_response.status_code == 200
+    assert "Installed template example &#39;support&#39;." in form_response.text
+    assert "Support queue" in form_response.text
+
+    create_response = await client.post(
+        "/dashboard/projects-new",
+        data={
+            "key": "support-desk",
+            "name": "Support Desk",
+            "template_key": "support",
+        },
+        follow_redirects=False,
+    )
+
+    assert create_response.status_code == 303
+    written = (projects_dir / "support-desk.toml").read_text(encoding="utf-8")
+    assert "[kinds.incident]" in written
+    assert "[custom_fields.sla_risk]" in written
+
+
+async def test_project_form_rejects_unknown_template_example(dashboard_client):
+    client, _registry, _projects_dir = dashboard_client
+
+    response = await client.post(
+        "/dashboard/project-template-examples/install",
+        data={"example_key": "missing"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 422
+    assert "unknown project template pack example" in response.text
 
 
 async def test_project_creation_uses_selected_template(dashboard_client):

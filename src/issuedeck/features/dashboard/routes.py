@@ -83,6 +83,8 @@ from issuedeck.features.migrate.markdown_tasks import (
 from issuedeck.features.projects.project_templates import (
     DEFAULT_PROJECT_TEMPLATE_KEY,
     get_project_template,
+    install_project_template_pack_example,
+    list_project_template_pack_examples,
     list_project_templates,
     render_project_toml,
 )
@@ -789,15 +791,26 @@ def _project_form_context(
     registry,
     error: str | None = None,
     form: dict[str, object] | None = None,
+    notice: str | None = None,
     status_code: int = 200,
 ) -> dict[str, object]:
+    project_templates = list_project_templates(registry.server.project_templates_dir)
+    installed_template_keys = {template.key for template in project_templates}
     return {
         "active_page": "new_project",
         "error": error,
+        "notice": notice,
         "form": form or {"template_key": DEFAULT_PROJECT_TEMPLATE_KEY},
-        "project_templates": list_project_templates(
-            registry.server.project_templates_dir
-        ),
+        "project_templates": project_templates,
+        "template_examples": [
+            {
+                "key": example.key,
+                "name": example.name,
+                "description": example.description,
+                "installed": example.key in installed_template_keys,
+            }
+            for example in list_project_template_pack_examples()
+        ],
         "default_template_key": DEFAULT_PROJECT_TEMPLATE_KEY,
         "status_code": status_code,
     }
@@ -901,12 +914,28 @@ async def dashboard_home(request: Request):
 # ---------------------------------------------------------------------------
 
 @router.get("/projects-new")
-async def create_project_form(request: Request):
+async def create_project_form(
+    request: Request,
+    template: str | None = None,
+    installed: str | None = None,
+):
     registry = request.app.state.registry
+    t = make_translator(language_from_request(request))
+    selected_template = (template or DEFAULT_PROJECT_TEMPLATE_KEY).strip()
+    notice = None
+    if installed:
+        notice = t(
+            "project_form.example_installed",
+            example_key=installed.strip(),
+        )
     return render(
         "pages/project_form.html", request,
         **_ctx(request),
-        **_project_form_context(registry=registry),
+        **_project_form_context(
+            registry=registry,
+            form={"template_key": selected_template},
+            notice=notice,
+        ),
     )
 
 
@@ -941,7 +970,7 @@ async def create_project_submit(
     elif not name:
         error = t("project_form.error.name_required")
     elif key in {p.key for p in registry.all_projects()}:
-        error = t("project_form.error.exists", key=key)
+        error = t("project_form.error.exists", project_key=key)
     elif template is None:
         error = t("project_form.error.invalid_template")
 
@@ -1000,6 +1029,44 @@ async def create_project_submit(
         )
 
     return RedirectResponse(url=f"/dashboard/{key}", status_code=303)
+
+
+@router.post("/project-template-examples/install")
+async def install_project_template_example_submit(
+    request: Request,
+    example_key: str = Form(...),
+):
+    registry = request.app.state.registry
+    t = make_translator(language_from_request(request))
+    key = example_key.strip().lower()
+
+    if get_project_template(key, registry.server.project_templates_dir) is None:
+        try:
+            install_project_template_pack_example(
+                key,
+                registry.server.project_templates_dir,
+            )
+        except ConfigError as exc:
+            return render(
+                "pages/project_form.html", request,
+                **_ctx(request),
+                **_project_form_context(
+                    registry=registry,
+                    error=str(exc),
+                    status_code=422,
+                ),
+            )
+
+    query = urlencode({"template": key, "installed": key})
+    response = RedirectResponse(
+        url=f"/dashboard/projects-new?{query}",
+        status_code=303,
+    )
+    response.headers["X-IssueDeck-Notice"] = t(
+        "project_form.example_installed",
+        example_key=key,
+    )
+    return response
 
 
 # ---------------------------------------------------------------------------

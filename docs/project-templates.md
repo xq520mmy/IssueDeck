@@ -104,6 +104,7 @@ issuedeck install-project-template-example research \
 Use `--dry-run` to preview the TOML before writing it, and `--force` to replace
 an example file that already exists. After installing an example, it appears in
 `issuedeck list-project-templates` and in the dashboard project creation form.
+The dashboard project creation page can also install these examples directly.
 
 ## Export A Project As A Template
 

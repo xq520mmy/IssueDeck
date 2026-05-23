@@ -76,8 +76,8 @@ Project snapshots are covered in
   estimate, customer impact, and source URL, with list summaries,
   exact/range/presence dashboard and API filtering, bulk updates, and CSV/JSON
   import mappings.
-- Starter project templates plus installable local template-pack examples for
-  support queues, content calendars, and research workflows.
+- Starter project templates plus dashboard/CLI-installable local template-pack
+  examples for support queues, content calendars, and research workflows.
 - Full-text search via SQLite FTS5.
 - Bidirectional relationships (`blocks`/`blocked_by`, `related_to`).
 - External links for GitHub issues, pull requests, commits, and other review context.
