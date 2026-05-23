@@ -71,6 +71,18 @@ class ProjectTemplateValidationResult:
     errors: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class ProjectTemplatePackExample:
+    key: str
+    name: str
+    description: str
+    filename: str
+    toml: str
+
+    def to_project_template(self) -> ProjectTemplate:
+        return load_project_template_from_toml(self.toml, source=self.filename)
+
+
 DEFAULT_PROJECT_TEMPLATE_KEY = "basic"
 
 
@@ -177,6 +189,241 @@ _PROJECT_TEMPLATE_MAP = {template.key: template for template in PROJECT_TEMPLATE
 _CUSTOM_FIELD_KEY_RE = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
 
 
+PROJECT_TEMPLATE_PACK_EXAMPLES: tuple[ProjectTemplatePackExample, ...] = (
+    ProjectTemplatePackExample(
+        key="support",
+        name="Support queue",
+        description="Customer requests, incidents, and escalation follow-up.",
+        filename="support.toml",
+        toml="""
+key = "support"
+name = "Support queue"
+description = "Customer requests, incidents, and escalation follow-up."
+ship_exempt_kinds = ["question"]
+
+[custom_fields.priority]
+label = "Priority"
+type = "select"
+options = ["low", "medium", "high", "urgent"]
+
+[custom_fields.customer]
+label = "Customer"
+type = "text"
+
+[custom_fields.source_url]
+label = "Source URL"
+type = "url"
+
+[custom_fields.sla_risk]
+label = "SLA risk"
+type = "checkbox"
+
+[[kinds]]
+key = "question"
+label = "Question"
+prefix = "QST"
+
+[[kinds]]
+key = "incident"
+label = "Incident"
+prefix = "INC"
+
+[[kinds]]
+key = "request"
+label = "Request"
+prefix = "REQ"
+
+[[statuses]]
+key = "new"
+label = "New"
+
+[[statuses]]
+key = "triaging"
+label = "Triaging"
+
+[[statuses]]
+key = "waiting"
+label = "Waiting"
+
+[[statuses]]
+key = "escalated"
+label = "Escalated"
+
+[[statuses]]
+key = "resolved"
+label = "Resolved"
+terminal = true
+
+[[statuses]]
+key = "closed"
+label = "Closed"
+terminal = true
+
+[[branches]]
+key = "support"
+label = "Support"
+""".strip() + "\n",
+    ),
+    ProjectTemplatePackExample(
+        key="content",
+        name="Content calendar",
+        description="Editorial planning from ideas through published assets.",
+        filename="content.toml",
+        toml="""
+key = "content"
+name = "Content calendar"
+description = "Editorial planning from ideas through published assets."
+ship_exempt_kinds = ["idea"]
+
+[custom_fields.channel]
+label = "Channel"
+type = "select"
+options = ["blog", "docs", "social", "video", "newsletter"]
+
+[custom_fields.owner]
+label = "Owner"
+type = "text"
+
+[custom_fields.publish_window]
+label = "Publish window"
+type = "text"
+
+[custom_fields.source_url]
+label = "Source URL"
+type = "url"
+
+[[kinds]]
+key = "idea"
+label = "Idea"
+prefix = "IDEA"
+
+[[kinds]]
+key = "draft"
+label = "Draft"
+prefix = "DRFT"
+
+[[kinds]]
+key = "asset"
+label = "Asset"
+prefix = "AST"
+
+[[statuses]]
+key = "backlog"
+label = "Backlog"
+
+[[statuses]]
+key = "drafting"
+label = "Drafting"
+
+[[statuses]]
+key = "editing"
+label = "Editing"
+
+[[statuses]]
+key = "scheduled"
+label = "Scheduled"
+
+[[statuses]]
+key = "published"
+label = "Published"
+terminal = true
+requires_ship = true
+
+[[statuses]]
+key = "archived"
+label = "Archived"
+terminal = true
+
+[[branches]]
+key = "website"
+label = "Website"
+
+[[branches]]
+key = "newsletter"
+label = "Newsletter"
+""".strip() + "\n",
+    ),
+    ProjectTemplatePackExample(
+        key="research",
+        name="Research lab",
+        description="Discovery, experiments, findings, and product decisions.",
+        filename="research.toml",
+        toml="""
+key = "research"
+name = "Research lab"
+description = "Discovery, experiments, findings, and product decisions."
+
+[custom_fields.confidence]
+label = "Confidence"
+type = "select"
+options = ["low", "medium", "high"]
+
+[custom_fields.effort]
+label = "Effort"
+type = "number"
+
+[custom_fields.source_url]
+label = "Source URL"
+type = "url"
+
+[[kinds]]
+key = "question"
+label = "Question"
+prefix = "QST"
+
+[[kinds]]
+key = "experiment"
+label = "Experiment"
+prefix = "EXP"
+
+[[kinds]]
+key = "finding"
+label = "Finding"
+prefix = "FIND"
+
+[[kinds]]
+key = "decision"
+label = "Decision"
+prefix = "DEC"
+
+[[statuses]]
+key = "proposed"
+label = "Proposed"
+
+[[statuses]]
+key = "researching"
+label = "Researching"
+
+[[statuses]]
+key = "validating"
+label = "Validating"
+
+[[statuses]]
+key = "synthesized"
+label = "Synthesized"
+
+[[statuses]]
+key = "adopted"
+label = "Adopted"
+terminal = true
+
+[[statuses]]
+key = "archived"
+label = "Archived"
+terminal = true
+
+[[branches]]
+key = "research"
+label = "Research"
+""".strip() + "\n",
+    ),
+)
+
+_PROJECT_TEMPLATE_PACK_EXAMPLE_MAP = {
+    example.key: example for example in PROJECT_TEMPLATE_PACK_EXAMPLES
+}
+
+
 def _ensure_unique(values: list[str], label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -271,6 +518,35 @@ def get_project_template(
     return None
 
 
+def get_project_template_pack_example(key: str) -> ProjectTemplatePackExample | None:
+    return _PROJECT_TEMPLATE_PACK_EXAMPLE_MAP.get(key)
+
+
+def list_project_template_pack_examples() -> tuple[ProjectTemplatePackExample, ...]:
+    return PROJECT_TEMPLATE_PACK_EXAMPLES
+
+
+def install_project_template_pack_example(
+    key: str,
+    templates_dir: Path | str,
+    *,
+    force: bool = False,
+) -> Path:
+    example = get_project_template_pack_example(key)
+    if example is None:
+        raise ConfigError(f"unknown project template pack example '{key}'")
+
+    directory = Path(templates_dir)
+    path = directory / example.filename
+    if path.exists() and not force:
+        raise ConfigError(f"project template pack example already exists: {path}")
+
+    example.to_project_template()
+    directory.mkdir(parents=True, exist_ok=True)
+    path.write_text(example.toml, encoding="utf-8")
+    return path
+
+
 def list_project_templates(
     templates_dir: Path | str | None = None,
 ) -> tuple[ProjectTemplate, ...]:
@@ -347,16 +623,23 @@ def validate_project_templates(
 def load_project_template(path: Path | str) -> ProjectTemplate:
     template_path = Path(path)
     try:
-        data = tomllib.loads(template_path.read_text(encoding="utf-8-sig"))
+        text = template_path.read_text(encoding="utf-8-sig")
     except FileNotFoundError as exc:
         raise ConfigError(f"project template not found: {template_path}") from exc
+
+    return load_project_template_from_toml(text, source=str(template_path))
+
+
+def load_project_template_from_toml(text: str, *, source: str) -> ProjectTemplate:
+    try:
+        data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as exc:
-        raise ConfigError(f"{template_path}: TOML parse error: {exc}") from exc
+        raise ConfigError(f"{source}: TOML parse error: {exc}") from exc
 
     try:
         return ProjectTemplateFile.model_validate(data).to_project_template()
     except ValidationError as exc:
-        raise ConfigError(f"{template_path}: invalid project template: {exc}") from exc
+        raise ConfigError(f"{source}: invalid project template: {exc}") from exc
 
 
 def render_project_toml(

@@ -159,6 +159,45 @@ def main(argv: list[str] | None = None) -> int:
         help="Output format",
     )
 
+    p_template_examples = sub.add_parser(
+        "list-project-template-examples",
+        help="List installable local project-template pack examples",
+    )
+    p_template_examples.add_argument(
+        "--format",
+        choices=["table", "json"],
+        default="table",
+        help="Output format",
+    )
+
+    p_install_template_example = sub.add_parser(
+        "install-project-template-example",
+        help="Install a local project-template pack example",
+    )
+    p_install_template_example.add_argument("example_key", help="Example key to install")
+    p_install_template_example.add_argument("--config", default="server.toml")
+    p_install_template_example.add_argument(
+        "--templates-dir",
+        default=None,
+        help="Template pack directory; defaults to project_templates_dir from config",
+    )
+    p_install_template_example.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print the template TOML without writing",
+    )
+    p_install_template_example.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite the example file if it already exists",
+    )
+    p_install_template_example.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Output format",
+    )
+
     p_project = sub.add_parser("create-project", help="Create a project config from a template")
     p_project.add_argument("key", help="Project key, for example myapp")
     p_project.add_argument("--config", default="server.toml")
@@ -686,6 +725,17 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_validate_project_templates(
             Path(args.config),
             Path(args.templates_dir) if args.templates_dir else None,
+            output_format=args.format,
+        )
+    if args.cmd == "list-project-template-examples":
+        return _cmd_list_project_template_examples(output_format=args.format)
+    if args.cmd == "install-project-template-example":
+        return _cmd_install_project_template_example(
+            Path(args.config),
+            args.example_key,
+            templates_dir=Path(args.templates_dir) if args.templates_dir else None,
+            dry_run=args.dry_run,
+            force=args.force,
             output_format=args.format,
         )
     if args.cmd == "create-project":
@@ -1362,6 +1412,98 @@ def _cmd_validate_project_templates(
     ]
     _print_table(["Status", "Key", "Path", "Errors"], rows)
     return 0 if valid else 2
+
+
+def _cmd_list_project_template_examples(*, output_format: str) -> int:
+    from issuedeck.features.projects.project_templates import (
+        list_project_template_pack_examples,
+    )
+
+    payload = []
+    for example in list_project_template_pack_examples():
+        template = example.to_project_template()
+        payload.append({
+            "key": example.key,
+            "name": example.name,
+            "description": example.description,
+            "filename": example.filename,
+            "kinds": [kind.key for kind in template.kinds],
+            "statuses": [status.key for status in template.statuses],
+            "branches": [branch.key for branch in template.branches],
+            "custom_fields": list(template.custom_fields.keys()),
+        })
+
+    if output_format == "json":
+        print(json.dumps({"examples": payload}, ensure_ascii=False, indent=2))
+        return 0
+
+    rows = [
+        [
+            item["key"],
+            item["name"],
+            item["filename"],
+            ", ".join(item["kinds"]),
+            ", ".join(item["custom_fields"]),
+        ]
+        for item in payload
+    ]
+    _print_table(["Key", "Name", "File", "Kinds", "Custom fields"], rows)
+    return 0
+
+
+def _cmd_install_project_template_example(
+    config_path: Path,
+    example_key: str,
+    *,
+    templates_dir: Path | None,
+    dry_run: bool,
+    force: bool,
+    output_format: str,
+) -> int:
+    from issuedeck.core.config import load_server_config
+    from issuedeck.core.errors import ConfigError
+    from issuedeck.features.projects.project_templates import (
+        get_project_template_pack_example,
+        install_project_template_pack_example,
+    )
+
+    key = example_key.strip().lower()
+    try:
+        example = get_project_template_pack_example(key)
+        if example is None:
+            raise ValueError(f"unknown project template pack example '{key}'")
+        directory = templates_dir or load_server_config(config_path).project_templates_dir
+        path = directory / example.filename
+        if dry_run:
+            example.to_project_template()
+        else:
+            path = install_project_template_pack_example(
+                key,
+                directory,
+                force=force,
+            )
+    except (ConfigError, ValueError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if output_format == "json":
+        payload = {
+            "key": key,
+            "name": example.name,
+            "description": example.description,
+            "path": str(path),
+            "installed": not dry_run,
+        }
+        if dry_run:
+            payload["toml"] = example.toml
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    if dry_run:
+        print(example.toml)
+    else:
+        print(f"[ok] installed project template example '{key}' at {path}")
+    return 0
 
 
 def _cmd_create_project(

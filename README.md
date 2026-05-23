@@ -76,6 +76,8 @@ Project snapshots are covered in
   estimate, customer impact, and source URL, with list summaries,
   exact/range/presence dashboard and API filtering, bulk updates, and CSV/JSON
   import mappings.
+- Starter project templates plus installable local template-pack examples for
+  support queues, content calendars, and research workflows.
 - Full-text search via SQLite FTS5.
 - Bidirectional relationships (`blocks`/`blocked_by`, `related_to`).
 - External links for GitHub issues, pull requests, commits, and other review context.
@@ -217,10 +219,13 @@ templates; edit TOML directly for advanced customizations. Local template packs
 can be added through `project_templates_dir`; see
 [Project Templates](docs/project-templates.md).
 
-The same starter templates are available from the CLI:
+The same starter templates and installable example packs are available from the
+CLI:
 
 ```bash
 uv run issuedeck list-project-templates --config server.toml
+uv run issuedeck list-project-template-examples
+uv run issuedeck install-project-template-example support --config server.toml
 uv run issuedeck create-project myapp \
   --config server.toml \
   --name "My App" \

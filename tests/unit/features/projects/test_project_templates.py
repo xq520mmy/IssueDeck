@@ -2,6 +2,8 @@ import pytest
 
 from issuedeck.core.errors import ConfigError
 from issuedeck.features.projects.project_templates import (
+    install_project_template_pack_example,
+    list_project_template_pack_examples,
     list_project_templates,
     load_project_templates,
     render_project_toml,
@@ -116,6 +118,41 @@ def test_builtin_templates_include_custom_field_presets():
         "docs",
         "infra",
     ]
+
+
+def test_project_template_pack_examples_are_valid():
+    examples = list_project_template_pack_examples()
+
+    assert [example.key for example in examples] == ["support", "content", "research"]
+    for example in examples:
+        template = example.to_project_template()
+        assert template.key == example.key
+        assert template.kinds
+        assert template.statuses
+        assert template.custom_fields
+
+
+def test_install_project_template_pack_example_writes_valid_template(tmp_path):
+    templates_dir = tmp_path / "templates"
+
+    path = install_project_template_pack_example("support", templates_dir)
+
+    assert path == templates_dir / "support.toml"
+    assert path.exists()
+    templates = load_project_templates(templates_dir)
+    assert [template.key for template in templates] == ["support"]
+    assert "sla_risk" in templates[0].custom_fields
+
+
+def test_install_project_template_pack_example_rejects_overwrite(tmp_path):
+    templates_dir = tmp_path / "templates"
+    install_project_template_pack_example("support", templates_dir)
+
+    with pytest.raises(ConfigError, match="already exists"):
+        install_project_template_pack_example("support", templates_dir)
+
+    path = install_project_template_pack_example("support", templates_dir, force=True)
+    assert path == templates_dir / "support.toml"
 
 
 def test_load_project_templates_rejects_builtin_key_collision(tmp_path):

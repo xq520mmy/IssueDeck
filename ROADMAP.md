@@ -72,11 +72,13 @@ listed in `CHANGELOG.md`.
   metadata, JSON output, and dry-run previews.
 - Local CLI item listing with REST-aligned filters and JSON output.
 - Local CLI item detail output for terminal-first triage.
+- Installable local template-pack examples for support queues, content
+  calendars, and research workflows.
 
 ## Near Term
 
 - Explore richer third-party extension points beyond project templates.
-- Add more local template pack examples as real workflow patterns emerge.
+- Collect community template-pack patterns for future marketplace-style docs.
 
 ## Later
 

@@ -63,6 +63,7 @@ Dashboard CSV、JSON 和 Markdown 上传见
 - 项目自定义字段：为事项补充 priority、estimate、客户影响、来源 URL 等元数据，
   并支持列表摘要展示、Dashboard/API 精确/范围/有值筛选、批量更新和 CSV/JSON
   导入映射。
+- 起步项目模板和可安装的本地模板包示例，覆盖客服队列、内容日历和调研工作流。
 - SQLite FTS5 全文搜索。
 - 双向关系：`blocks`、`blocked_by`、`related_to`。
 - 外部链接：关联 GitHub issue、PR、commit 和其他审查上下文。
@@ -270,10 +271,12 @@ Basic issue deck、Agent workflow、Software team 等起步模板生成项目配
 高级配置仍建议直接编辑 TOML。也可以通过 `project_templates_dir` 增加本地模板包；
 详见[项目模板](docs/project-templates.zh-CN.md)。
 
-同一套起步模板也可以从 CLI 使用：
+同一套起步模板和可安装示例模板包也可以从 CLI 使用：
 
 ```bash
 uv run issuedeck list-project-templates --config server.toml
+uv run issuedeck list-project-template-examples
+uv run issuedeck install-project-template-example support --config server.toml
 uv run issuedeck create-project myapp \
   --config server.toml \
   --name "My App" \

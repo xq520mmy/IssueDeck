@@ -76,6 +76,35 @@ stopping at the first failure, and exits with code `2` when any template needs
 fixing. If you omit the directory argument, IssueDeck reads
 `project_templates_dir` from `server.toml`.
 
+## Example Template Packs
+
+IssueDeck ships installable example packs for common workflows:
+
+| Example | Best for | Highlights |
+| --- | --- | --- |
+| `support` | Customer support queues and incident follow-up | Questions, incidents, requests, SLA risk, customer, source URL |
+| `content` | Editorial and content calendars | Ideas, drafts, assets, publishing channels, publish window |
+| `research` | Discovery and validation work | Questions, experiments, findings, decisions, confidence, effort |
+
+List the available examples:
+
+```bash
+issuedeck list-project-template-examples
+issuedeck list-project-template-examples --format json
+```
+
+Install one into your local template pack directory:
+
+```bash
+issuedeck install-project-template-example support --config server.toml
+issuedeck install-project-template-example research \
+  --templates-dir ./project-templates
+```
+
+Use `--dry-run` to preview the TOML before writing it, and `--force` to replace
+an example file that already exists. After installing an example, it appears in
+`issuedeck list-project-templates` and in the dashboard project creation form.
+
 ## Built-In Templates
 
 | Template | Best for | Includes | Custom fields |

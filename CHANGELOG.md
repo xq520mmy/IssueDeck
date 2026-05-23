@@ -11,6 +11,9 @@ versioning once public releases begin.
 
 - Added `issuedeck validate-project-templates` for local template-pack TOML
   validation with table and JSON output.
+- Added `issuedeck list-project-template-examples` and
+  `issuedeck install-project-template-example` with support, content, and
+  research template-pack examples.
 
 ## [0.8.0] - 2026-05-02
 

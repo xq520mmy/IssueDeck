@@ -72,6 +72,35 @@ issuedeck validate-project-templates ./project-templates --format json
 只要有模板需要修复，命令就会以退出码 `2` 结束。省略目录参数时，IssueDeck 会从
 `server.toml` 读取 `project_templates_dir`。
 
+## 示例模板包
+
+IssueDeck 内置了几个可以直接安装的示例模板包，覆盖常见工作流：
+
+| 示例 | 适合场景 | 亮点 |
+| --- | --- | --- |
+| `support` | 客服队列和事故跟进 | Question、Incident、Request、SLA 风险、客户、来源链接 |
+| `content` | 内容日历和编辑排期 | Idea、Draft、Asset、发布渠道、发布时间窗口 |
+| `research` | 调研、实验和验证工作 | Question、Experiment、Finding、Decision、信心等级、投入量 |
+
+查看可用示例：
+
+```bash
+issuedeck list-project-template-examples
+issuedeck list-project-template-examples --format json
+```
+
+把某个示例安装到本地模板包目录：
+
+```bash
+issuedeck install-project-template-example support --config server.toml
+issuedeck install-project-template-example research \
+  --templates-dir ./project-templates
+```
+
+可以用 `--dry-run` 先预览将要写入的 TOML；如果示例文件已经存在，可以用
+`--force` 覆盖。安装完成后，这些示例会出现在
+`issuedeck list-project-templates` 和 Dashboard 的新建项目表单里。
+
 ## 内置模板
 
 | 模板 | 适合场景 | 包含内容 | 自定义字段 |

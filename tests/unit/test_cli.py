@@ -21,7 +21,9 @@ from issuedeck.cli import (
     _cmd_import_github_url,
     _cmd_import_json,
     _cmd_import_markdown_list,
+    _cmd_install_project_template_example,
     _cmd_list_items,
+    _cmd_list_project_template_examples,
     _cmd_list_project_templates,
     _cmd_seed_demo,
     _cmd_serve,
@@ -50,6 +52,8 @@ def test_issuedeck_help_lists_subcommands():
         "seed-demo",
         "list-project-templates",
         "validate-project-templates",
+        "list-project-template-examples",
+        "install-project-template-example",
         "create-project",
         "create-item",
         "update-item",
@@ -263,6 +267,83 @@ def test_validate_project_templates_cli_returns_error_for_invalid_pack(
     payload = json.loads(capsys.readouterr().out)
     assert payload["valid"] is False
     assert "invalid project template" in payload["templates"][0]["errors"][0]
+
+
+def test_list_project_template_examples_cli_outputs_json(capsys):
+    rc = _cmd_list_project_template_examples(output_format="json")
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert [example["key"] for example in payload["examples"]] == [
+        "support",
+        "content",
+        "research",
+    ]
+    assert payload["examples"][0]["filename"] == "support.toml"
+
+
+def test_install_project_template_example_cli_dry_run_outputs_json(tmp_path, capsys):
+    templates_dir = tmp_path / "templates"
+
+    rc = _cmd_install_project_template_example(
+        tmp_path / "missing-server.toml",
+        "support",
+        templates_dir=templates_dir,
+        dry_run=True,
+        force=False,
+        output_format="json",
+    )
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["installed"] is False
+    assert payload["path"] == str(templates_dir / "support.toml")
+    assert 'key = "support"' in payload["toml"]
+    assert not templates_dir.exists()
+
+
+def test_install_project_template_example_cli_writes_template(tmp_path, capsys):
+    templates_dir = tmp_path / "templates"
+
+    rc = _cmd_install_project_template_example(
+        tmp_path / "missing-server.toml",
+        "research",
+        templates_dir=templates_dir,
+        dry_run=False,
+        force=False,
+        output_format="json",
+    )
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["installed"] is True
+    assert payload["key"] == "research"
+    assert (templates_dir / "research.toml").exists()
+
+
+def test_install_project_template_example_cli_rejects_overwrite(tmp_path, capsys):
+    templates_dir = tmp_path / "templates"
+    _cmd_install_project_template_example(
+        tmp_path / "missing-server.toml",
+        "content",
+        templates_dir=templates_dir,
+        dry_run=False,
+        force=False,
+        output_format="text",
+    )
+    capsys.readouterr()
+
+    rc = _cmd_install_project_template_example(
+        tmp_path / "missing-server.toml",
+        "content",
+        templates_dir=templates_dir,
+        dry_run=False,
+        force=False,
+        output_format="text",
+    )
+
+    assert rc == 2
+    assert "already exists" in capsys.readouterr().err
 
 
 def test_create_project_cli_writes_template_config(tmp_path, capsys):
