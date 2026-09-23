@@ -6,6 +6,7 @@ node_modules/
 .ruff_cache/
 dist/
 build/
+artifacts/
 *.egg-info/
 .env
 .env.*
